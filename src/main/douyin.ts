@@ -2,9 +2,9 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-09 00:09:21
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-06-09 00:51:04
- * @FilePath: /yishe-electron/src/main/xiaohongshu.ts
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ * @LastEditTime: 2025-06-09 01:10:41
+ * @FilePath: /yishe-electron/src/main/douyin.ts
+ * @Description: 抖音发布功能
  */
 import puppeteer from 'puppeteer-core'
 import { SocialMediaUploadUrl } from './const'
@@ -12,14 +12,13 @@ import { join as pathJoin } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { startChrome } from './chrome'
 
-export async function publishToXiaohongshu(): Promise<void> {
+export async function publishToDouyin(): Promise<void> {
   try {
-    console.log('开始执行小红书发布操作，参数:')
-
+    console.log('开始执行抖音发布操作，参数:')
 
     const params = {
-        title:'bbbbb',
-        content:'cccccccc'
+      title: 'bbbbb',
+      content: 'cccccccc'
     }
     
     // 尝试连接到Chrome浏览器
@@ -46,8 +45,8 @@ export async function publishToXiaohongshu(): Promise<void> {
     const page = await browser.newPage();
     console.log('新页面创建成功');
     
-    await page.goto(SocialMediaUploadUrl.xiaohongshu_pic);
-    console.log('已打开小红书发布页面');
+    await page.goto(SocialMediaUploadUrl.douyin_pic);
+    console.log('已打开抖音发布页面');
 
     // 等待文件选择器出现
     await page.waitForSelector('input[type="file"]');
@@ -74,23 +73,23 @@ export async function publishToXiaohongshu(): Promise<void> {
     // 填写标题
     const titleSelector = 'input[placeholder*="标题"]';
     await page.waitForSelector(titleSelector);
-    await page.type(titleSelector, '2131313131');
+    await page.type(titleSelector, '测试发布标题');
     console.log('已填写标题');
 
     // 填写正文内容
-    const contentSelector = '.ql-editor';
+    const contentSelector = '.editor-kit-container';
     await page.waitForSelector(contentSelector);
 
     console.log(contentSelector)
 
-    await page.type(contentSelector, params.content as string);
+    await page.type(contentSelector, '测试发布内容');
     console.log('已填写正文内容');
 
     // 等待内容填写完成
-    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 1000)));
+    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 3000)));
 
     // 点击发布按钮
-    const submitButton = await page.waitForSelector('.submit button');
+    const submitButton = await page.waitForSelector('[class^="content-confirm-container-"] button');
     if (!submitButton) {
       throw new Error('未找到发布按钮');
     }
@@ -101,7 +100,7 @@ export async function publishToXiaohongshu(): Promise<void> {
     await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 3000)));
     
   } catch (error) {
-    console.error('小红书发布过程出错:', error);
+    console.error('抖音发布过程出错:', error);
     throw error;
   }
 } 

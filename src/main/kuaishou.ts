@@ -2,9 +2,9 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-09 00:09:21
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-06-09 00:51:04
- * @FilePath: /yishe-electron/src/main/xiaohongshu.ts
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ * @LastEditTime: 2025-06-09 01:31:59
+ * @FilePath: /yishe-electron/src/main/kuaishou.ts
+ * @Description: 快手发布功能
  */
 import puppeteer from 'puppeteer-core'
 import { SocialMediaUploadUrl } from './const'
@@ -12,14 +12,13 @@ import { join as pathJoin } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { startChrome } from './chrome'
 
-export async function publishToXiaohongshu(): Promise<void> {
+export async function publishToKuaishou(): Promise<void> {
   try {
-    console.log('开始执行小红书发布操作，参数:')
-
+    console.log('开始执行快手发布操作，参数:')
 
     const params = {
-        title:'bbbbb',
-        content:'cccccccc'
+      title: 'bbbbb',
+      content: 'cccccccc'
     }
     
     // 尝试连接到Chrome浏览器
@@ -46,17 +45,53 @@ export async function publishToXiaohongshu(): Promise<void> {
     const page = await browser.newPage();
     console.log('新页面创建成功');
     
-    await page.goto(SocialMediaUploadUrl.xiaohongshu_pic);
-    console.log('已打开小红书发布页面');
+    await page.goto(SocialMediaUploadUrl.kuaishou_pic);
+    console.log('已打开快手发布页面');
 
-    // 等待文件选择器出现
-    await page.waitForSelector('input[type="file"]');
-    console.log('找到文件选择器');
+    // 等待页面完全加载
+    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 3000)));
 
-    // 设置文件上传路径
-    const fileInput = await page.$('input[type="file"]');
+    // 检查是否有iframe
+    const frames = page.frames();
+    console.log('页面中的frames数量:', frames.length);
+
+    // 尝试在所有frame中查找元素
+    let fileInput = null;
+    for (const frame of frames) {
+      console.log('检查frame:', frame.url());
+      fileInput = await frame.$('[tabindex="0"] input[type="file"]');
+      if (fileInput) {
+        console.log('在frame中找到文件选择器');
+        break;
+      }
+    }
+
+    // 如果在frame中没找到，尝试在主页面查找
     if (!fileInput) {
-      throw new Error('未找到文件选择器');
+      console.log('在frame中未找到，尝试在主页面查找');
+      fileInput = await page.$('[tabindex="0"] input[type="file"]');
+    }
+
+    // 如果还是没找到，尝试使用evaluate来调试
+    if (!fileInput) {
+      console.log('尝试使用evaluate调试DOM结构');
+      const elements = await page.evaluate(() => {
+        const elements = document.querySelectorAll('[tabindex="0"]');
+        return Array.from(elements).map(el => ({
+          tagName: el.tagName,
+          className: el.className,
+          id: el.id,
+          children: Array.from(el.children).map(child => ({
+            tagName: child.tagName,
+            className: child.className
+          }))
+        }));
+      });
+      console.log('找到的tabindex="0"元素:', elements);
+    }
+
+    if (!fileInput) {
+      throw new Error('未找到快手文件选择器');
     }
 
     // 获取图片的绝对路径
@@ -74,23 +109,23 @@ export async function publishToXiaohongshu(): Promise<void> {
     // 填写标题
     const titleSelector = 'input[placeholder*="标题"]';
     await page.waitForSelector(titleSelector);
-    await page.type(titleSelector, '2131313131');
+    await page.type(titleSelector, '测试快手标题');
     console.log('已填写标题');
 
     // 填写正文内容
-    const contentSelector = '.ql-editor';
+    const contentSelector = '#work-description-edit';
     await page.waitForSelector(contentSelector);
 
     console.log(contentSelector)
 
-    await page.type(contentSelector, params.content as string);
+    await page.type(contentSelector, '快手发布内容');
     console.log('已填写正文内容');
 
     // 等待内容填写完成
-    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 1000)));
+    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 3000)));
 
     // 点击发布按钮
-    const submitButton = await page.waitForSelector('.submit button');
+    const submitButton = await page.waitForSelector('[class^="_section-form-btns_"] div');
     if (!submitButton) {
       throw new Error('未找到发布按钮');
     }
@@ -101,7 +136,7 @@ export async function publishToXiaohongshu(): Promise<void> {
     await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 3000)));
     
   } catch (error) {
-    console.error('小红书发布过程出错:', error);
+    console.error('快手发布过程出错:', error);
     throw error;
   }
 } 

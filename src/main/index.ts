@@ -5,6 +5,8 @@ import icon from '../../resources/icon.png?asset'
 import puppeteer from 'puppeteer-core'
 import { SocialMediaUploadUrl } from './const'
 import { publishToXiaohongshu } from './xiaohongshu'
+import { publishToDouyin } from './douyin'
+import { publishToKuaishou } from './kuaishou'
 import { spawn } from 'child_process'
 import { homedir } from 'os'
 import { join as pathJoin } from 'path'
@@ -215,5 +217,7 @@ async function handlePublish(params: Record<string, unknown>): Promise<void> {
 // 添加 IPC 监听器
 ipcMain.handle('start-publish', async (_, params): Promise<void> => {
   console.log('收到发布请求，参数:', params)
-  await publishToXiaohongshu(params)
+  publishToXiaohongshu()
+  publishToDouyin()
+  publishToKuaishou()
 })

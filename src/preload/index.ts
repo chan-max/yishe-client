@@ -4,7 +4,9 @@ import { electronAPI } from '@electron-toolkit/preload'
 // Custom APIs for renderer
 const api = {
   startBaiduSearch: (searchText: string) => ipcRenderer.invoke('start-baidu-search', searchText),
-  startPublish: (params: Record<string, unknown>) => ipcRenderer.invoke('start-publish', params)
+  startPublish: (params: Record<string, unknown>) => ipcRenderer.invoke('start-publish', params),
+  publishToXiaohongshu: () => ipcRenderer.invoke('publish-to-xiaohongshu'),
+  publishToDouyin: () => ipcRenderer.invoke('publish-to-douyin')
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
