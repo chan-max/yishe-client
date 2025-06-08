@@ -1,8 +1,11 @@
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
-const api = {}
+const api = {
+  startBaiduSearch: (searchText: string) => ipcRenderer.invoke('start-baidu-search', searchText),
+  startPublish: (params: Record<string, unknown>) => ipcRenderer.invoke('start-publish', params)
+}
 
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise
