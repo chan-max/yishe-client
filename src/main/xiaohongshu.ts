@@ -17,10 +17,7 @@ export async function publishToXiaohongshu(): Promise<void> {
     console.log('开始执行小红书发布操作，参数:')
 
 
-    const params = {
-        title:'bbbbb',
-        content:'cccccccc'
-    }
+
     
     // 尝试连接到Chrome浏览器
     let browser;
@@ -83,7 +80,7 @@ export async function publishToXiaohongshu(): Promise<void> {
 
     console.log(contentSelector)
 
-    await page.type(contentSelector, params.content as string);
+    await page.type(contentSelector, '这是一段测试内容');
     console.log('已填写正文内容');
 
     // 等待内容填写完成

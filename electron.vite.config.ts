@@ -4,7 +4,11 @@ import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
+    build: {
+      minify: false,  // 禁用压缩混淆
+      sourcemap: true  // 生成sourcemap方便调试
+    }
   },
   preload: {
     plugins: [externalizeDepsPlugin()]

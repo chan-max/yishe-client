@@ -16,10 +16,7 @@ export async function publishToDouyin(): Promise<void> {
   try {
     console.log('开始执行抖音发布操作，参数:')
 
-    const params = {
-      title: 'bbbbb',
-      content: 'cccccccc'
-    }
+
     
     // 尝试连接到Chrome浏览器
     let browser;
