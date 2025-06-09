@@ -145,3 +145,16 @@ ipcMain.handle('start-publish', async (_, params): Promise<void> => {
   publishToDouyin()
   publishToKuaishou()
 })
+
+// 添加调试工具切换事件处理
+ipcMain.on('toggle-devtools', (event) => {
+  console.log('toggle')
+  const win = BrowserWindow.fromWebContents(event.sender)
+  if (win) {
+    if (win.webContents.isDevToolsOpened()) {
+      win.webContents.closeDevTools()
+    } else {
+      win.webContents.openDevTools()
+    }
+  }
+})

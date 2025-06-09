@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-08 23:07:32
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-06-09 22:32:04
+ * @LastEditTime: 2025-06-09 22:45:14
  * @FilePath: /yishe-electron/src/renderer/src/App.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -12,6 +12,7 @@ import Versions from "./components/Versions.vue";
 
 const serverStatus = ref(false);
 const remoteServerStatus = ref(false);
+const isDevToolsOpen = ref(false);
 const timerId = ref<NodeJS.Timeout | null>(null);
 const remoteTimerId = ref<NodeJS.Timeout | null>(null);
 
@@ -113,6 +114,14 @@ const handlePublish = async (): Promise<void> => {
     console.error("发布过程出错:", error);
   }
 };
+
+const toggleDevTools = (): void => {
+  window.electron.ipcRenderer.send('toggle-devtools');
+  // 由于我们无法直接获取DevTools的状态，这里使用一个简单的延时来更新状态
+  setTimeout(() => {
+    isDevToolsOpen.value = !isDevToolsOpen.value;
+  }, 100);
+};
 </script>
 
 <template>
@@ -141,6 +150,9 @@ const handlePublish = async (): Promise<void> => {
       <div class="status-indicator remote-status-indicator"></div>
       {{ remoteServerStatus ? "远程服务已连接" : "远程服务未连接" }}
     </div>
+    <button @click="toggleDevTools" class="devtools-button">
+      {{ isDevToolsOpen ? '隐藏调试工具' : '显示调试工具' }}
+    </button>
   </div>
 
   <div class="publish-container">
@@ -279,5 +291,20 @@ const handlePublish = async (): Promise<void> => {
 
 .offline .status-indicator {
   background: #f44336;
+}
+
+.devtools-button {
+  padding: 4px 10px;
+  background-color: #607d8b;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 10px;
+}
+
+.devtools-button:hover {
+  background-color: #455a64;
 }
 </style>
