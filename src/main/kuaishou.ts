@@ -10,35 +10,13 @@ import puppeteer from 'puppeteer-core'
 import { SocialMediaUploadUrl } from './const'
 import { join as pathJoin } from 'path'
 import { is } from '@electron-toolkit/utils'
-import { startChrome } from './chrome'
+import { getBrowser } from './browser'
 
 export async function publishToKuaishou (): Promise<void> {
   try {
     console.log('开始执行快手发布操作，参数:')
 
-
-
-    // 尝试连接到Chrome浏览器
-    let browser
-    try {
-      browser = await puppeteer.connect({
-        browserURL: 'http://localhost:9222',
-        defaultViewport: null
-      })
-      console.log('浏览器连接成功')
-    } catch (connectError) {
-      console.error('连接浏览器失败，尝试启动Chrome:', connectError)
-      // 如果连接失败，尝试启动Chrome
-      await startChrome()
-
-      // 再次尝试连接
-      browser = await puppeteer.connect({
-        browserURL: 'http://localhost:9222',
-        defaultViewport: null
-      })
-      console.log('浏览器启动并连接成功')
-    }
-
+    const browser = await getBrowser()
     const page = await browser.newPage()
     console.log('新页面创建成功')
 

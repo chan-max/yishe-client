@@ -141,9 +141,17 @@ ipcMain.handle('start-baidu-search', async (_, searchText): Promise<void> => {
 // 添加 IPC 监听器
 ipcMain.handle('start-publish', async (_, params): Promise<void> => {
   console.log('收到发布请求，参数:', params)
-  publishToXiaohongshu()
-  publishToDouyin()
-  publishToKuaishou()
+  try {
+    // 并行执行发布操作
+    await Promise.all([
+      publishToXiaohongshu(),
+      publishToDouyin(),
+      publishToKuaishou()
+    ])
+  } catch (error) {
+    console.error('发布过程出错:', error)
+    throw error
+  }
 })
 
 // 添加调试工具切换事件处理
