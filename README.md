@@ -1,5 +1,7 @@
 # yishe-electron
 
+# npx electron-icon-builder --input=resources/icon.png --output=build 生成图标
+
 An Electron application with Vue and TypeScript
 
 ## Recommended IDE Setup
