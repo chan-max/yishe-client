@@ -1,7 +1,7 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
+import icon from '../../resources/test.jpeg?asset'
 import puppeteer from 'puppeteer-core'
 import { SocialMediaUploadUrl } from './const'
 import { publishToXiaohongshu } from './xiaohongshu'
@@ -198,8 +198,8 @@ async function handlePublish(params: Record<string, unknown>): Promise<void> {
 
     // 获取图片的绝对路径
     const imagePath = is.dev 
-      ? pathJoin(__dirname, '../../resources/icon.png')  // 开发环境
-      : pathJoin(process.resourcesPath, 'resources/icon.png');  // 生产环境
+      ? pathJoin(__dirname, '../../resources/test.jpeg')  // 开发环境
+      : pathJoin(process.resourcesPath, 'resources/test.jpeg');  // 生产环境
     
     console.log('图片路径:', imagePath);
     await fileInput.uploadFile(imagePath);
