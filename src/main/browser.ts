@@ -1,7 +1,7 @@
 import puppeteer from 'puppeteer-core'
 import { startChrome } from './chrome'
 
-let browserInstance: puppeteer.Browser | null = null
+let browserInstance = null
 
 async function waitForChromeDebugger(timeout = 10000): Promise<void> {
   const startTime = Date.now()
@@ -19,7 +19,7 @@ async function waitForChromeDebugger(timeout = 10000): Promise<void> {
   throw new Error('等待Chrome调试器超时')
 }
 
-export async function getBrowser(): Promise<puppeteer.Browser> {
+export async function getBrowser(){
   if (browserInstance) {
     try {
       // 检查浏览器是否仍然连接

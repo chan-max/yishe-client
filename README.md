@@ -1,5 +1,9 @@
 # yishe-electron
 
+
+# win 开启游览器调试
+"C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="D:\work"
+
 # npx electron-icon-builder --input=resources/icon.png --output=build 生成图标
 
 An Electron application with Vue and TypeScript

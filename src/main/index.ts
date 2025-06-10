@@ -100,43 +100,6 @@ app.on('window-all-closed', () => {
   }
 })
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
-
-// 添加 puppeteer 处理函数
-async function handleBaiduSearch(searchText: string): Promise<void> {
-  try {
-    console.log('开始执行百度搜索，搜索内容:', searchText)
-    const browser = await puppeteer.launch({
-      headless: false,
-      executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' // macOS Chrome 路径
-    })
-    
-    console.log('浏览器启动成功')
-    const page = await browser.newPage()
-    console.log('新页面创建成功')
-    
-    await page.goto('https://www.baidu.com')
-    console.log('已打开百度首页')
-    
-    await page.type('#kw', searchText)
-    console.log('已输入搜索内容')
-    
-    await page.click('#su')
-    console.log('已点击搜索按钮')
-    
-    // 不关闭浏览器，让用户可以看到结果
-  } catch (error) {
-    console.error('浏览器自动化过程出错:', error)
-  }
-}
-
-// 添加 IPC 监听器
-ipcMain.handle('start-baidu-search', async (_, searchText): Promise<void> => {
-  console.log('收到搜索请求:', searchText)
-  await handleBaiduSearch(searchText)
-})
-
 
 // 添加 IPC 监听器
 ipcMain.handle('start-publish', async (_, params): Promise<void> => {
