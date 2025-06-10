@@ -16,9 +16,13 @@ const isDevToolsOpen = ref(false);
 const timerId = ref<NodeJS.Timeout | null>(null);
 const remoteTimerId = ref<NodeJS.Timeout | null>(null);
 
+const browserStatus = ref(false); // 新增浏览器状态
+const browserTimerId = ref<NodeJS.Timeout | null>(null); // 新增浏览器检测定时器
+
 onMounted(() => {
   startServerPolling();
   startRemoteServerPolling();
+  startBrowserCheck();
 });
 
 onUnmounted(() => {
@@ -27,6 +31,9 @@ onUnmounted(() => {
   }
   if (remoteTimerId.value) {
     clearInterval(remoteTimerId.value);
+  }
+  if (browserTimerId.value) {
+    clearInterval(browserTimerId.value);
   }
 });
 
@@ -80,20 +87,20 @@ const checkRemoteServerStatus = async () => {
   }
 };
 
-const searchText = ref("");
-const ipcHandle = (): void => window.electron.ipcRenderer.send("ping");
+// 新增浏览器状态检测方法
+const startBrowserCheck = () => {
+  checkBrowserStatus();
+  browserTimerId.value = setInterval(checkBrowserStatus, 5000);
+};
 
-const handleSearch = async (): Promise<void> => {
+const checkBrowserStatus = async () => {
   try {
-    if (searchText.value.trim()) {
-      console.log("准备发送搜索请求:", searchText.value);
-      await window.api.startBaiduSearch(searchText.value);
-      console.log("搜索请求已发送");
-    } else {
-      console.log("搜索内容为空");
-    }
-  } catch (error) {
-    console.error("搜索过程出错:", error);
+    const response = await fetch("http://127.0.0.1:9222/json/version", { 
+      mode: 'no-cors' // 添加no-cors模式
+    });
+    browserStatus.value = response.status == 0;
+  } catch {
+    browserStatus.value = false;
   }
 };
 
@@ -116,7 +123,7 @@ const handlePublish = async (): Promise<void> => {
 };
 
 const toggleDevTools = (): void => {
-  window.electron.ipcRenderer.send('toggle-devtools');
+  window.electron.ipcRenderer.send("toggle-devtools");
   // 由于我们无法直接获取DevTools的状态，这里使用一个简单的延时来更新状态
   setTimeout(() => {
     isDevToolsOpen.value = !isDevToolsOpen.value;
@@ -126,19 +133,16 @@ const toggleDevTools = (): void => {
 
 <template>
   <img alt="logo" class="logo" src="./assets/electron.svg" />
-  <div class="creator">Powered by electron-vite</div>
-
-  <div class="search-container">
-    <input
-      v-model="searchText"
-      type="text"
-      placeholder="请输入搜索内容"
-      class="search-input"
-    />
-    <button @click="handleSearch" class="search-button">搜索</button>
-  </div>
 
   <div class="server-status-container">
+    <div
+      class="server-status browser-status"
+      :class="{ online: browserStatus, offline: !browserStatus }"
+    >
+      <div class="status-indicator"></div>
+      {{ browserStatus ? "浏览器已连接" : "浏览器连接失败" }}
+    </div>
+
     <div class="server-status" :class="{ online: serverStatus, offline: !serverStatus }">
       <div class="status-indicator"></div>
       {{ serverStatus ? "服务已启动" : "服务未连接" }}
@@ -151,30 +155,12 @@ const toggleDevTools = (): void => {
       {{ remoteServerStatus ? "远程服务已连接" : "远程服务未连接" }}
     </div>
     <button @click="toggleDevTools" class="devtools-button">
-      {{ isDevToolsOpen ? '隐藏调试工具' : '显示调试工具' }}
+      {{ isDevToolsOpen ? "隐藏调试工具" : "显示调试工具" }}
     </button>
   </div>
 
   <div class="publish-container">
     <button @click="handlePublish" class="publish-button">发布内容</button>
-  </div>
-
-  <div class="text">
-    Build an Electron app with
-    <span class="vue">Vue123</span>
-    and
-    <span class="ts">TypeScript</span>
-  </div>
-  <p class="tip">Please try pressing <code>F12</code> to open the devTool</p>
-  <div class="actions">
-    <div class="action">
-      <a href="https://electron-vite.org/" target="_blank" rel="noreferrer"
-        >Documentation</a
-      >
-    </div>
-    <div class="action">
-      <a target="_blank" rel="noreferrer" @click="ipcHandle">Send IPC</a>
-    </div>
   </div>
   <Versions />
 </template>
@@ -242,7 +228,7 @@ const toggleDevTools = (): void => {
   top: 20px;
   right: 20px;
   display: flex;
-  gap: .5em;
+  gap: 0.5em;
 }
 
 .remote-status {

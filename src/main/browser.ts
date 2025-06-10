@@ -3,27 +3,27 @@ import { startChrome } from './chrome'
 
 let browserInstance = null
 
-async function waitForChromeDebugger(timeout = 10000): Promise<string> {
+async function getWebSocketUrl(timeout = 5000): Promise<string> {  // 修改默认超时为5秒
   const startTime = Date.now()
   while (Date.now() - startTime < timeout) {
     try {
       const response = await fetch('http://127.0.0.1:9222/json/version')
       if (response.ok) {
         const data = await response.json()
-        return data.webSocketDebuggerUrl // 新增返回webSocketDebuggerUrl
+        console.log('[DEBUG] 获取到最新webSocketDebuggerUrl:', data.webSocketDebuggerUrl)
+        return data.webSocketDebuggerUrl
       }
     } catch (error) {
-      // 忽略错误，继续重试
+      console.log('[DEBUG] 连接调试器失败，0.5秒后重试...')
     }
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise(resolve => setTimeout(resolve, 500))  // 保持500ms重试间隔
   }
-  throw new Error('等待Chrome调试器超时')
+  throw new Error(`等待Chrome调试器超时（${timeout}ms）`)
 }
 
-export async function getBrowser(){
+export async function getBrowser() {
   if (browserInstance) {
     try {
-      // 检查浏览器是否仍然连接
       await browserInstance.pages()
       return browserInstance
     } catch (error) {
@@ -33,12 +33,21 @@ export async function getBrowser(){
   }
 
   try {
-    // 先启动Chrome
     await startChrome()
-    const webSocketUrl = await waitForChromeDebugger() // 获取webSocket地址
     
+    // 新增无限重试机制
+    let webSocketUrl = '';
+    while (!webSocketUrl) {
+      try {
+        webSocketUrl = await getWebSocketUrl(5000) // 缩短超时时间到5秒
+      } catch (error) {
+        console.log('浏览器未就绪，5秒后重试...')
+        await new Promise(resolve => setTimeout(resolve, 5000))
+      }
+    }
+
     browserInstance = await puppeteer.connect({
-      browserWSEndpoint: webSocketUrl, // 修改连接方式
+      browserWSEndpoint: webSocketUrl,
       defaultViewport: null
     })
     console.log('浏览器连接成功')
