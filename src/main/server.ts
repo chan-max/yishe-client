@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';  // 新增cors导入
 
-export function startServer(port: number = 1520): void {
+export function startServer(port: number = 1519): void {
   const app = express();
   
   // 基础中间件

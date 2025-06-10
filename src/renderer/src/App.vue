@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-08 23:07:32
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-06-09 22:45:14
+ * @LastEditTime: 2025-06-11 07:45:30
  * @FilePath: /yishe-electron/src/renderer/src/App.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -53,7 +53,7 @@ const startRemoteServerPolling = () => {
 
 const checkServerStatus = async () => {
   try {
-    const response = await fetch("http://localhost:1520/api/health");
+    const response = await fetch("http://localhost:1519/api/health");
     const wasOnline = serverStatus.value;
     serverStatus.value = response.ok;
 
@@ -71,7 +71,7 @@ const checkServerStatus = async () => {
 
 const checkRemoteServerStatus = async () => {
   try {
-    const response = await fetch("https://1s.design:7788/api/test");
+    const response = await fetch("https://1s.design:1520/api/test");
     const wasOnline = remoteServerStatus.value;
     remoteServerStatus.value = response.ok;
 

@@ -1,40 +1,51 @@
 # yishe-electron
 
-
-# win 开启游览器调试
-"C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="D:\work"
-
-# npx electron-icon-builder --input=resources/icon.png --output=build 生成图标
-
 An Electron application with Vue and TypeScript
 
-## Recommended IDE Setup
+## 开发调试
 
+### 浏览器调试
+
+#### Windows
+```bash
+"C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="D:\work"
+```
+
+#### macOS
+```bash
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222 --user-data-dir="/Users/jackie/work"
+```
+
+### 应用图标生成
+```bash
+npx electron-icon-builder --input=resources/icon.png --output=build
+```
+
+## 开发环境配置
+
+### 推荐的IDE设置
 - [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar)
 
-## Project Setup
+## 项目设置
 
-### Install
-
+### 安装依赖
 ```bash
 $ npm install
 ```
 
-### Development
-
+### 开发环境运行
 ```bash
 $ npm run dev
 ```
 
-### Build
-
+### 构建应用
 ```bash
-# For windows
+# Windows版本
 $ npm run build:win
 
-# For macOS
+# macOS版本
 $ npm run build:mac
 
-# For Linux
+# Linux版本
 $ npm run build:linux
 ```

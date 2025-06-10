@@ -1,0 +1,70 @@
+name: Build and Release Electron App
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build/Release Electron app
+        uses: samuelmeuli/action-electron-builder@v1
+        with:
+          github_token: ${{ secrets.github_token }}
+          release: true
+        env:
+          GH_TOKEN: ${{ secrets.github_token }}
+
+      - name: Send Feishu Notification
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const status = '${{ job.status }}';
+            const emoji = status === 'success' ? '🚀' : '❌';
+            const commitSha = '${{ github.sha }}'.substring(0, 7);
+            const platforms = '${{ matrix.os }}';
+            
+            const message = {
+              msg_type: "text",
+              content: {
+                text: `${emoji} 衣设Electron应用构建${status === 'success' ? '成功' : '失败'}通知\n\n` +
+                      `项目: ${{ github.repository }}\n` +
+                      `分支: main\n` +
+                      `提交: ${commitSha}\n` +
+                      `平台: ${platforms}\n` +
+                      `提交者: ${{ github.actor }}\n` +
+                      `提交信息: ${{ github.event.head_commit.message }}\n` +
+                      `构建时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}\n` +
+                      `状态: ${status === 'success' ? '✅ 成功' : '❌ 失败'}\n\n` +
+                      `下载地址: https://github.com/${{ github.repository }}/releases/latest`
+              }
+            };
+            
+            await fetch('${{ secrets.FEISHU_WEBHOOK_URL }}', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(message)
+            }); 

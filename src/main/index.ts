@@ -30,7 +30,7 @@ function createWindow(): void {
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
     // 开启开发者工具
-    mainWindow.webContents.openDevTools()
+    // mainWindow.webContents.openDevTools()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -82,7 +82,7 @@ app.whenReady().then(() => {
   createWindow()
 
   // 启动服务器
-  startServer(1520);
+  startServer(1519);
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
