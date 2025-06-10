@@ -3,13 +3,14 @@ import { startChrome } from './chrome'
 
 let browserInstance = null
 
-async function waitForChromeDebugger(timeout = 10000): Promise<void> {
+async function waitForChromeDebugger(timeout = 10000): Promise<string> {
   const startTime = Date.now()
   while (Date.now() - startTime < timeout) {
     try {
-      const response = await fetch('http://localhost:9222/json/version')
+      const response = await fetch('http://127.0.0.1:9222/json/version')
       if (response.ok) {
-        return
+        const data = await response.json()
+        return data.webSocketDebuggerUrl // 新增返回webSocketDebuggerUrl
       }
     } catch (error) {
       // 忽略错误，继续重试
@@ -34,11 +35,10 @@ export async function getBrowser(){
   try {
     // 先启动Chrome
     await startChrome()
-    // 等待Chrome调试器准备就绪
-    await waitForChromeDebugger()
+    const webSocketUrl = await waitForChromeDebugger() // 获取webSocket地址
     
     browserInstance = await puppeteer.connect({
-      browserURL: 'http://localhost:9222',
+      browserWSEndpoint: webSocketUrl, // 修改连接方式
       defaultViewport: null
     })
     console.log('浏览器连接成功')
@@ -55,4 +55,4 @@ export function closeBrowser(): void {
     browserInstance.disconnect()
     browserInstance = null
   }
-} 
+}
