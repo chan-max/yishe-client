@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-09 00:09:21
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-06-11 22:21:51
+ * @LastEditTime: 2025-06-12 01:20:10
  * @FilePath: /yishe-electron/src/main/douyin.ts
  * @Description: 抖音发布功能
  */
@@ -11,10 +11,24 @@ import { SocialMediaUploadUrl } from './const'
 import { join as pathJoin } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { getBrowser } from './browser'
+import fs from 'fs'
 
-export async function publishToDouyin(publishInfo): Promise<void> {
+interface PublishInfo {
+  platform: string;
+  name: string;
+  description: string;
+  images: string[];
+}
+
+export async function publishToDouyin(publishInfo: PublishInfo): Promise<void> {
   try {
-    console.log('开始执行抖音发布操作，参数:')
+    console.log('开始执行抖音发布操作，参数:', publishInfo)
+    
+    // 确保临时目录存在
+    const tempDir = pathJoin(process.cwd(), 'temp')
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true })
+    }
     
     const browser = await getBrowser()
     const page = await browser.newPage()
@@ -33,31 +47,46 @@ export async function publishToDouyin(publishInfo): Promise<void> {
       throw new Error('未找到文件选择器')
     }
 
-    // 获取图片的绝对路径
-    const imagePath = is.dev 
-      ? pathJoin(__dirname, '../../resources/test.jpeg')  // 开发环境
-      : pathJoin(process.resourcesPath, 'resources/test.jpeg')  // 生产环境
-    
-    console.log('图片路径:', imagePath)
-    await fileInput.uploadFile(imagePath)
-    console.log('已选择图片文件')
-
-    // 等待图片上传完成
-    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 2000))) // 给一些时间让图片上传
+    // 下载并上传所有图片
+    for (const imageUrl of publishInfo.images) {
+      try {
+        // 下载图片到临时目录
+        const response = await fetch(imageUrl)
+        if (!response.ok) {
+          throw new Error(`下载图片失败: ${response.statusText}`)
+        }
+        
+        const buffer = await response.arrayBuffer()
+        const tempPath = pathJoin(tempDir, `${Date.now()}.jpg`)
+        await fs.promises.writeFile(tempPath, Buffer.from(buffer))
+        
+        // 上传图片
+        await fileInput.uploadFile(tempPath)
+        console.log('已上传图片:', imageUrl)
+        
+        // 等待图片上传完成
+        await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 2000)))
+        
+        // 删除临时文件
+        await fs.promises.unlink(tempPath).catch(err => {
+          console.warn('删除临时文件失败:', err)
+        })
+      } catch (error) {
+        console.error(`处理图片 ${imageUrl} 时出错:`, error)
+        throw error
+      }
+    }
 
     // 填写标题
     const titleSelector = 'input[placeholder*="标题"]'
     await page.waitForSelector(titleSelector)
-    await page.type(titleSelector, '测试发布标题')
+    await page.type(titleSelector, publishInfo.name)
     console.log('已填写标题')
 
     // 填写正文内容
     const contentSelector = '.editor-kit-container'
     await page.waitForSelector(contentSelector)
-
-    console.log(contentSelector)
-
-    await page.type(contentSelector, '测试发布内容')
+    await page.type(contentSelector, publishInfo.description)
     console.log('已填写正文内容')
 
     // 等待内容填写完成
