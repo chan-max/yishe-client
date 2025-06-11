@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-09 00:09:21
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-06-09 08:33:26
+ * @LastEditTime: 2025-06-11 22:22:06
  * @FilePath: /yishe-electron/src/main/kuaishou.ts
  * @Description: 快手发布功能
  */
@@ -12,7 +12,7 @@ import { join as pathJoin } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { getBrowser } from './browser'
 
-export async function publishToKuaishou (): Promise<void> {
+export async function publishToKuaishou (publishInfo): Promise<void> {
   try {
     console.log('开始执行快手发布操作，参数:')
 

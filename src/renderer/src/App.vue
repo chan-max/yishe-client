@@ -23,6 +23,8 @@ onMounted(() => {
   startServerPolling();
   startRemoteServerPolling();
   startBrowserCheck();
+  // 自动启动浏览器
+  handleStartBrowser();
 });
 
 onUnmounted(() => {
@@ -104,21 +106,14 @@ const checkBrowserStatus = async () => {
   }
 };
 
-const handlePublish = async (): Promise<void> => {
+const handleStartBrowser = async (): Promise<void> => {
   try {
-    // 这里可以根据需要构造不同的参数
-    const publishParams = {
-      url: "https://example.com",
-      selector: "#content",
-      content: "要发布的内容",
-      buttonSelector: "#submit",
-    };
-
-    console.log("准备发送发布请求，参数:", publishParams);
-    await window.api.startPublish(publishParams);
-    console.log("发布请求已发送");
+    await window.api.startBrowser();
+    console.log("浏览器启动请求已发送");
+    // 立即检测浏览器状态
+    await checkBrowserStatus();
   } catch (error) {
-    console.error("发布过程出错:", error);
+    console.error("启动浏览器失败:", error);
   }
 };
 
@@ -160,7 +155,7 @@ const toggleDevTools = (): void => {
   </div>
 
   <div class="publish-container">
-    <button @click="handlePublish" class="publish-button">发布内容</button>
+    <button @click="handleStartBrowser" class="publish-button">启动浏览器</button>
   </div>
   <Versions />
 </template>

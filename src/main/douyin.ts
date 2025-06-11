@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-09 00:09:21
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-06-09 01:10:41
+ * @LastEditTime: 2025-06-11 22:21:51
  * @FilePath: /yishe-electron/src/main/douyin.ts
  * @Description: 抖音发布功能
  */
@@ -12,7 +12,7 @@ import { join as pathJoin } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { getBrowser } from './browser'
 
-export async function publishToDouyin(): Promise<void> {
+export async function publishToDouyin(publishInfo): Promise<void> {
   try {
     console.log('开始执行抖音发布操作，参数:')
     

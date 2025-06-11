@@ -11,6 +11,7 @@ import { spawn } from 'child_process'
 import { homedir } from 'os'
 import { join as pathJoin } from 'path'
 import { startServer } from './server';
+import { getBrowser } from './browser'
 
 function createWindow(): void {
   // Create the browser window.
@@ -107,9 +108,9 @@ ipcMain.handle('start-publish', async (_, params): Promise<void> => {
   try {
     // 并行执行发布操作
     await Promise.all([
-      publishToXiaohongshu(),
-      publishToDouyin(),
-      publishToKuaishou()
+      // publishToXiaohongshu(),
+      // publishToDouyin(),
+      // publishToKuaishou()
     ])
   } catch (error) {
     console.error('发布过程出错:', error)
@@ -127,5 +128,16 @@ ipcMain.on('toggle-devtools', (event) => {
     } else {
       win.webContents.openDevTools()
     }
+  }
+})
+
+// 添加启动浏览器的 IPC 处理函数
+ipcMain.handle('start-browser', async (): Promise<void> => {
+  try {
+    await getBrowser()
+    console.log('浏览器启动成功')
+  } catch (error) {
+    console.error('启动浏览器失败:', error)
+    throw error
   }
 })

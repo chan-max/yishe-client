@@ -3,6 +3,9 @@ import { ElectronAPI } from '@electron-toolkit/preload'
 declare global {
   interface Window {
     electron: ElectronAPI
-    api: unknown
+    api: {
+      startPublish(params: Record<string, unknown>): Promise<void>
+      startBrowser(): Promise<void>
+    }
   }
 }
