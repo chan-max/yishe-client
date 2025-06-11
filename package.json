@@ -59,14 +59,17 @@
     ],
     "mac": {
       "category": "public.app-category.utilities",
-      "target": ["dmg", "zip"]
+      "target": ["dmg", "zip"],
+      "artifactName": "yishe-client.${ext}"
     },
     "win": {
-      "target": ["nsis", "portable"]
+      "target": ["nsis", "portable"],
+      "artifactName": "yishe-client.${ext}"
     },
     "linux": {
       "target": ["AppImage", "deb"],
-      "category": "Utility"
+      "category": "Utility",
+      "artifactName": "yishe-client.${ext}"
     },
     "publish": {
       "provider": "github",
