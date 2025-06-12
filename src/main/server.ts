@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-09 18:31:32
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-06-12 00:50:14
+ * @LastEditTime: 2025-06-12 08:02:23
  * @FilePath: /yishe-electron/src/main/server.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -59,8 +59,8 @@ export function startServer(port: number = 1519): void {
           //   return publishToXiaohongshu(publishInfo);
           // case 'kuaishou':
           //   return publishToKuaishou(publishInfo);
-          default:
-            return Promise.reject(new Error(`不支持的平台: ${publishInfo.platform}`));
+          // default:
+          //   return Promise.reject(new Error(`不支持的平台: ${publishInfo.platform}`));
         }
       });
 
@@ -73,8 +73,7 @@ export function startServer(port: number = 1519): void {
     } catch (error) {
       console.error('发布过程出错:', error);
       res.status(500).json({
-        error: '发布过程出错',
-        message: error.message
+        msg: '发布过程出错'
       });
     }
   });
