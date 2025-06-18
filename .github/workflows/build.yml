@@ -57,6 +57,23 @@ jobs:
         with:
           path: artifacts
 
+      - name: Debug - List artifacts structure
+        run: |
+          echo "=== Artifacts directory structure ==="
+          find artifacts -type f -name "*.exe" -o -name "*.dmg" | head -20
+          echo "=== All files in artifacts ==="
+          find artifacts -type f | head -20
+          echo "=== Directory structure ==="
+          ls -la artifacts/
+          if [ -d "artifacts/electron-builds-macos-latest" ]; then
+            echo "=== macOS artifacts ==="
+            ls -la artifacts/electron-builds-macos-latest/
+          fi
+          if [ -d "artifacts/electron-builds-windows-latest" ]; then
+            echo "=== Windows artifacts ==="
+            ls -la artifacts/electron-builds-windows-latest/
+          fi
+
       - name: Deploy to Tencent Cloud
         if: success()
         uses: appleboy/scp-action@v0.1.7
@@ -65,7 +82,7 @@ jobs:
           username: ${{ secrets.SERVER_USERNAME }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: 22
-          source: "artifacts/**"
+          source: "artifacts/**/*.exe,artifacts/**/*.dmg"
           target: "/www/wwwroot/49.232.186.238_1525"
           rm: false
           overwrite: true
