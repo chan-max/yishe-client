@@ -36,6 +36,8 @@ jobs:
         with:
           github_token: ${{ secrets.github_token }}
           release: true
+          draft: false
+          prerelease: false
         env:
           GH_TOKEN: ${{ secrets.github_token }}
 
@@ -61,7 +63,8 @@ jobs:
                       `提交信息: ${{ github.event.head_commit.message }}\n` +
                       `构建时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}\n` +
                       `状态: ${status === 'success' ? '✅ 成功' : '❌ 失败'}\n\n` +
-                      `下载地址: https://github.com/${{ github.repository }}/releases/latest`
+                      `下载地址: https://github.com/${{ github.repository }}/releases/latest\n` +
+                      `注意: 仓库为私有，但 releases 已设置为公开访问`
               }
             };
             
