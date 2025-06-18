@@ -39,57 +39,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.github_token }}
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: electron-builds-${{ matrix.os }}
-          path: dist/*.exe,dist/*.dmg
-          retention-days: 1
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    if: always()
-
-    steps:
-      - name: Download all build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Debug - List artifacts structure
-        run: |
-          echo "=== Artifacts directory structure ==="
-          find artifacts -type f -name "*.exe" -o -name "*.dmg" | head -20
-          echo "=== All files in artifacts ==="
-          find artifacts -type f | head -20
-          echo "=== Directory structure ==="
-          ls -la artifacts/
-          if [ -d "artifacts/electron-builds-macos-latest" ]; then
-            echo "=== macOS artifacts ==="
-            ls -la artifacts/electron-builds-macos-latest/
-          fi
-          if [ -d "artifacts/electron-builds-windows-latest" ]; then
-            echo "=== Windows artifacts ==="
-            ls -la artifacts/electron-builds-windows-latest/
-          fi
-
-      - name: Deploy to Tencent Cloud
-        if: success()
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          password: ${{ secrets.SERVER_PASSWORD }}
-          port: 22
-          source: "artifacts/**/*.exe,artifacts/**/*.dmg"
-          target: "/www/wwwroot/49.232.186.238_1525"
-          rm: false
-          overwrite: true
-          command_timeout: "10m"
-          timeout: "10m"
-          debug: true
-
       - name: Send Feishu Notification
         if: always()
         uses: actions/github-script@v6
@@ -98,6 +47,7 @@ jobs:
             const status = '${{ job.status }}';
             const emoji = status === 'success' ? '🚀' : '❌';
             const commitSha = '${{ github.sha }}'.substring(0, 7);
+            const platforms = '${{ matrix.os }}';
             
             const message = {
               msg_type: "text",
@@ -106,12 +56,12 @@ jobs:
                       `项目: ${{ github.repository }}\n` +
                       `分支: main\n` +
                       `提交: ${commitSha}\n` +
+                      `平台: ${platforms}\n` +
                       `提交者: ${{ github.actor }}\n` +
                       `提交信息: ${{ github.event.head_commit.message }}\n` +
                       `构建时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}\n` +
                       `状态: ${status === 'success' ? '✅ 成功' : '❌ 失败'}\n\n` +
-                      `下载地址: https://github.com/${{ github.repository }}/releases/latest\n` +
-                      `服务器路径: /www/wwwroot/49.232.186.238_1525`
+                      `下载地址: https://github.com/${{ github.repository }}/releases/latest`
               }
             };
             
@@ -121,4 +71,4 @@ jobs:
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify(message)
-            }); 
+            }); dede
