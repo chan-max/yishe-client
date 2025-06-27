@@ -1,17 +1,10 @@
 // 文件顶部已有该导入
-import { app, shell, BrowserWindow, ipcMain, protocol } from 'electron'
+import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/favicon.png?asset'
-import puppeteer from 'puppeteer-core'
-import { publishToXiaohongshu } from './xiaohongshu'
-import { publishToDouyin } from './douyin'
-import { publishToKuaishou } from './kuaishou'
-import { spawn } from 'child_process'
-import { homedir } from 'os'
-import { join as pathJoin } from 'path'
 import { startServer } from './server';
-import { getBrowser } from './browser'
+import { getBrowser, checkBrowserStatus, forceRestartBrowser } from './browser'
 
 function createWindow(): void {
   // Create the browser window.
@@ -131,13 +124,57 @@ ipcMain.on('toggle-devtools', (event) => {
   }
 })
 
-// 添加启动浏览器的 IPC 处理函数
-ipcMain.handle('start-browser', async (): Promise<void> => {
+// 添加启动游览器的 IPC 处理函数
+ipcMain.handle('start-browser', async (): Promise<{ success: boolean; message: string }> => {
   try {
+    console.log('收到启动浏览器请求...')
+    
+    // 启动浏览器
     await getBrowser()
+    
     console.log('浏览器启动成功')
+    return { 
+      success: true, 
+      message: '浏览器启动成功！' 
+    }
   } catch (error) {
-    console.error('启动浏览器失败:', error)
-    throw error
+    console.error('启动游览器失败:', error)
+    return { 
+      success: false, 
+      message: `启动游览器失败: ${error.message}` 
+    }
+  }
+})
+
+// 添加检查浏览器状态的 IPC 处理函数
+ipcMain.handle('check-browser-status', async (): Promise<boolean> => {
+  try {
+    const status = await checkBrowserStatus()
+    return status
+  } catch (error) {
+    console.error('检查浏览器状态失败:', error)
+    return false
+  }
+})
+
+// 添加强制重启浏览器的 IPC 处理函数
+ipcMain.handle('force-restart-browser', async (): Promise<{ success: boolean; message: string }> => {
+  try {
+    console.log('收到强制重启浏览器请求...')
+    
+    // 强制重启浏览器
+    await forceRestartBrowser()
+    
+    console.log('浏览器强制重启成功')
+    return { 
+      success: true, 
+      message: '浏览器重启成功！' 
+    }
+  } catch (error) {
+    console.error('强制重启游览器失败:', error)
+    return { 
+      success: false, 
+      message: `重启游览器失败: ${error.message}` 
+    }
   }
 })

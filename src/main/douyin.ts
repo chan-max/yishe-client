@@ -6,10 +6,8 @@
  * @FilePath: /yishe-electron/src/main/douyin.ts
  * @Description: 抖音发布功能
  */
-import puppeteer from 'puppeteer-core'
 import { SocialMediaUploadUrl } from './const'
 import { join as pathJoin } from 'path'
-import { is } from '@electron-toolkit/utils'
 import { getBrowser } from './browser'
 import fs from 'fs'
 

@@ -2,15 +2,15 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-09 00:09:21
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-06-11 22:21:59
+ * @LastEditTime: 2025-06-12 01:20:10
  * @FilePath: /yishe-electron/src/main/xiaohongshu.ts
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ * @Description: 小红书发布功能
  */
-import puppeteer from 'puppeteer-core'
 import { SocialMediaUploadUrl } from './const'
 import { join as pathJoin } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { getBrowser } from './browser'
+import fs from 'fs'
 
 export async function publishToXiaohongshu(publishInfo): Promise<void> {
   try {
