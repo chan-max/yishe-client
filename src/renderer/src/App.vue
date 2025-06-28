@@ -149,9 +149,9 @@ const toggleDevTools = (): void => {
       <div class="status-indicator remote-status-indicator"></div>
       {{ remoteServerStatus ? "远程服务已连接" : "远程服务未连接" }}
     </div>
-    <button @click="toggleDevTools" class="devtools-button">
+    <!-- <button @click="toggleDevTools" class="devtools-button">
       {{ isDevToolsOpen ? "隐藏调试工具" : "显示调试工具" }}
-    </button>
+    </button> -->
   </div>
 
   <div class="publish-container">
