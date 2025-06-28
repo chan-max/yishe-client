@@ -5,9 +5,6 @@ declare global {
     electron: ElectronAPI
     api: {
       startPublish(params: Record<string, unknown>): Promise<void>
-      startBrowser(): Promise<{ success: boolean; message: string }>
-      checkBrowserStatus(): Promise<boolean>
-      forceRestartBrowser(): Promise<{ success: boolean; message: string }>
     }
   }
 }

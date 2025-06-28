@@ -20,65 +20,31 @@ export async function getBrowser() {
       }
     } catch (error) {
       console.log('浏览器连接已断开，重新启动...')
-      // 确保清理旧实例
-      try {
-        await browserInstance.close()
-      } catch (closeError) {
-        console.log('关闭旧浏览器实例时出错:', closeError)
-      }
       browserInstance = null
     }
   }
 
-  // 确保 browserInstance 为 null
-  browserInstance = null
+  try {
+    // 使用puppeteer自动启动浏览器
+    browserInstance = await puppeteer.launch({
+      headless: false, // 显示浏览器窗口
+      defaultViewport: null,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu'
+      ]
+    })
 
-  let retryCount = 0
-  const maxRetries = 3
-
-  while (retryCount < maxRetries) {
-    try {
-      console.log('启动 Puppeteer 浏览器...')
-      
-      browserInstance = await puppeteer.launch({
-        headless: false, // 显示浏览器窗口，方便调试
-        defaultViewport: null,
-        args: [
-          '--no-first-run',
-          '--no-default-browser-check',
-          '--disable-gpu',
-          '--disable-software-rasterizer',
-          '--disable-dev-shm-usage',
-          '--disable-web-security',
-          '--disable-features=VizDisplayCompositor'
-        ]
-      })
-
-      // 验证连接是否成功
-      await browserInstance.pages()
-      console.log('浏览器启动成功')
-      return browserInstance
-    } catch (error) {
-      console.error(`启动游览器失败 (尝试 ${retryCount + 1}/${maxRetries}):`, error)
-      retryCount++
-      
-      // 清理失败的实例
-      if (browserInstance) {
-        try {
-          await browserInstance.close()
-        } catch (closeError) {
-          console.log('关闭失败的浏览器实例时出错:', closeError)
-        }
-        browserInstance = null
-      }
-      
-      if (retryCount < maxRetries) {
-        console.log('5秒后重试...')
-        await new Promise(resolve => setTimeout(resolve, 5000))
-      } else {
-        throw new Error('启动游览器失败，已达到最大重试次数')
-      }
-    }
+    console.log('浏览器启动成功')
+    return browserInstance
+  } catch (error) {
+    console.error('启动浏览器失败:', error)
+    throw new Error('启动浏览器失败')
   }
 }
 

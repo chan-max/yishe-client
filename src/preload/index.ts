@@ -12,9 +12,6 @@ import { electronAPI } from '@electron-toolkit/preload'
 // Custom APIs for renderer
 const api = {
   startPublish: (params: Record<string, unknown>) => ipcRenderer.invoke('start-publish', params),
-  startBrowser: () => ipcRenderer.invoke('start-browser') as Promise<{ success: boolean; message: string }>,
-  checkBrowserStatus: () => ipcRenderer.invoke('check-browser-status') as Promise<boolean>,
-  forceRestartBrowser: () => ipcRenderer.invoke('force-restart-browser') as Promise<{ success: boolean; message: string }>,
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
