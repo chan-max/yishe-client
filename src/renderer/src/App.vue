@@ -16,15 +16,9 @@ const isDevToolsOpen = ref(false);
 const timerId = ref<NodeJS.Timeout | null>(null);
 const remoteTimerId = ref<NodeJS.Timeout | null>(null);
 
-const browserStatus = ref(false); // 新增浏览器状态
-const browserTimerId = ref<NodeJS.Timeout | null>(null); // 新增浏览器检测定时器
-
 onMounted(() => {
   startServerPolling();
   startRemoteServerPolling();
-  startBrowserCheck();
-  // 自动启动浏览器
-  handleStartBrowser();
 });
 
 onUnmounted(() => {
@@ -33,9 +27,6 @@ onUnmounted(() => {
   }
   if (remoteTimerId.value) {
     clearInterval(remoteTimerId.value);
-  }
-  if (browserTimerId.value) {
-    clearInterval(browserTimerId.value);
   }
 });
 
@@ -89,34 +80,6 @@ const checkRemoteServerStatus = async () => {
   }
 };
 
-// 新增浏览器状态检测方法
-const startBrowserCheck = () => {
-  checkBrowserStatus();
-  browserTimerId.value = setInterval(checkBrowserStatus, 5000);
-};
-
-const checkBrowserStatus = async () => {
-  try {
-    const response = await fetch("http://127.0.0.1:9222/json/version", { 
-      mode: 'no-cors' // 添加no-cors模式
-    });
-    browserStatus.value = response.status == 0;
-  } catch {
-    browserStatus.value = false;
-  }
-};
-
-const handleStartBrowser = async (): Promise<void> => {
-  try {
-    await window.api.startBrowser();
-    console.log("浏览器启动请求已发送");
-    // 立即检测浏览器状态
-    await checkBrowserStatus();
-  } catch (error) {
-    console.error("启动浏览器失败:", error);
-  }
-};
-
 const toggleDevTools = (): void => {
   window.electron.ipcRenderer.send("toggle-devtools");
   // 由于我们无法直接获取DevTools的状态，这里使用一个简单的延时来更新状态
@@ -130,14 +93,6 @@ const toggleDevTools = (): void => {
   <img alt="logo" class="logo" src="./assets/electron.svg" />
 
   <div class="server-status-container">
-    <div
-      class="server-status browser-status"
-      :class="{ online: browserStatus, offline: !browserStatus }"
-    >
-      <div class="status-indicator"></div>
-      {{ browserStatus ? "浏览器已连接" : "浏览器连接失败" }}
-    </div>
-
     <div class="server-status" :class="{ online: serverStatus, offline: !serverStatus }">
       <div class="status-indicator"></div>
       {{ serverStatus ? "服务已启动" : "服务未连接" }}
@@ -154,9 +109,6 @@ const toggleDevTools = (): void => {
     </button> -->
   </div>
 
-  <div class="publish-container">
-    <button @click="handleStartBrowser" class="publish-button">启动浏览器</button>
-  </div>
   <Versions />
 </template>
 
@@ -188,26 +140,6 @@ const toggleDevTools = (): void => {
 
 .search-button:hover {
   background-color: #45a049;
-}
-
-.publish-container {
-  margin: 20px 0;
-  display: flex;
-  justify-content: center;
-}
-
-.publish-button {
-  padding: 8px 20px;
-  background-color: #2196f3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.publish-button:hover {
-  background-color: #1976d2;
 }
 
 .server-status {

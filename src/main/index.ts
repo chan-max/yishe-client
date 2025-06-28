@@ -3,7 +3,7 @@ import { app, shell, BrowserWindow, ipcMain, protocol } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/favicon.png?asset'
-import puppeteer from 'puppeteer-core'
+import puppeteer from 'puppeteer'
 import { publishToXiaohongshu } from './xiaohongshu'
 import { publishToDouyin } from './douyin'
 import { publishToKuaishou } from './kuaishou'
@@ -11,7 +11,6 @@ import { spawn } from 'child_process'
 import { homedir } from 'os'
 import { join as pathJoin } from 'path'
 import { startServer } from './server';
-import { getBrowser } from './browser'
 
 function createWindow(): void {
   // Create the browser window.
@@ -128,16 +127,5 @@ ipcMain.on('toggle-devtools', (event) => {
     } else {
       win.webContents.openDevTools()
     }
-  }
-})
-
-// 添加启动浏览器的 IPC 处理函数
-ipcMain.handle('start-browser', async (): Promise<void> => {
-  try {
-    await getBrowser()
-    console.log('浏览器启动成功')
-  } catch (error) {
-    console.error('启动浏览器失败:', error)
-    throw error
   }
 })
