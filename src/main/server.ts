@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-09 18:31:32
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-06-19 08:43:45
+ * @LastEditTime: 2025-06-30 06:58:25
  * @FilePath: /yishe-electron/src/main/server.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -321,6 +321,174 @@ export function startServer(port: number = 1519): void {
       console.error('查询浏览器状态失败:', error);
       res.status(500).json({
         connected: false,
+        error: error instanceof Error ? error.message : '未知错误',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+  // 新增通用社交媒体登录状态检查接口
+  app.get('/api/checkSocialMediaLogin', async (req, res) => {
+    try {
+      console.log('检查社交媒体登录状态...');
+      
+      const loginStatus = {
+        xiaohongshu: {
+          isLoggedIn: false,
+          status: 'unknown',
+          message: ''
+        },
+        douyin: {
+          isLoggedIn: false,
+          status: 'unknown',
+          message: ''
+        },
+        weibo: {
+          isLoggedIn: false,
+          status: 'unknown',
+          message: ''
+        },
+        kuaishou: {
+          isLoggedIn: false,
+          status: 'unknown',
+          message: ''
+        },
+        bilibili: {
+          isLoggedIn: false,
+          status: 'unknown',
+          message: ''
+        }
+      };
+
+      // 获取或创建浏览器实例（只创建一次）
+      const browser = await getOrCreateBrowser();
+      const pages: any[] = [];
+
+      // 定义平台检查配置
+      const platformConfigs = [
+        {
+          name: 'xiaohongshu',
+          url: 'https://www.xiaohongshu.com',
+          selectors: {
+            userElements: ['[data-testid="user-avatar"]', '[data-testid="user-menu"]'],
+            loginElements: ['button[data-testid="login-button"]']
+          }
+        },
+        {
+          name: 'douyin',
+          url: 'https://www.douyin.com',
+          selectors: {
+            userElements: ['.avatar', '.user-menu', '.user-info'],
+            loginElements: ['.login-btn', '.login-text', '.login-button']
+          }
+        },
+        {
+          name: 'weibo',
+          url: 'https://weibo.com',
+          selectors: {
+            userElements: ['.avatar', '.user-menu', '.user-info'],
+            loginElements: ['.login-btn', '.login-text', '.login-button']
+          }
+        },
+        {
+          name: 'kuaishou',
+          url: 'https://www.kuaishou.com',
+          selectors: {
+            userElements: ['.avatar', '.user-menu', '.user-info'],
+            loginElements: ['.login-btn', '.login-text', '.login-button']
+          }
+        },
+        {
+          name: 'bilibili',
+          url: 'https://www.bilibili.com',
+          selectors: {
+            userElements: ['.avatar', '.user-menu', '.user-info'],
+            loginElements: ['.login-btn', '.login-text', '.login-button']
+          }
+        }
+      ];
+
+      // 并发检查所有平台的登录状态
+      const checkPromises = platformConfigs.map(async (config) => {
+        let page = null;
+        try {
+          console.log(`检查${config.name}登录状态...`);
+          
+          // 在同一个浏览器中创建新标签页
+          page = await browser.newPage();
+          pages.push(page);
+          
+          // 设置页面超时
+          page.setDefaultTimeout(30000);
+          page.setDefaultNavigationTimeout(30000);
+          
+          // 访问平台首页
+          console.log(`正在访问${config.name}首页...`);
+          await page.goto(config.url, {
+            waitUntil: 'domcontentloaded'
+          });
+
+          // 等待页面加载完成
+          await page.waitForTimeout(3000);
+
+          // 检查是否有登录相关的元素
+          const isLoggedIn = await page.evaluate((selectors) => {
+            // 检查是否存在登录后的用户信息元素
+            const hasUserElement = selectors.userElements.some(selector => 
+              document.querySelector(selector)
+            );
+            
+            // 检查是否存在登录按钮
+            const hasLoginElement = selectors.loginElements.some(selector => 
+              document.querySelector(selector)
+            );
+            
+            return hasUserElement && !hasLoginElement;
+          }, config.selectors);
+
+          // 更新登录状态
+          loginStatus[config.name as keyof typeof loginStatus] = {
+            isLoggedIn: isLoggedIn,
+            status: 'success',
+            message: isLoggedIn ? '已登录' : '未登录'
+          };
+
+          console.log(`${config.name}登录状态检查完成，是否已登录:`, isLoggedIn);
+
+        } catch (error) {
+          console.error(`检查${config.name}登录状态失败:`, error);
+          loginStatus[config.name as keyof typeof loginStatus] = {
+            isLoggedIn: false,
+            status: 'error',
+            message: error instanceof Error ? error.message : '检查失败'
+          };
+        } finally {
+          // 关闭当前标签页
+          if (page) {
+            try {
+              await page.close();
+              console.log(`已关闭${config.name}检查页面`);
+            } catch (closeError) {
+              console.log(`关闭${config.name}检查页面时出错:`, closeError);
+            }
+          }
+        }
+      });
+
+      // 等待所有平台检查完成
+      await Promise.all(checkPromises);
+
+      // 返回所有平台的登录状态
+      res.status(200).json({
+        message: '社交媒体登录状态检查完成',
+        platforms: loginStatus,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('检查社交媒体登录状态失败:', error);
+      res.status(500).json({
+        message: '检查社交媒体登录状态失败',
         error: error instanceof Error ? error.message : '未知错误',
         timestamp: new Date().toISOString()
       });

@@ -12,7 +12,7 @@
     "typecheck:web": "vue-tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "start": "electron-vite preview",
-    "dev": "chcp 65001 &&electron-vite dev",
+    "dev": "electron-vite dev",
     "build": " electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
@@ -35,6 +35,7 @@
     "@types/cors": "^2.8.19",
     "@types/node": "^22.14.1",
     "@vitejs/plugin-vue": "^5.2.3",
+    "cross-env": "^7.0.3",
     "electron": "^35.1.5",
     "electron-builder": "^25.1.8",
     "electron-vite": "^3.1.0",
@@ -59,11 +60,15 @@
     ],
     "mac": {
       "category": "public.app-category.utilities",
-      "target": ["dmg"],
+      "target": [
+        "dmg"
+      ],
       "artifactName": "yishe-client.${ext}"
     },
     "win": {
-      "target": ["portable"],
+      "target": [
+        "portable"
+      ],
       "artifactName": "yishe-client.${ext}"
     },
     "publish": {
