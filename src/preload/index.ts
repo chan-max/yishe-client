@@ -12,6 +12,11 @@ import { electronAPI } from '@electron-toolkit/preload'
 // Custom APIs for renderer
 const api = {
   startPublish: (params: Record<string, unknown>) => ipcRenderer.invoke('start-publish', params),
+  showTrayNotification: (options: { title: string; body: string }) => ipcRenderer.invoke('show-tray-notification', options),
+  updateTrayTooltip: (tooltip: string) => ipcRenderer.invoke('update-tray-tooltip', tooltip),
+  hideMainWindow: () => ipcRenderer.invoke('hide-main-window'),
+  showMainWindow: () => ipcRenderer.invoke('show-main-window'),
+  confirmExit: () => ipcRenderer.invoke('confirm-exit'),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

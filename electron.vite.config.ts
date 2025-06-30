@@ -19,6 +19,19 @@ export default defineConfig({
         '@renderer': resolve('src/renderer/src')
       }
     },
-    plugins: [vue()]
+    plugins: [vue()],
+    server: {
+      hmr: {
+        port: 5173, // 指定HMR端口
+        overlay: true // 显示错误覆盖层
+      },
+      watch: {
+        usePolling: true, // 使用轮询监听文件变化
+        interval: 1000 // 轮询间隔
+      }
+    },
+    build: {
+      sourcemap: true // 生成sourcemap
+    }
   }
 })

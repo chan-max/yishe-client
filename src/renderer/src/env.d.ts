@@ -18,5 +18,9 @@ interface Window {
   }
   api: {
     startPublish(params: Record<string, unknown>): Promise<void>
+    showTrayNotification(options: { title: string; body: string }): Promise<void>
+    updateTrayTooltip(tooltip: string): Promise<void>
+    hideMainWindow(): Promise<void>
+    showMainWindow(): Promise<void>
   }
 }
