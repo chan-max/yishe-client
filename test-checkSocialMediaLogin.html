@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>checkSocialMediaLogin 接口测试</title>
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --text-muted: #adb5bd;
+            --border-color: #dee2e6;
+            --border-focus: #007bff;
+            --shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            --shadow-lg: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            --success-bg: #d1e7dd;
+            --success-text: #0f5132;
+            --success-border: #badbcc;
+            --error-bg: #f8d7da;
+            --error-text: #721c24;
+            --error-border: #f5c2c7;
+            --info-bg: #cff4fc;
+            --info-text: #055160;
+            --info-border: #b6effb;
+            --warning-bg: #fff3cd;
+            --warning-text: #664d03;
+            --warning-border: #ffecb5;
+            --primary-bg: #cce7ff;
+            --primary-text: #004085;
+            --primary-border: #b8daff;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #1a1a1a;
+                --bg-secondary: #2d2d2d;
+                --bg-tertiary: #404040;
+                --text-primary: #e9ecef;
+                --text-secondary: #adb5bd;
+                --text-muted: #6c757d;
+                --border-color: #495057;
+                --border-focus: #0d6efd;
+                --shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
+                --shadow-lg: 0 0.5rem 1rem rgba(0, 0, 0, 0.4);
+                --success-bg: #0f5132;
+                --success-text: #d1e7dd;
+                --success-border: #146c43;
+                --error-bg: #721c24;
+                --error-text: #f8d7da;
+                --error-border: #842029;
+                --info-bg: #055160;
+                --info-text: #cff4fc;
+                --info-border: #087990;
+                --warning-bg: #664d03;
+                --warning-text: #fff3cd;
+                --warning-border: #997404;
+                --primary-bg: #004085;
+                --primary-text: #cce7ff;
+                --primary-border: #0056b3;
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background-color: var(--bg-primary);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-bg), var(--info-bg));
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--primary-text);
+            text-align: center;
+            margin: 0;
+        }
+
+        .card-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.75rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .status-dot.ready {
+            background-color: var(--success-bg);
+            box-shadow: 0 0 0 2px var(--success-border);
+        }
+
+        .status-dot.loading {
+            background-color: var(--warning-bg);
+            box-shadow: 0 0 0 2px var(--warning-border);
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-dot.success {
+            background-color: var(--success-bg);
+            box-shadow: 0 0 0 2px var(--success-border);
+        }
+
+        .status-dot.error {
+            background-color: var(--error-bg);
+            box-shadow: 0 0 0 2px var(--error-border);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-text {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.875rem 1.75rem;
+            font-size: 1rem;
+            font-weight: 500;
+            line-height: 1.5;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            box-shadow: var(--shadow);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #0056b3, #004085);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-primary:disabled {
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-icon {
+            margin-right: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .result-container {
+            margin-top: 1.5rem;
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            border-radius: 6px;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        .result-content {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .result {
+            padding: 1rem;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+            color: var(--text-primary);
+            background-color: var(--bg-primary);
+        }
+
+        .result.success {
+            border-left: 4px solid var(--success-border);
+            background-color: var(--success-bg);
+            color: var(--success-text);
+        }
+
+        .result.error {
+            border-left: 4px solid var(--error-border);
+            background-color: var(--error-bg);
+            color: var(--error-text);
+        }
+
+        .result.loading {
+            border-left: 4px solid var(--warning-border);
+            background-color: var(--warning-bg);
+            color: var(--warning-text);
+        }
+
+        .result.info {
+            border-left: 4px solid var(--info-border);
+            background-color: var(--info-bg);
+            color: var(--info-text);
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 1rem;
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-text);
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 1rem auto;
+                padding: 0 0.5rem;
+            }
+
+            .card-body {
+                padding: 1.5rem;
+            }
+
+            .card-title {
+                font-size: 1.5rem;
+            }
+
+            .metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h1 class="card-title">社交媒体登录状态检查</h1>
+                <p class="card-subtitle">测试 checkSocialMediaLogin 接口的跨域访问</p>
+            </div>
+            
+            <div class="card-body">
+                <div class="status-indicator">
+                    <div class="status-dot ready" id="statusDot"></div>
+                    <span class="status-text" id="statusText">准备就绪</span>
+                </div>
+                
+                <button class="btn btn-primary" onclick="testCheckSocialMediaLogin()" id="testBtn">
+                    <span class="btn-icon">🚀</span>
+                    开始测试接口
+                </button>
+                
+                <div class="result-container" id="resultContainer" style="display: none;">
+                    <div class="result-header">
+                        <span class="result-title">测试结果</span>
+                        <div class="result-actions">
+                            <button class="btn btn-sm btn-outline" onclick="clearResult()">清空</button>
+                            <button class="btn btn-sm btn-outline" onclick="copyResult()">复制</button>
+                        </div>
+                    </div>
+                    
+                    <div class="result-content">
+                        <div id="result" class="result info"></div>
+                    </div>
+                    
+                    <div class="metrics" id="metrics" style="display: none;">
+                        <div class="metric">
+                            <div class="metric-value" id="durationValue">-</div>
+                            <div class="metric-label">响应时间</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="statusValue">-</div>
+                            <div class="metric-label">状态码</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" id="sizeValue">-</div>
+                            <div class="metric-label">响应大小</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SERVER_URL = 'http://localhost:1519';
+        
+        function updateStatus(message, type = 'ready') {
+            const statusText = document.getElementById('statusText');
+            const statusDot = document.getElementById('statusDot');
+            
+            statusText.textContent = message;
+            statusDot.className = `status-dot ${type}`;
+        }
+        
+        function setButtonState(disabled, text, icon = '🚀') {
+            const btn = document.getElementById('testBtn');
+            btn.disabled = disabled;
+            btn.innerHTML = `<span class="btn-icon">${icon}</span>${text}`;
+        }
+        
+        function showResult(data, type = 'info') {
+            const resultContainer = document.getElementById('resultContainer');
+            const result = document.getElementById('result');
+            
+            result.textContent = JSON.stringify(data, null, 2);
+            result.className = `result ${type}`;
+            resultContainer.style.display = 'block';
+        }
+        
+        function updateMetrics(duration, status, size) {
+            const metrics = document.getElementById('metrics');
+            const durationValue = document.getElementById('durationValue');
+            const statusValue = document.getElementById('statusValue');
+            const sizeValue = document.getElementById('sizeValue');
+            
+            durationValue.textContent = `${duration}ms`;
+            statusValue.textContent = status;
+            sizeValue.textContent = size;
+            metrics.style.display = 'grid';
+        }
+        
+        function clearResult() {
+            const resultContainer = document.getElementById('resultContainer');
+            const metrics = document.getElementById('metrics');
+            resultContainer.style.display = 'none';
+            metrics.style.display = 'none';
+        }
+        
+        function copyResult() {
+            const result = document.getElementById('result');
+            const text = result.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = result.textContent;
+                result.textContent = '复制成功！';
+                setTimeout(() => {
+                    result.textContent = originalText;
+                }, 1000);
+            }).catch(err => {
+                console.error('复制失败:', err);
+            });
+        }
+        
+        async function testCheckSocialMediaLogin() {
+            try {
+                updateStatus('正在测试接口...', 'loading');
+                setButtonState(true, '测试中...', '⏳');
+                showResult({ message: '开始测试 checkSocialMediaLogin 接口...' }, 'loading');
+                
+                console.log('开始测试 checkSocialMediaLogin 接口...');
+                
+                const startTime = Date.now();
+                
+                const response = await fetch(`${SERVER_URL}/api/checkSocialMediaLogin`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                const endTime = Date.now();
+                const duration = endTime - startTime;
+                
+                console.log('响应状态:', response.status);
+                console.log('响应头:', Object.fromEntries(response.headers.entries()));
+                
+                const data = await response.json();
+                const responseSize = JSON.stringify(data).length;
+                
+                const result = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    duration: `${duration}ms`,
+                    responseSize: `${responseSize} bytes`,
+                    headers: Object.fromEntries(response.headers.entries()),
+                    data: data,
+                    timestamp: new Date().toISOString()
+                };
+                
+                console.log('完整结果:', result);
+                
+                if (response.ok) {
+                    showResult(result, 'success');
+                    updateStatus(`测试成功 (${duration}ms)`, 'success');
+                    updateMetrics(duration, response.status, `${responseSize} B`);
+                } else {
+                    showResult(result, 'error');
+                    updateStatus(`测试失败 (${duration}ms)`, 'error');
+                    updateMetrics(duration, response.status, `${responseSize} B`);
+                }
+                
+            } catch (error) {
+                console.error('测试失败:', error);
+                
+                const errorResult = {
+                    error: error.message,
+                    errorType: error.name,
+                    stack: error.stack,
+                    timestamp: new Date().toISOString()
+                };
+                
+                showResult(errorResult, 'error');
+                updateStatus('测试失败', 'error');
+                updateMetrics('-', 'ERROR', '-');
+            } finally {
+                setButtonState(false, '重新测试', '🔄');
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('页面加载完成，准备测试');
+            updateStatus('准备就绪', 'ready');
+            
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            console.log('系统主题偏好:', prefersDark ? '深色' : '浅色');
+        });
+        
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+            console.log('系统主题已切换:', e.matches ? '深色' : '浅色');
+        });
+    </script>
+</body>
+</html> 

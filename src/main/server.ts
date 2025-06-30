@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-09 18:31:32
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-06-30 06:58:25
+ * @LastEditTime: 2025-06-30 08:46:32
  * @FilePath: /yishe-electron/src/main/server.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -328,7 +328,7 @@ export function startServer(port: number = 1519): void {
   });
 
   // 新增通用社交媒体登录状态检查接口
-  app.get('/api/checkSocialMediaLogin', async (req, res) => {
+  app.post('/api/checkSocialMediaLogin', async (req, res) => {
     try {
       console.log('检查社交媒体登录状态...');
       
@@ -480,8 +480,9 @@ export function startServer(port: number = 1519): void {
 
       // 返回所有平台的登录状态
       res.status(200).json({
-        message: '社交媒体登录状态检查完成',
-        platforms: loginStatus,
+      code:0,
+      status:true,
+        data: loginStatus,
         timestamp: new Date().toISOString()
       });
 
