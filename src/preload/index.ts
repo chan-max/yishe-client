@@ -18,6 +18,7 @@ const api = {
   showMainWindow: () => ipcRenderer.invoke('show-main-window'),
   confirmExit: () => ipcRenderer.invoke('confirm-exit'),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  checkSocialMediaLogin: () => ipcRenderer.invoke('check-social-media-login'),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

@@ -10,7 +10,7 @@ import { publishToKuaishou } from './kuaishou'
 import { spawn } from 'child_process'
 import { homedir } from 'os'
 import { join as pathJoin } from 'path'
-import { startServer } from './server';
+import { startServer, checkAllSocialMediaLoginStatus } from './server';
 
 // 扩展app对象的类型
 declare global {
@@ -98,16 +98,12 @@ function createWindow(): void {
 
 // 创建系统托盘
 function createTray(): void {
-  let trayIcon: Electron.NativeImage
-  if (is.dev) {
-    // 开发环境用png
-    const devIconPath = join(__dirname, '../../resources/favicon.png')
-    trayIcon = nativeImage.createFromPath(devIconPath)
-  } else {
-    // 生产环境用ico
-    const prodIconPath = join(__dirname, '../../resources/favicon.ico')
-    trayIcon = nativeImage.createFromPath(prodIconPath)
-  }
+  const { nativeImage } = require('electron')
+  const path = require('path')
+  const trayIconPath = path.join(__dirname, '../../resources/tray-icon.png')
+  let trayIcon = nativeImage.createFromPath(trayIconPath)
+  // 缩放为 20x20，适配 macOS 托盘
+  trayIcon = trayIcon.resize({ width: 20, height: 20 })
   tray = new Tray(trayIcon)
   tray.setToolTip('衣设程序')
   
@@ -360,3 +356,8 @@ ipcMain.on('toggle-devtools', (event) => {
 })
 
 ipcMain.handle('get-app-version', () => app.getVersion())
+
+// 在主进程暴露社交媒体登录状态检测方法
+ipcMain.handle('check-social-media-login', async () => {
+  return await checkAllSocialMediaLoginStatus();
+});

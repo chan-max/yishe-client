@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-09 18:31:32
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-06-30 08:51:17
+ * @LastEditTime: 2025-06-30 23:44:59
  * @FilePath: /yishe-electron/src/main/server.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -201,9 +201,6 @@ export function startServer(port: number = 1519): void {
         waitUntil: 'domcontentloaded'
       });
 
-      // 等待页面加载完成
-      await page.waitForTimeout(3000);
-
       // 检查是否有登录相关的元素
       const isLoggedIn = await page.evaluate(() => {
         // 检查是否存在登录后的用户信息元素
@@ -370,7 +367,7 @@ export function startServer(port: number = 1519): void {
           name: 'xiaohongshu',
           url: 'https://www.xiaohongshu.com',
           selectors: {
-            userElements: ['[data-testid="user-avatar"]', '[data-testid="user-menu"]'],
+            userElements: ['.reds-avatar-border'],
             loginElements: ['button[data-testid="login-button"]']
           }
         },
@@ -428,11 +425,8 @@ export function startServer(port: number = 1519): void {
             waitUntil: 'domcontentloaded'
           });
 
-          // 等待页面加载完成
-          await page.waitForTimeout(3000);
-
           // 检查是否有登录相关的元素
-          const isLoggedIn = await page.evaluate((selectors) => {
+          var isLoggedIn = await page.evaluate((selectors) => {
             // 检查是否存在登录后的用户信息元素
             const hasUserElement = selectors.userElements.some(selector => 
               document.querySelector(selector)
@@ -445,6 +439,8 @@ export function startServer(port: number = 1519): void {
             
             return hasUserElement && !hasLoginElement;
           }, config.selectors);
+
+   
 
           // 更新登录状态
           loginStatus[config.name as keyof typeof loginStatus] = {
@@ -534,4 +530,91 @@ export function startServer(port: number = 1519): void {
   }).on('error', (err) => {
     console.error('Express server failed to start:', err);
   });
+}
+
+// 核心逻辑抽离为独立方法
+export async function checkAllSocialMediaLoginStatus() {
+  const loginStatus = {
+    xiaohongshu: { isLoggedIn: false, status: 'unknown', message: '' },
+    douyin: { isLoggedIn: false, status: 'unknown', message: '' },
+    weibo: { isLoggedIn: false, status: 'unknown', message: '' },
+    kuaishou: { isLoggedIn: false, status: 'unknown', message: '' },
+    bilibili: { isLoggedIn: false, status: 'unknown', message: '' }
+  };
+  const browser = await getOrCreateBrowser();
+  const pages: any[] = [];
+  const platformConfigs = [
+    {
+      name: 'xiaohongshu',
+      url: 'https://www.xiaohongshu.com',
+      selectors: {
+        userElements: ['.reds-avatar-border'],
+        loginElements: ['button[data-testid="login-button"]']
+      }
+    },
+    {
+      name: 'douyin',
+      url: 'https://www.douyin.com',
+      selectors: {
+        userElements: ['.avatar', '.user-menu', '.user-info'],
+        loginElements: ['.login-btn', '.login-text', '.login-button']
+      }
+    },
+    {
+      name: 'weibo',
+      url: 'https://weibo.com',
+      selectors: {
+        userElements: ['.avatar', '.user-menu', '.user-info'],
+        loginElements: ['.login-btn', '.login-text', '.login-button']
+      }
+    },
+    {
+      name: 'kuaishou',
+      url: 'https://www.kuaishou.com',
+      selectors: {
+        userElements: ['.avatar', '.user-menu', '.user-info'],
+        loginElements: ['.login-btn', '.login-text', '.login-button']
+      }
+    },
+    {
+      name: 'bilibili',
+      url: 'https://www.bilibili.com',
+      selectors: {
+        userElements: ['.avatar', '.user-menu', '.user-info'],
+        loginElements: ['.login-btn', '.login-text', '.login-button']
+      }
+    }
+  ];
+  const checkPromises = platformConfigs.map(async (config) => {
+    let page = null;
+    try {
+      page = await browser.newPage();
+      pages.push(page);
+      page.setDefaultTimeout(30000);
+      page.setDefaultNavigationTimeout(30000);
+      await page.goto(config.url, { waitUntil: 'domcontentloaded' });
+      const isLoggedIn = await page.evaluate((selectors) => {
+        const hasUserElement = selectors.userElements.some(selector => document.querySelector(selector));
+        const hasLoginElement = selectors.loginElements.some(selector => document.querySelector(selector));
+        return hasUserElement && !hasLoginElement;
+      }, config.selectors);
+      loginStatus[config.name] = {
+        isLoggedIn,
+        status: 'success',
+        message: isLoggedIn ? '已登录' : '未登录'
+      };
+    } catch (error) {
+      loginStatus[config.name] = {
+        isLoggedIn: false,
+        status: 'error',
+        message: error instanceof Error ? error.message : '检查失败'
+      };
+    } finally {
+      if (page) {
+        try { await page.close(); } catch {}
+      }
+    }
+  });
+  await Promise.all(checkPromises);
+  return loginStatus;
 }

@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-08 23:07:32
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-06-29 07:27:18
+ * @LastEditTime: 2025-07-01 00:41:23
  * @FilePath: /yishe-electron/src/renderer/src/App.vue
  * @Description: 衣设程序主界面 - 暗色主题设计
 -->
@@ -98,6 +98,29 @@ const updateTrayStatus = async (): Promise<void> => {
   const status = serverStatus.value ? '服务运行中' : '服务未连接';
   await window.api.updateTrayTooltip(`衣设程序 - ${status}`);
 };
+
+const checkSocialMediaStatus = async () => {
+  try {
+    const result = await window.api.checkSocialMediaLogin();
+    if (!result) throw new Error('无返回数据');
+    const statusMap = {
+      xiaohongshu: '小红书',
+      douyin: '抖音',
+      weibo: '微博',
+      kuaishou: '快手',
+      bilibili: 'B站',
+    };
+    let msg = '社交平台登录状态：\n';
+    for (const key in result) {
+      const plat = statusMap[key] || key;
+      const s = result[key];
+      msg += `${plat}：${s.isLoggedIn ? '✅可用' : '❌不可用'}\n`;
+    }
+    window.alert(msg);
+  } catch (e) {
+    window.alert('检查失败：' + (e instanceof Error ? e.message : e));
+  }
+};
 </script>
 
 <template>
@@ -130,8 +153,8 @@ const updateTrayStatus = async (): Promise<void> => {
     <main class="main-content">
       <!-- 顶部标题 -->
       <div class="title-section">
-        <img alt="logo" class="logo" src="./assets/electron.svg" />
-        <h1 class="app-title">衣设</h1>
+        <img alt="logo" class="logo" src="./assets/icon.png" />
+        <h1 class="app-title">衣设 最具创意的设计工具</h1>
       </div>
 
       <!-- 快速链接区域 -->
@@ -178,6 +201,14 @@ const updateTrayStatus = async (): Promise<void> => {
             </svg>
             客户端下载
           </a>
+        </div>
+      </section>
+      <!-- 新增小功能区，弱化为链接样式 -->
+      <section class="mini-tools-section">
+        <h3 class="mini-tools-title">功能合集</h3>
+        <div class="mini-tools-links">
+          <a href="javascript:void(0);" class="mini-tool-link" @click="checkSocialMediaStatus">检查社交媒体登录状态</a>
+          <!-- 可继续添加更多小功能链接 -->
         </div>
       </section>
 
@@ -298,15 +329,22 @@ body {
 .logo {
   width: 60px;
   height: 60px;
-  filter: invert(1) drop-shadow(0 4px 8px rgba(255, 255, 255, 0.2));
+  filter: none;
+  transition: transform 0.2s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s cubic-bezier(0.4,0,0.2,1);
+}
+
+.logo:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 16px rgba(80, 0, 255, 0.18);
 }
 
 .app-title {
   font-size: 2rem;
-  font-weight: 700;
+  font-weight: 400;
   color: #ffffff;
   margin: 0;
   text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  font-family: 'YisheLogo', 'Fira Mono', 'Consolas', 'Menlo', monospace;
 }
 
 /* 快速链接区域 */
@@ -630,5 +668,46 @@ body {
   border-color: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* 在 style 标签顶部添加字体引入 */
+@font-face {
+  font-family: 'YisheLogo';
+  src: url('./assets/logo.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.mini-tools-section {
+  margin-top: 10px;
+  text-align: center;
+}
+.mini-tools-title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #b0b0b0;
+  margin-bottom: 8px;
+  margin-top: 0;
+  letter-spacing: 0.02em;
+}
+.mini-tools-links {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.mini-tool-link {
+  color: #b0b0b0;
+  font-size: 13px;
+  text-decoration: underline dotted;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0 2px;
+  transition: color 0.2s;
+}
+.mini-tool-link:hover {
+  color: #e0e0e0;
+  text-decoration: underline;
 }
 </style>

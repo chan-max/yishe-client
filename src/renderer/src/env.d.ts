@@ -22,5 +22,6 @@ interface Window {
     updateTrayTooltip(tooltip: string): Promise<void>
     hideMainWindow(): Promise<void>
     showMainWindow(): Promise<void>
+    checkSocialMediaLogin(): Promise<Record<string, { isLoggedIn: boolean; status: string; message: string }>>
   }
 }
