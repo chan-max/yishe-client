@@ -189,7 +189,7 @@ const updateTrayStatus = async (): Promise<void> => {
             <a href="https://1s.design" target="_blank" class="design-link">1s.design</a>
           </div>
           <div class="author-info">
-            <span class="author-text">作者：</span>
+            <span class="author-text">Created by：</span>
             <span class="author-name">Jackie Chan</span>
           </div>
         </div>
