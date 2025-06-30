@@ -98,10 +98,16 @@ function createWindow(): void {
 
 // 创建系统托盘
 function createTray(): void {
-  // 创建托盘图标
-  const trayIcon = nativeImage.createFromPath(icon)
-  trayIcon.resize({ width: 16, height: 16 })
-  
+  let trayIcon: Electron.NativeImage
+  if (is.dev) {
+    // 开发环境用png
+    const devIconPath = join(__dirname, '../../resources/favicon.png')
+    trayIcon = nativeImage.createFromPath(devIconPath)
+  } else {
+    // 生产环境用ico
+    const prodIconPath = join(__dirname, '../../resources/favicon.ico')
+    trayIcon = nativeImage.createFromPath(prodIconPath)
+  }
   tray = new Tray(trayIcon)
   tray.setToolTip('衣设程序')
   
