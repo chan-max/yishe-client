@@ -17,6 +17,7 @@ const api = {
   hideMainWindow: () => ipcRenderer.invoke('hide-main-window'),
   showMainWindow: () => ipcRenderer.invoke('show-main-window'),
   confirmExit: () => ipcRenderer.invoke('confirm-exit'),
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

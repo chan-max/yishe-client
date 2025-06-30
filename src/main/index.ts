@@ -358,3 +358,5 @@ ipcMain.on('toggle-devtools', (event) => {
     }
   }
 })
+
+ipcMain.handle('get-app-version', () => app.getVersion())

@@ -15,10 +15,12 @@ const remoteServerStatus = ref(false);
 const isDevToolsOpen = ref(false);
 const timerId = ref<NodeJS.Timeout | null>(null);
 const remoteTimerId = ref<NodeJS.Timeout | null>(null);
+const appVersion = ref('');
 
 onMounted(() => {
   startServerPolling();
   startRemoteServerPolling();
+  window.api.getAppVersion().then(v => appVersion.value = v);
 });
 
 onUnmounted(() => {
@@ -89,9 +91,7 @@ const showTrayNotification = async (): Promise<void> => {
 };
 
 const hideToTray = async (): Promise<void> => {
-  const result = await window.api.confirmExit();
-  // 根据用户选择，API会自动处理相应的操作
-  console.log('用户选择:', result);
+  await window.api.hideMainWindow();
 };
 
 const updateTrayStatus = async (): Promise<void> => {
@@ -182,18 +182,14 @@ const updateTrayStatus = async (): Promise<void> => {
       </section>
 
       <!-- 底部信息区域 -->
-      <section class="footer-section">
-        <div class="footer-info">
-          <div class="powered-by">
-            <span class="powered-text">Powered by</span>
-            <a href="https://1s.design" target="_blank" class="design-link">1s.design</a>
-          </div>
-          <div class="author-info">
-            <span class="author-text">Created by：</span>
-            <span class="author-name">Jackie Chan</span>
-          </div>
+      <footer class="footer-bar">
+        <div class="footer-content-vertical">
+          <span class="version-text">v{{ appVersion }}</span>
+          <span class="footer-meta">
+            Created by <a href="https://github.com/chan-max" target="_blank" class="creator-name">Jackie Chan</a>
+          </span>
         </div>
-      </section>
+      </footer>
     </main>
   </div>
 </template>
@@ -403,84 +399,63 @@ body {
 }
 
 /* 底部信息区域 */
-.footer-section {
-  margin-top: 25px;
+.footer-bar {
+  position: fixed;
+  left: 0;
+  bottom: 0;
   width: 100%;
-  max-width: 700px;
+  background: transparent;
+  border-top: none;
+  z-index: 2000;
+  padding: 0;
+  box-shadow: none;
 }
-
-.footer-info {
+.footer-content-vertical {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  padding: 12px 20px;
-  background: rgba(30, 30, 30, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s ease;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 0 4px 0;
 }
-
-.footer-info:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
-}
-
-.powered-by {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.powered-text {
+.version-text {
+  color: #b0b0b0;
   font-size: 11px;
+  font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
+  letter-spacing: 0.08em;
+  margin-bottom: 0;
+}
+.footer-meta {
+  color: #b0b0b0;
+  font-size: 12px;
+  font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
+  letter-spacing: 0.08em;
+  font-weight: 400;
+}
+.footer-link, .creator-name {
+  color: #b0b0b0;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.design-link {
-  font-size: 11px;
-  font-weight: 600;
-  color: #6900ff;
   text-decoration: none;
-  transition: all 0.2s ease;
-  padding: 3px 6px;
-  border-radius: 5px;
-  background: rgba(105, 0, 255, 0.1);
+  border-bottom: 1px dotted #b47cff44;
+  transition: border-color 0.2s, color 0.2s;
+  padding-bottom: 1px;
 }
-
-.design-link:hover {
-  color: #ffffff;
-  background: rgba(105, 0, 255, 0.2);
-  transform: translateY(-1px);
+.footer-link:hover, .creator-name:hover {
+  color: #6900ff;
+  border-bottom: 1.5px solid #6900ff;
 }
-
-.author-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.author-text {
-  font-size: 11px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.author-name {
-  font-size: 11px;
-  font-weight: 600;
-  color: #ffffff;
-  padding: 3px 6px;
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.1);
-  transition: all 0.2s ease;
-}
-
-.author-name:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px);
+@media (max-width: 600px) {
+  .footer-content-vertical {
+    gap: 1px;
+    font-size: 11px;
+    padding: 4px 0 2px 0;
+  }
+  .footer-meta {
+    font-size: 11px;
+  }
+  .version-text {
+    font-size: 10px;
+  }
 }
 
 /* 动画效果 */
@@ -553,14 +528,14 @@ body {
     padding: 8px 14px;
   }
   
-  .footer-info {
-    flex-direction: column;
-    gap: 10px;
-    padding: 10px 14px;
+  .footer-content-vertical {
+    gap: 1px;
+    font-size: 11px;
+    padding: 4px 0 2px 0;
   }
   
-  .powered-by, .author-info {
-    justify-content: center;
+  .footer-meta {
+    font-size: 11px;
   }
 }
 
@@ -584,12 +559,14 @@ body {
     font-size: 10px;
   }
   
-  .footer-info {
-    padding: 8px 10px;
+  .footer-content-vertical {
+    gap: 1px;
+    font-size: 11px;
+    padding: 4px 0 2px 0;
   }
   
-  .powered-text, .author-text, .design-link, .author-name {
-    font-size: 10px;
+  .footer-meta {
+    font-size: 11px;
   }
 }
 

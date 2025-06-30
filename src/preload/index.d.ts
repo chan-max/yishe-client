@@ -10,6 +10,7 @@ declare global {
       hideMainWindow(): Promise<void>
       showMainWindow(): Promise<void>
       confirmExit(): Promise<'tray' | 'quit' | 'cancel'>
+      getAppVersion(): Promise<string>
     }
   }
 }
