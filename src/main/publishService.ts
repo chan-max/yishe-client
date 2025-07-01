@@ -9,6 +9,8 @@
 import { publishToXiaohongshu } from './xiaohongshu';
 import { publishToDouyin } from './douyin';
 import { publishToKuaishou } from './kuaishou';
+import { publishToWeibo } from './weibo';
+import { publishToBilibili } from './bilibili';
 import { getOrCreateBrowser } from './server';
 
 // 平台配置接口
@@ -54,6 +56,13 @@ export class PublishService {
         content: '这是一个来自衣设程序的测试发布内容，用于验证发布功能是否正常工作。',
         images: ['https://dummyimage.com/600x400'],
         tags: ['测试', '衣设', '设计工具']
+      },
+      {
+        platform: 'weibo',
+        title: '衣设测试产品',
+        content: '这是一个来自衣设程序的测试发布内容，用于验证发布功能是否正常工作。',
+        images: ['https://dummyimage.com/600x400'],
+        tags: ['测试', '衣设', '设计工具']
       }
     ];
   }
@@ -78,6 +87,12 @@ export class PublishService {
             break;
           case 'kuaishou':
             result = await publishToKuaishou(publishInfo as any);
+            break;
+          case 'weibo':
+            result = await publishToWeibo(publishInfo as any);
+            break;
+          case 'bilibili':
+            result = await publishToBilibili(publishInfo as any);
             break;
           default:
             result = {
@@ -182,6 +197,22 @@ export class PublishService {
         selectors: {
           userElements: ['.user-info', '.user-avatar', '.header-user'],
           loginElements: ['.login-btn', '.login-button', '.login-entry']
+        }
+      },
+      {
+        name: 'weibo',
+        url: 'https://weibo.com',
+        selectors: {
+          userElements: ['[class*="Ctrls_avatarItem_"]'],
+          loginElements: ['.login-btn', '.login-text', '.login-button']
+        }
+      },
+      {
+        name: 'bilibili',
+        url: 'https://member.bilibili.com/platform/home',
+        selectors: {
+          userElements: ['.avatar', '.user-menu', '.user-info', '.creator-header'],
+          loginElements: ['.login-btn', '.login-text', '.login-button']
         }
       }
     ];

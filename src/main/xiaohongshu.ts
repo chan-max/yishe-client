@@ -15,7 +15,6 @@ import fs from 'fs'
 export async function publishToXiaohongshu(publishInfo): Promise<{ success: boolean; message?: string; data?: any }> {
   try {
     console.log('开始执行小红书发布操作，参数:', publishInfo)
-    
     const browser = await getOrCreateBrowser()
     const page = await browser.newPage()
     console.log('新页面创建成功')

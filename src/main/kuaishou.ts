@@ -12,10 +12,9 @@ import { is } from '@electron-toolkit/utils'
 import { getOrCreateBrowser } from './server'
 import fs from 'fs'
 
-export async function publishToKuaishou (publishInfo): Promise<void> {
+export async function publishToKuaishou(publishInfo): Promise<{ success: boolean; message?: string; data?: any }> {
   try {
-    console.log('开始执行快手发布操作，参数:')
-
+    console.log('开始执行快手发布操作，参数:', publishInfo)
     const browser = await getOrCreateBrowser()
     const page = await browser.newPage()
     console.log('新页面创建成功')
@@ -91,8 +90,9 @@ export async function publishToKuaishou (publishInfo): Promise<void> {
 
     // 等待发布完成
     await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 3000)))
+    return { success: true, message: '快手发布成功' }
   } catch (error) {
     console.error('快手发布过程出错:', error)
-    throw error
+    return { success: false, message: error?.message || '未知错误', data: error }
   }
 }
