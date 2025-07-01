@@ -52,7 +52,7 @@ export class PublishService {
         platform: 'xiaohongshu',
         title: '衣设测试产品',
         content: '这是一个来自衣设程序的测试发布内容，用于验证发布功能是否正常工作。',
-        images: ['https://via.placeholder.com/800x600/FF6B6B/FFFFFF?text=衣设测试图片'],
+        images: ['https://dummyimage.com/600x400'],
         tags: ['测试', '衣设', '设计工具']
       }
     ];
@@ -88,7 +88,7 @@ export class PublishService {
         
         results.push({
           platform: publishInfo.platform,
-          success: result.success || false,
+          success: result?.success || false,
           message: result.message || result.error || '发布完成',
           data: result.data || null
         });

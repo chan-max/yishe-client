@@ -150,7 +150,7 @@ const testPublishToSocialMedia = async () => {
       if (result.data && result.data.results) {
         result.data.results.forEach((item: any) => {
           const platformName = platformMap[item.platform] || item.platform;
-          const status = item.success ? '✅成功' : '❌失败';
+          const status = item?.success ? '✅成功' : '❌失败';
           msg += `<span class="platform-name">${platformName}</span> ${status}\n`;
           if (item.message) {
             msg += `    ${item.message}\n`;
