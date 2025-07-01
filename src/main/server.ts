@@ -9,15 +9,15 @@
 import express from 'express';
 import cors from 'cors';  // 新增cors导入
 import puppeteer, { Browser } from 'puppeteer';  // 修复puppeteer导入
-import { publishToXiaohongshu } from './xiaohongshu';
-import { publishToDouyin } from './douyin';
-import { publishToKuaishou } from './kuaishou';
+import { PublishService } from './publishService';
 
 // 全局浏览器实例管理
 let browserInstance: Browser | null = null;
 
+
+
 // 获取或创建浏览器实例
-async function getOrCreateBrowser(): Promise<Browser> {
+export async function getOrCreateBrowser(): Promise<Browser> {
   if (browserInstance) {
     try {
       // 检查浏览器是否仍然连接
@@ -58,7 +58,7 @@ async function getOrCreateBrowser(): Promise<Browser> {
 }
 
 // 关闭浏览器实例
-async function closeBrowser(): Promise<void> {
+export async function closeBrowser(): Promise<void> {
   if (browserInstance) {
     try {
       await browserInstance.close();
@@ -297,6 +297,73 @@ export function startServer(port: number = 1519): void {
     }
   });
 
+  // 新增 page.evaluate 测试接口
+  app.get('/api/testPageEvaluate', async (req, res) => {
+    let page = null;
+    try {
+      console.log('开始测试 page.evaluate...');
+      
+      const browser = await getOrCreateBrowser();
+      page = await browser.newPage();
+      
+      // 访问一个简单的页面
+      await page.goto('https://www.baidu.com', { waitUntil: 'domcontentloaded' });
+      
+      // 测试简单的 page.evaluate
+      const simpleResult = await page.evaluate(() => {
+        console.log('简单测试执行中...');
+        return document.title;
+      });
+      
+      // 测试带参数的 page.evaluate
+      const paramResult = await page.evaluate((param) => {
+        console.log('带参数测试执行中，参数:', param);
+        return `页面标题: ${document.title}, 参数: ${param}`;
+      }, 'test-param');
+      
+      // 测试复杂参数的 page.evaluate
+      const complexParam = {
+        userElements: ['.test1', '.test2'],
+        loginElements: ['.login1', '.login2']
+      };
+      
+      const complexResult = await page.evaluate((selectors) => {
+        console.log('复杂参数测试执行中，选择器:', selectors);
+        return {
+          userElementsCount: selectors.userElements.length,
+          loginElementsCount: selectors.loginElements.length,
+          pageTitle: document.title
+        };
+      }, complexParam);
+      
+      res.status(200).json({
+        message: 'page.evaluate 测试成功',
+        results: {
+          simple: simpleResult,
+          param: paramResult,
+          complex: complexResult
+        },
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      console.error('page.evaluate 测试失败:', error);
+      res.status(500).json({
+        message: 'page.evaluate 测试失败',
+        error: error instanceof Error ? error.message : '未知错误',
+        timestamp: new Date().toISOString()
+      });
+    } finally {
+      if (page) {
+        try {
+          await page.close();
+        } catch (closeError) {
+          console.log('关闭测试页面时出错:', closeError);
+        }
+      }
+    }
+  });
+
   // 新增浏览器状态查询接口
   app.get('/api/browserStatus', async (req, res) => {
     try {
@@ -365,41 +432,41 @@ export function startServer(port: number = 1519): void {
       const platformConfigs = [
         {
           name: 'xiaohongshu',
-          url: 'https://www.xiaohongshu.com',
+          url: 'https://creator.xiaohongshu.com/publish/publish?target=image',
           selectors: {
-            userElements: ['.reds-avatar-border'],
-            loginElements: ['button[data-testid="login-button"]']
+            userElements: ['.reds-avatar-border', '.user-avatar', '.creator-header'],
+            loginElements: ['button[data-testid="login-button"]', '.login-btn', '.login-text']
           }
         },
         {
           name: 'douyin',
-          url: 'https://www.douyin.com',
+          url: 'https://creator.douyin.com/creator-micro/content/manage',
           selectors: {
-            userElements: ['.avatar', '.user-menu', '.user-info'],
+            userElements: ['.avatar', '.user-menu', '.user-info', '.creator-header'],
             loginElements: ['.login-btn', '.login-text', '.login-button']
           }
         },
         {
           name: 'weibo',
-          url: 'https://weibo.com',
+          url: 'https://weibo.com/creator/home',
           selectors: {
-            userElements: ['.avatar', '.user-menu', '.user-info'],
+            userElements: ['.avatar', '.user-menu', '.user-info', '.creator-header'],
             loginElements: ['.login-btn', '.login-text', '.login-button']
           }
         },
         {
           name: 'kuaishou',
-          url: 'https://www.kuaishou.com',
+          url: 'https://creator.kuaishou.com/creator/post',
           selectors: {
-            userElements: ['.avatar', '.user-menu', '.user-info'],
+            userElements: ['.avatar', '.user-menu', '.user-info', '.creator-header'],
             loginElements: ['.login-btn', '.login-text', '.login-button']
           }
         },
         {
           name: 'bilibili',
-          url: 'https://www.bilibili.com',
+          url: 'https://member.bilibili.com/platform/home',
           selectors: {
-            userElements: ['.avatar', '.user-menu', '.user-info'],
+            userElements: ['.avatar', '.user-menu', '.user-info', '.creator-header'],
             loginElements: ['.login-btn', '.login-text', '.login-button']
           }
         }
@@ -495,31 +562,50 @@ export function startServer(port: number = 1519): void {
   // 新增发布产品到社交媒体的接口
   app.post('/api/publishProductToSocialMedia', async (req, res) => {
     try {
-      const { platforms, prouctId } = req.body;
+      var { platforms, productId } = req.body;
         
-      const publishTasks = platforms.map(publishInfo => {
-        switch (publishInfo.platform) {
-          case 'douyin':
-            return publishToDouyin(publishInfo);
-          // case 'xiaohongshu':
-          //   return publishToXiaohongshu(publishInfo);
-          // case 'kuaishou':
-          //   return publishToKuaishou(publishInfo);
-          // default:
-          //   return Promise.reject(new Error(`不支持的平台: ${publishInfo.platform}`));
-        }
-      });
+      console.log('publishProductToSocialMedia', platforms);
 
-      await Promise.all(publishTasks);
+      const results = await PublishService.publishToMultiplePlatforms(platforms, productId);
 
       res.status(200).json({
+        code: 0,
+        status: true,
         message: '发布请求已成功处理',
-        platforms: platforms
+        data: {
+          platforms: platforms,
+          results: results
+        }
       });
     } catch (error) {
       console.error('发布过程出错:', error);
       res.status(500).json({
-        msg: '发布过程出错'
+        code: 1,
+        status: false,
+        msg: '发布过程出错',
+        error: error instanceof Error ? error.message : '未知错误'
+      });
+    }
+  });
+  
+
+
+  // 新增测试发布接口
+  app.post('/api/testPublishToSocialMedia', async (req, res) => {
+    try {
+      console.log('收到测试发布请求...');
+      
+      const result = await PublishService.testPublish();
+
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('测试发布过程出错:', error);
+      res.status(500).json({
+        code: 1,
+        status: false,
+        msg: '测试发布过程出错',
+        error: error instanceof Error ? error.message : '未知错误',
+        timestamp: new Date().toISOString()
       });
     }
   });
@@ -531,6 +617,8 @@ export function startServer(port: number = 1519): void {
     console.error('Express server failed to start:', err);
   });
 }
+
+
 
 // 核心逻辑抽离为独立方法
 export async function checkAllSocialMediaLoginStatus() {
@@ -546,64 +634,162 @@ export async function checkAllSocialMediaLoginStatus() {
   const platformConfigs = [
     {
       name: 'xiaohongshu',
-      url: 'https://www.xiaohongshu.com',
+      url: 'https://creator.xiaohongshu.com/publish/publish?target=image',
       selectors: {
-        userElements: ['.reds-avatar-border'],
-        loginElements: ['button[data-testid="login-button"]']
+        userElements: ['.user_avatar', '.reds-avatar-border', '.user-avatar', '.creator-header'],
+        loginElements: ['.login', 'button[data-testid="login-button"]', '.login-btn', '.login-text']
       }
     },
     {
       name: 'douyin',
-      url: 'https://www.douyin.com',
+      url: 'https://creator.douyin.com/creator-micro/content/manage',
       selectors: {
-        userElements: ['.avatar', '.user-menu', '.user-info'],
+        userElements: ['.avatar', '.user-menu', '.user-info', '.creator-header'],
         loginElements: ['.login-btn', '.login-text', '.login-button']
       }
     },
     {
       name: 'weibo',
-      url: 'https://weibo.com',
+      url: 'https://weibo.com/creator/home',
       selectors: {
-        userElements: ['.avatar', '.user-menu', '.user-info'],
+        userElements: ['.avatar', '.user-menu', '.user-info', '.creator-header'],
         loginElements: ['.login-btn', '.login-text', '.login-button']
       }
     },
     {
       name: 'kuaishou',
-      url: 'https://www.kuaishou.com',
+      url: 'https://creator.kuaishou.com/creator/post',
       selectors: {
-        userElements: ['.avatar', '.user-menu', '.user-info'],
+        userElements: ['.avatar', '.user-menu', '.user-info', '.creator-header'],
         loginElements: ['.login-btn', '.login-text', '.login-button']
       }
     },
     {
       name: 'bilibili',
-      url: 'https://www.bilibili.com',
+      url: 'https://member.bilibili.com/platform/home',
       selectors: {
-        userElements: ['.avatar', '.user-menu', '.user-info'],
+        userElements: ['.avatar', '.user-menu', '.user-info', '.creator-header'],
         loginElements: ['.login-btn', '.login-text', '.login-button']
       }
     }
   ];
+  console.log(`开始检查 ${platformConfigs.length} 个平台的登录状态...`);
+  
   const checkPromises = platformConfigs.map(async (config) => {
     let page = null;
     try {
+      console.log(`正在处理平台: ${config.name}`);
       page = await browser.newPage();
       pages.push(page);
       page.setDefaultTimeout(30000);
       page.setDefaultNavigationTimeout(30000);
-      await page.goto(config.url, { waitUntil: 'domcontentloaded' });
+      
+      console.log(`正在访问 ${config.name} 的URL: ${config.url}`);
+      
+      // 添加页面加载的错误处理
+      try {
+        await page.goto(config.url, { 
+          waitUntil: 'domcontentloaded',
+          timeout: 30000 
+        });
+        console.log(`${config.name} 页面加载成功`);
+      } catch (navigationError) {
+        console.error(`${config.name} 页面加载失败:`, navigationError);
+        throw navigationError;
+      }
+
+      // 等待页面完全加载
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // 检查页面是否正常加载
+      const pageTitle = await page.title();
+      console.log(`${config.name} 页面标题:`, pageTitle);
+      
+      // 检查页面URL
+      const currentUrl = page.url();
+      console.log(`${config.name} 当前URL:`, currentUrl);
+      
+      console.log(`开始检查 ${config.name} 的登录状态...`);
+      console.log(`传递给page.evaluate的选择器:`, JSON.stringify(config.selectors));
+      
+      // 先测试一个简单的 page.evaluate 调用
+      try {
+        console.log(`${config.name} 开始测试 page.evaluate...`);
+        const testResult = await page.evaluate(() => {
+          console.log('测试 page.evaluate 是否正常工作');
+          return 'test-success';
+        });
+        console.log(`${config.name} page.evaluate 测试结果:`, testResult);
+      } catch (testError) {
+        console.error(`${config.name} page.evaluate 测试失败:`, testError);
+        throw testError;
+      }
+      
+      // 测试带参数的 page.evaluate 调用
+      try {
+        console.log(`${config.name} 开始测试带参数的 page.evaluate...`);
+        const paramTestResult = await page.evaluate((param) => {
+          console.log('带参数的 page.evaluate 测试，参数:', param);
+          return `param-test-${param}`;
+        }, 'test-param');
+        console.log(`${config.name} 带参数的 page.evaluate 测试结果:`, paramTestResult);
+      } catch (paramTestError) {
+        console.error(`${config.name} 带参数的 page.evaluate 测试失败:`, paramTestError);
+        throw paramTestError;
+      }
+      
       const isLoggedIn = await page.evaluate((selectors) => {
-        const hasUserElement = selectors.userElements.some(selector => document.querySelector(selector));
-        const hasLoginElement = selectors.loginElements.some(selector => document.querySelector(selector));
-        return hasUserElement && !hasLoginElement;
+        try {
+          console.log('dev - 开始检查页面元素');
+          console.log('接收到的选择器参数:', selectors);
+          
+          // 验证参数
+          if (!selectors || !selectors.userElements || !selectors.loginElements) {
+            console.error('选择器参数无效:', selectors);
+            return false;
+          }
+          
+          const hasUserElement = selectors.userElements.some(selector => {
+            try {
+              const element = document.querySelector(selector);
+              console.log(`检查用户元素选择器: ${selector}, 结果:`, !!element);
+              return element;
+            } catch (selectorError) {
+              console.error(`检查用户元素选择器 ${selector} 时出错:`, selectorError);
+              return false;
+            }
+          });
+          
+          const hasLoginElement = selectors.loginElements.some(selector => {
+            try {
+              const element = document.querySelector(selector);
+              console.log(`检查登录元素选择器: ${selector}, 结果:`, !!element);
+              return element;
+            } catch (selectorError) {
+              console.error(`检查登录元素选择器 ${selector} 时出错:`, selectorError);
+              return false;
+            }
+          });
+
+          console.log('hasUserElement', hasUserElement);
+          console.log('hasLoginElement', hasLoginElement);
+          console.log('dev - 检查完成');
+          return hasUserElement && !hasLoginElement;
+        } catch (evaluateError) {
+          console.error('page.evaluate 内部执行出错:', evaluateError);
+          return false;
+        }
       }, config.selectors);
+
+      console.log(`${config.name} 登录状态检查结果:`, isLoggedIn);
       loginStatus[config.name] = {
         isLoggedIn,
         status: 'success',
         message: isLoggedIn ? '已登录' : '未登录'
       };
+      console.log(`${config.name} 检查完成`);
     } catch (error) {
+      console.error(`${config.name} 检查失败:`, error);
       loginStatus[config.name] = {
         isLoggedIn: false,
         status: 'error',
@@ -611,10 +797,18 @@ export async function checkAllSocialMediaLoginStatus() {
       };
     } finally {
       if (page) {
-        try { await page.close(); } catch {}
+        try { 
+          await page.close(); 
+          console.log(`${config.name} 页面已关闭`);
+        } catch (closeError) {
+          console.log(`${config.name} 关闭页面时出错:`, closeError);
+        }
       }
     }
   });
+  
+  console.log('等待所有平台检查完成...');
   await Promise.all(checkPromises);
+  console.log('所有平台检查完成，返回结果');
   return loginStatus;
 }

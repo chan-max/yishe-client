@@ -8,7 +8,7 @@
  */
 import { SocialMediaUploadUrl } from './const'
 import { join as pathJoin } from 'path'
-import { getBrowser } from './browser'
+import { getOrCreateBrowser } from './server'
 import fs from 'fs'
 
 interface PublishInfo {
@@ -18,17 +18,10 @@ interface PublishInfo {
   images: string[];
 }
 
-export async function publishToDouyin(publishInfo: PublishInfo): Promise<void> {
+export async function publishToDouyin(publishInfo: PublishInfo): Promise<{ success: boolean; message?: string; data?: any }> {
   try {
     console.log('开始执行抖音发布操作，参数:', publishInfo)
-    
-    // 确保临时目录存在
-    const tempDir = pathJoin(process.cwd(), 'temp')
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true })
-    }
-    
-    const browser = await getBrowser()
+    const browser = await getOrCreateBrowser()
     const page = await browser.newPage()
     console.log('新页面创建成功')
     
@@ -55,7 +48,7 @@ export async function publishToDouyin(publishInfo: PublishInfo): Promise<void> {
         }
         
         const buffer = await response.arrayBuffer()
-        const tempPath = pathJoin(tempDir, `${Date.now()}.jpg`)
+        const tempPath = pathJoin(process.cwd(), 'temp', `${Date.now()}.jpg`)
         await fs.promises.writeFile(tempPath, Buffer.from(buffer))
         
         // 上传图片
@@ -101,8 +94,9 @@ export async function publishToDouyin(publishInfo: PublishInfo): Promise<void> {
     // 等待发布完成
     await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 3000)))
     
+    return { success: true, message: '抖音发布成功' }
   } catch (error) {
     console.error('抖音发布过程出错:', error)
-    throw error
+    return { success: false, message: error?.message || '未知错误', data: error }
   }
 } 

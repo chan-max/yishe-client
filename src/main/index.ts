@@ -11,6 +11,7 @@ import { spawn } from 'child_process'
 import { homedir } from 'os'
 import { join as pathJoin } from 'path'
 import { startServer, checkAllSocialMediaLoginStatus } from './server';
+import { PublishService } from './publishService';
 
 // 扩展app对象的类型
 declare global {
@@ -359,5 +360,37 @@ ipcMain.handle('get-app-version', () => app.getVersion())
 
 // 在主进程暴露社交媒体登录状态检测方法
 ipcMain.handle('check-social-media-login', async () => {
-  return await checkAllSocialMediaLoginStatus();
+  try {
+    // 直接调用PublishService方法，而不是通过HTTP接口
+    const result = await PublishService.checkSocialMediaLoginStatus();
+    return {
+      code: 0,
+      status: true,
+      data: result,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('检查社交媒体登录状态失败:', error);
+    return {
+      code: 1,
+      status: false,
+      msg: '检查失败',
+      error: error instanceof Error ? error.message : '未知错误',
+      timestamp: new Date().toISOString()
+    };
+  }
+});
+
+// 在主进程暴露测试发布方法
+ipcMain.handle('test-publish-to-social-media', async () => {
+  try {
+    console.log('收到测试发布请求...');
+    
+    // 直接调用PublishService方法，而不是通过HTTP接口
+    const result = await PublishService.testPublish();
+    return result;
+  } catch (error) {
+    console.error('测试发布失败:', error);
+    throw error;
+  }
 });
