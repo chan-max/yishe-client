@@ -11,12 +11,30 @@ import { join as pathJoin } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { getOrCreateBrowser } from './server'
 import fs from 'fs'
+import puppeteer from 'puppeteer'
+// @ts-ignore
+import puppeteerExtra from 'puppeteer-extra'
+// @ts-ignore
+import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 
 export async function publishToXiaohongshu(publishInfo): Promise<{ success: boolean; message?: string; data?: any }> {
   try {
     console.log('开始执行小红书发布操作，参数:', publishInfo)
+    puppeteerExtra.use(StealthPlugin())
     const browser = await getOrCreateBrowser()
     const page = await browser.newPage()
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => false })
+      // @ts-ignore
+      window.chrome = { runtime: {} }
+      Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] })
+      Object.defineProperty(navigator, 'languages', { get: () => ['zh-CN', 'zh'] })
+      const originalQuery = window.navigator.permissions.query
+      window.navigator.permissions.query = (parameters) =>
+        parameters.name === 'notifications'
+          ? Promise.resolve({ state: Notification.permission } as any)
+          : originalQuery(parameters)
+    })
     console.log('新页面创建成功')
     
     await page.goto(SocialMediaUploadUrl.xiaohongshu_pic)
@@ -47,6 +65,10 @@ export async function publishToXiaohongshu(publishInfo): Promise<{ success: bool
           const buffer = await response.arrayBuffer()
           const tempPath = pathJoin(tempDir, `${Date.now()}_xiaohongshu.jpg`)
           await fs.promises.writeFile(tempPath, Buffer.from(buffer))
+          // 先点击 input，再上传，模拟真实用户
+          await fileInput.click()
+          await page.waitForSelector('input[type="file"]')
+          await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 500)))
           await fileInput.uploadFile(tempPath)
           console.log('已上传图片:', imageUrl)
           await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 2000)))
