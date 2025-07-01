@@ -52,17 +52,17 @@ export class PublishService {
     return [
       {
         platform: 'xiaohongshu',
-        title: '衣设测试产品',
-        content: '这是一个来自衣设程序的测试发布内容，用于验证发布功能是否正常工作。',
+        title: '春日出游穿搭推荐',
+        content: '今天和朋友一起去公园野餐，分享一下我的穿搭和美食，希望大家喜欢～',
         images: ['https://dummyimage.com/600x400'],
-        tags: ['测试', '衣设', '设计工具']
+        tags: ['穿搭', '日常', '美好生活']
       },
       {
         platform: 'weibo',
-        title: '衣设测试产品',
-        content: '这是一个来自衣设程序的测试发布内容，用于验证发布功能是否正常工作。',
+        title: '周末咖啡时光',
+        content: '周末在家自制咖啡，享受惬意时光，记录生活的美好瞬间。',
         images: ['https://dummyimage.com/600x400'],
-        tags: ['测试', '衣设', '设计工具']
+        tags: ['咖啡', '生活', '分享']
       }
     ];
   }
