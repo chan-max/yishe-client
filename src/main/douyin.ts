@@ -8,7 +8,7 @@
  */
 import { SocialMediaUploadUrl } from './const'
 import { join as pathJoin } from 'path'
-import { getBrowser } from './browser'
+import { getOrCreateBrowser } from './server'
 import fs from 'fs'
 
 interface PublishInfo {
@@ -28,7 +28,7 @@ export async function publishToDouyin(publishInfo: PublishInfo): Promise<void> {
       fs.mkdirSync(tempDir, { recursive: true })
     }
     
-    const browser = await getBrowser()
+    const browser = await getOrCreateBrowser()
     const page = await browser.newPage()
     console.log('新页面创建成功')
     

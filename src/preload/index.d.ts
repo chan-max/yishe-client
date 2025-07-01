@@ -12,6 +12,18 @@ declare global {
       confirmExit(): Promise<'tray' | 'quit' | 'cancel'>
       getAppVersion(): Promise<string>
       checkSocialMediaLogin(): Promise<Record<string, { isLoggedIn: boolean; status: string; message: string }>>
+      testPublishToSocialMedia(): Promise<{
+        code: number;
+        status: boolean;
+        message: string;
+        data?: {
+          platforms: any[];
+          results: any[];
+          timestamp: string;
+        };
+        msg?: string;
+        error?: string;
+      }>
     }
   }
 }

@@ -19,6 +19,7 @@ const api = {
   confirmExit: () => ipcRenderer.invoke('confirm-exit'),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   checkSocialMediaLogin: () => ipcRenderer.invoke('check-social-media-login'),
+  testPublishToSocialMedia: () => ipcRenderer.invoke('test-publish-to-social-media'),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

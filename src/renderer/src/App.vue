@@ -104,7 +104,8 @@ const updateTrayStatus = async (): Promise<void> => {
 
 const checkSocialMediaStatus = async () => {
   try {
-    const result = await window.api.checkSocialMediaLogin();
+    const res = await window.api.checkSocialMediaLogin();
+    const result = res.data;
     if (!result) throw new Error('无返回数据');
     const statusMap = {
       xiaohongshu: '小红书',
@@ -118,8 +119,7 @@ const checkSocialMediaStatus = async () => {
       const plat = statusMap[key] || key;
       const s = result[key];
       const status = s.isLoggedIn ? '✅可用' : '❌不可用';
-      const paddedName = plat.padEnd(4, '');
-      msg += `${paddedName}：${status}\n`;
+      msg += `<span class="platform-name">${plat}</span> ${status}\n`;
     }
     modalTitle.value = '社交平台登录状态';
     modalMessage.value = msg;
@@ -128,6 +128,45 @@ const checkSocialMediaStatus = async () => {
     modalTitle.value = '检查失败';
     modalMessage.value = '检查失败：' + (e instanceof Error ? e.message : e);
     showModal.value = true;
+  }
+};
+
+const testPublishToSocialMedia = async () => {
+  try {
+    modalTitle.value = '测试发布';
+    modalMessage.value = '正在测试发布到各社交平台，请稍候...';
+    showModal.value = true;
+    
+    const result = await window.api.testPublishToSocialMedia();
+    
+    if (result && result.status) {
+      let msg = '测试发布结果：\n\n';
+      const platformMap = {
+        xiaohongshu: '小红书',
+        douyin: '抖音',
+        kuaishou: '快手'
+      };
+      
+      if (result.data && result.data.results) {
+        result.data.results.forEach((item: any) => {
+          const platformName = platformMap[item.platform] || item.platform;
+          const status = item.success ? '✅成功' : '❌失败';
+          msg += `<span class="platform-name">${platformName}</span> ${status}\n`;
+          if (item.message) {
+            msg += `    ${item.message}\n`;
+          }
+        });
+      }
+      
+      modalTitle.value = '测试发布完成';
+      modalMessage.value = msg;
+    } else {
+      modalTitle.value = '测试发布失败';
+      modalMessage.value = '测试发布失败：' + (result.msg || '未知错误');
+    }
+  } catch (e) {
+    modalTitle.value = '测试发布失败';
+    modalMessage.value = '测试发布失败：' + (e instanceof Error ? e.message : e);
   }
 };
 
@@ -223,6 +262,7 @@ const closeModal = () => {
         <h3 class="mini-tools-title">功能合集</h3>
         <div class="mini-tools-links">
           <a href="javascript:void(0);" class="mini-tool-link" @click="checkSocialMediaStatus">检查社交媒体登录状态</a>
+          <a href="javascript:void(0);" class="mini-tool-link" @click="testPublishToSocialMedia">测试发布到社交平台</a>
           <!-- 可继续添加更多小功能链接 -->
         </div>
       </section>
@@ -250,9 +290,9 @@ const closeModal = () => {
             </svg>
           </button>
         </div>
-        <div class="modal-body">
-          <pre class="modal-message">{{ modalMessage }}</pre>
-        </div>
+          <div class="modal-body">
+            <div class="modal-message" v-html="modalMessage"></div>
+          </div>
         <div class="modal-footer">
           <button class="modal-btn" @click="closeModal">确定</button>
         </div>
@@ -829,6 +869,12 @@ body {
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.platform-name {
+  display: inline-block;
+  width: 60px;
+  text-align: left;
 }
 
 .modal-footer {

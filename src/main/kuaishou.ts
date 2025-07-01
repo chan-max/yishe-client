@@ -9,14 +9,14 @@
 import { SocialMediaUploadUrl } from './const'
 import { join as pathJoin } from 'path'
 import { is } from '@electron-toolkit/utils'
-import { getBrowser } from './browser'
+import { getOrCreateBrowser } from './server'
 import fs from 'fs'
 
 export async function publishToKuaishou (publishInfo): Promise<void> {
   try {
     console.log('开始执行快手发布操作，参数:')
 
-    const browser = await getBrowser()
+    const browser = await getOrCreateBrowser()
     const page = await browser.newPage()
     console.log('新页面创建成功')
 
