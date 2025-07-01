@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-08 23:07:32
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-07-01 00:41:23
+ * @LastEditTime: 2025-07-01 08:32:33
  * @FilePath: /yishe-electron/src/renderer/src/App.vue
  * @Description: 衣设程序主界面 - 暗色主题设计
 -->
@@ -16,6 +16,9 @@ const isDevToolsOpen = ref(false);
 const timerId = ref<NodeJS.Timeout | null>(null);
 const remoteTimerId = ref<NodeJS.Timeout | null>(null);
 const appVersion = ref('');
+const showModal = ref(false);
+const modalMessage = ref('');
+const modalTitle = ref('');
 
 onMounted(() => {
   startServerPolling();
@@ -110,16 +113,28 @@ const checkSocialMediaStatus = async () => {
       kuaishou: '快手',
       bilibili: 'B站',
     };
-    let msg = '社交平台登录状态：\n';
+    let msg = '社交平台登录状态：\n\n';
     for (const key in result) {
       const plat = statusMap[key] || key;
       const s = result[key];
-      msg += `${plat}：${s.isLoggedIn ? '✅可用' : '❌不可用'}\n`;
+      const status = s.isLoggedIn ? '✅可用' : '❌不可用';
+      const paddedName = plat.padEnd(4, '');
+      msg += `${paddedName}：${status}\n`;
     }
-    window.alert(msg);
+    modalTitle.value = '社交平台登录状态';
+    modalMessage.value = msg;
+    showModal.value = true;
   } catch (e) {
-    window.alert('检查失败：' + (e instanceof Error ? e.message : e));
+    modalTitle.value = '检查失败';
+    modalMessage.value = '检查失败：' + (e instanceof Error ? e.message : e);
+    showModal.value = true;
   }
+};
+
+const closeModal = () => {
+  showModal.value = false;
+  modalMessage.value = '';
+  modalTitle.value = '';
 };
 </script>
 
@@ -222,6 +237,27 @@ const checkSocialMediaStatus = async () => {
         </div>
       </footer>
     </main>
+
+    <!-- 自定义弹窗 -->
+    <div v-if="showModal" class="modal-overlay" @click="closeModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3 class="modal-title">{{ modalTitle }}</h3>
+          <button class="modal-close" @click="closeModal">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <pre class="modal-message">{{ modalMessage }}</pre>
+        </div>
+        <div class="modal-footer">
+          <button class="modal-btn" @click="closeModal">确定</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -709,5 +745,141 @@ body {
 .mini-tool-link:hover {
   color: #e0e0e0;
   text-decoration: underline;
+}
+
+/* 弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-title {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.modal-body {
+  padding: 20px 24px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.modal-message {
+  color: #e0e0e0;
+  font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.modal-footer {
+  padding: 16px 24px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.modal-btn {
+  background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+  color: #000000;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 255, 136, 0.4);
+}
+
+/* 响应式弹窗 */
+@media (max-width: 768px) {
+  .modal-content {
+    width: 95%;
+    margin: 20px;
+  }
+  
+  .modal-header {
+    padding: 16px 20px 12px;
+  }
+  
+  .modal-body {
+    padding: 16px 20px;
+  }
+  
+  .modal-footer {
+    padding: 12px 20px 16px;
+  }
+  
+  .modal-title {
+    font-size: 16px;
+  }
+  
+  .modal-message {
+    font-size: 13px;
+  }
 }
 </style>
