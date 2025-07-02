@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-01-01 00:00:00
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-07-02 08:51:13
+ * @LastEditTime: 2025-07-02 23:46:16
  * @FilePath: /yishe-electron/src/main/publishService.ts
  * @Description: 发布服务类 - 统一管理发布相关逻辑
  */
@@ -69,13 +69,17 @@ export class PublishService {
    * 检查缓存是否有效
    */
   private static isCacheValid(): boolean {
-    if (!this.CACHE_CONFIG.enabled || !this.loginStatusCache) {
+    if (!this.CACHE_CONFIG.enabled) {
+      console.log('[缓存] 未启用');
       return false;
     }
-    
+    if (!this.loginStatusCache) {
+      console.log('[缓存] 无缓存数据');
+      return false;
+    }
     const now = Date.now();
     const cacheAge = now - this.cacheTimestamp;
-    
+    console.log(`[缓存] 存在，age: ${cacheAge} ms, duration: ${this.CACHE_CONFIG.duration} ms`);
     return cacheAge < this.CACHE_CONFIG.duration;
   }
 
@@ -402,15 +406,15 @@ export class PublishService {
    * 检查社交媒体登录状态
    */
   static async checkSocialMediaLoginStatus(forceRefresh: boolean = false): Promise<LoginStatusResult> {
+    console.log('[登录状态] checkSocialMediaLoginStatus called, forceRefresh:', forceRefresh);
+    let loginStatus: LoginStatusResult = {};
     try {
       // 检查缓存是否有效
       if (!forceRefresh && this.isCacheValid()) {
-        console.log('使用缓存的登录状态数据');
+        console.log('[登录状态] 使用缓存的登录状态数据', this.loginStatusCache, '缓存时间戳:', this.cacheTimestamp);
         return this.loginStatusCache!;
       }
-
-      console.log('开始检查登录状态，缓存已失效或强制刷新');
-      
+      console.log('[登录状态] 开始检查登录状态，缓存已失效或强制刷新');
       // 支持多个平台，初始化所有平台的状态
       const platformConfigs = [
         {
@@ -456,7 +460,7 @@ export class PublishService {
       ];
 
       // 初始化所有平台的返回结构
-      const loginStatus: LoginStatusResult = {};
+      loginStatus = {};
       for (const config of platformConfigs) {
         loginStatus[config.name] = { 
           isLoggedIn: false, 
@@ -480,6 +484,10 @@ export class PublishService {
             timestamp: Date.now()
           };
         }
+        // 赋值缓存
+        this.loginStatusCache = loginStatus;
+        this.cacheTimestamp = Date.now();
+        console.log('[缓存] 浏览器获取失败已更新', this.loginStatusCache, '时间戳:', this.cacheTimestamp);
         return loginStatus;
       }
 
@@ -614,21 +622,16 @@ export class PublishService {
       console.log('等待所有平台检查完成...');
       await Promise.all(checkPromises);
       console.log('所有平台检查完成，返回结果');
-      
       // 更新缓存
       this.loginStatusCache = loginStatus;
       this.cacheTimestamp = Date.now();
-      console.log('登录状态缓存已更新');
-      
+      console.log('[缓存] 已更新', this.loginStatusCache, '时间戳:', this.cacheTimestamp);
       return loginStatus;
-      
     } catch (overallError) {
       console.error('登录状态检查整体过程出错:', overallError);
-      
       // 如果整体过程出错，返回所有平台的错误状态
       const errorLoginStatus: LoginStatusResult = {};
       const platformNames = ['xiaohongshu', 'douyin', 'kuaishou', 'weibo', 'bilibili'];
-      
       for (const platformName of platformNames) {
         errorLoginStatus[platformName] = {
           isLoggedIn: false,
@@ -637,7 +640,10 @@ export class PublishService {
           timestamp: Date.now()
         };
       }
-      
+      // catch分支也赋值缓存
+      this.loginStatusCache = errorLoginStatus;
+      this.cacheTimestamp = Date.now();
+      console.log('[缓存] catch分支已更新', this.loginStatusCache, '时间戳:', this.cacheTimestamp);
       return errorLoginStatus;
     }
   }
