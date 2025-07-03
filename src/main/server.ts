@@ -450,26 +450,6 @@ export function startServer(port: number = 1519): void {
   
 
 
-  // 新增测试发布接口
-  app.post('/api/testPublishToSocialMedia', async (req, res) => {
-    try {
-      console.log('收到测试发布请求...');
-      
-      const result = await PublishService.testPublish();
-
-      res.status(200).json(result);
-    } catch (error) {
-      console.error('测试发布过程出错:', error);
-      res.status(500).json({
-        code: 1,
-        status: false,
-        msg: '测试发布过程出错',
-        error: error instanceof Error ? error.message : '未知错误',
-        timestamp: new Date().toISOString()
-      });
-    }
-  });
-
   // 启动服务器
   app.listen(port, () => {
     console.log(`Express server started on port ${port}`);

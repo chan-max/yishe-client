@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-01-01 00:00:00
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-07-02 23:46:16
+ * @LastEditTime: 2025-07-03 00:22:44
  * @FilePath: /yishe-electron/src/main/publishService.ts
  * @Description: 发布服务类 - 统一管理发布相关逻辑
  */
@@ -158,28 +158,6 @@ export class PublishService {
   }
 
   /**
-   * 生成测试平台配置
-   */
-  static generateTestPlatforms(): PlatformConfig[] {
-    return [
-      {
-        platform: 'xiaohongshu',
-        title: '春日出游穿搭推荐',
-        content: '今天和朋友一起去公园野餐，分享一下我的穿搭和美食，希望大家喜欢～',
-        images: ['https://dummyimage.com/600x400'],
-        tags: ['穿搭', '日常', '美好生活']
-      },
-      {
-        platform: 'weibo',
-        title: '周末咖啡时光',
-        content: '周末在家自制咖啡，享受惬意时光，记录生活的美好瞬间。',
-        images: ['https://dummyimage.com/600x400'],
-        tags: ['咖啡', '生活', '分享']
-      }
-    ];
-  }
-
-  /**
    * 发布到多个平台
    */
   static async publishToMultiplePlatforms(platforms: PlatformConfig[], productId?: string): Promise<PublishResult[]> {
@@ -313,93 +291,6 @@ export class PublishService {
     
     console.log('多平台发布完成，结果汇总:', results);
     return results;
-  }
-
-  /**
-   * 测试发布功能
-   */
-  static async testPublish(): Promise<{
-    code: number;
-    status: boolean;
-    message: string;
-    data?: {
-      platforms: PlatformConfig[];
-      results: PublishResult[];
-      timestamp: string;
-      summary: {
-        total: number;
-        success: number;
-        failed: number;
-        notLoggedIn: number;
-        errors: number;
-      };
-    };
-    msg?: string;
-    error?: string;
-    timestamp?: string;
-  }> {
-    try {
-      console.log('开始测试发布...');
-      
-      const testPlatforms = this.generateTestPlatforms();
-      const results = await this.publishToMultiplePlatforms(testPlatforms, 'test-product-id');
-
-      // 统计结果
-      const summary = {
-        total: results.length,
-        success: results.filter(r => r.success).length,
-        failed: results.filter(r => !r.success).length,
-        notLoggedIn: results.filter(r => r.data?.loginStatus === 'not_logged_in').length,
-        errors: results.filter(r => r.data?.loginStatus === 'error').length
-      };
-
-      return {
-        code: 0,
-        status: true,
-        message: '测试发布请求已成功处理',
-        data: {
-          platforms: testPlatforms,
-          results: results,
-          timestamp: new Date().toISOString(),
-          summary
-        }
-      };
-    } catch (error) {
-      console.error('测试发布过程出错:', error);
-      
-      // 即使出错也要返回结构化的错误信息
-      const errorMessage = error instanceof Error ? error.message : '未知错误';
-      const testPlatforms = this.generateTestPlatforms();
-      
-      return {
-        code: 1,
-        status: false,
-        message: `测试发布过程出错: ${errorMessage}`,
-        msg: `测试发布过程出错: ${errorMessage}`,
-        error: errorMessage,
-        timestamp: new Date().toISOString(),
-        data: {
-          platforms: testPlatforms,
-          results: testPlatforms.map(platform => ({
-            platform: platform.platform,
-            success: false,
-            message: `测试发布失败: ${errorMessage}`,
-            data: {
-              loginStatus: 'unknown',
-              error: errorMessage
-            }
-          })),
-          timestamp: new Date().toISOString(),
-          summary: {
-            total: testPlatforms.length,
-            success: 0,
-            failed: testPlatforms.length,
-            notLoggedIn: 0,
-            errors: testPlatforms.length
-          }
-        }
-      };
-    }
   }
 
   /**

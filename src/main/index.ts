@@ -380,17 +380,3 @@ ipcMain.handle('check-social-media-login', async () => {
     };
   }
 });
-
-// 在主进程暴露测试发布方法
-ipcMain.handle('test-publish-to-social-media', async () => {
-  try {
-    console.log('收到测试发布请求...');
-    
-    // 直接调用PublishService方法，而不是通过HTTP接口
-    const result = await PublishService.testPublish();
-    return result;
-  } catch (error) {
-    console.error('测试发布失败:', error);
-    throw error;
-  }
-});
