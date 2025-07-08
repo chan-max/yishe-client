@@ -499,14 +499,14 @@ body {
   margin-bottom: 0;
 }
 .footer-meta {
-  color: #b0b0b0;
+  color: #808080;
   font-size: 12px;
-  font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
-  letter-spacing: 0.08em;
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  letter-spacing: -0.02em;
   font-weight: 400;
 }
 .footer-link, .creator-name {
-  color: #b0b0b0;
+  color: #808080;
   font-weight: 500;
   text-decoration: none;
   border-bottom: 1px dotted #b47cff44;
@@ -525,6 +525,7 @@ body {
   }
   .footer-meta {
     font-size: 11px;
+    letter-spacing: -0.01em;
   }
   .version-text {
     font-size: 10px;
@@ -640,6 +641,7 @@ body {
   
   .footer-meta {
     font-size: 11px;
+    letter-spacing: -0.01em;
   }
 }
 

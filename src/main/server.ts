@@ -447,7 +447,159 @@ export function startServer(port: number = 1519): void {
       });
     }
   });
-  
+
+  // 新增测试发布内容的GET接口
+  app.get('/api/testPublishContent', async (req, res) => {
+    try {
+      console.log('收到测试发布内容请求...');
+      
+      // 定义默认的测试发布内容
+      const testPublishContent = [
+        {
+          platform: 'xiaohongshu',
+          title: '记录美好生活的一天',
+          content: '今天分享一些生活中的小确幸，希望大家都能拥有美好心情。#生活 #分享 #美好时光',
+          images: [
+            'https://picsum.photos/800/600?random=1',
+            'https://picsum.photos/800/600?random=2'
+          ],
+          tags: ['生活', '分享', '美好时光']
+        },
+        // {
+        //   platform: 'douyin',
+        //   title: '生活点滴分享',
+        //   content: '记录生活中的精彩瞬间，每一天都值得被珍藏。#生活 #记录 #日常',
+        //   images: [
+        //     'https://picsum.photos/800/600?random=3',
+        //     'https://picsum.photos/800/600?random=4'
+        //   ],
+        //   tags: ['生活', '记录', '日常']
+        // },
+        // {
+        //   platform: 'kuaishou',
+        //   title: '日常生活分享',
+        //   content: '平凡的日子里也有属于自己的小幸福，与你们一起分享。#日常 #幸福 #分享',
+        //   images: [
+        //     'https://picsum.photos/800/600?random=5',
+        //     'https://picsum.photos/800/600?random=6'
+        //   ],
+        //   tags: ['日常', '幸福', '分享']
+        // },
+        {
+          platform: 'weibo',
+          title: '今天的心情日记',
+          content: '有些美好值得被记录，愿你我都能感受到生活的温柔。#心情 #日记 #温柔',
+          images: [
+            'https://picsum.photos/800/600?random=7',
+            'https://picsum.photos/800/600?random=8'
+          ],
+          tags: ['心情', '日记', '温柔']
+        },
+        // {
+        //   platform: 'bilibili',
+        //   title: '生活随拍',
+        //   content: '分享一些日常生活的片段，希望能带给你一点点快乐。#生活 #随拍 #快乐',
+        //   images: [
+        //     'https://picsum.photos/800/600?random=9',
+        //     'https://picsum.photos/800/600?random=10'
+        //   ],
+        //   tags: ['生活', '随拍', '快乐']
+        // }
+      ];
+
+      console.log('开始执行多平台测试发布...');
+      const results = await PublishService.publishToMultiplePlatforms(testPublishContent, 'test-product-id');
+
+      // 统计发布结果
+      const successCount = results.filter(r => r.success).length;
+      const totalCount = results.length;
+      const failedPlatforms = results.filter(r => !r.success).map(r => r.platform);
+
+      res.status(200).json({
+        code: 0,
+        status: true,
+        message: `测试发布完成，成功: ${successCount}/${totalCount}`,
+        data: {
+          summary: {
+            totalPlatforms: totalCount,
+            successCount: successCount,
+            failedCount: totalCount - successCount,
+            failedPlatforms: failedPlatforms,
+            successRate: `${((successCount / totalCount) * 100).toFixed(1)}%`
+          },
+          testContent: testPublishContent,
+          results: results,
+          timestamp: new Date().toISOString()
+        }
+      });
+
+    } catch (error) {
+      console.error('测试发布内容失败:', error);
+      res.status(500).json({
+        code: 1,
+        status: false,
+        message: '测试发布内容失败',
+        error: error instanceof Error ? error.message : '未知错误',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+  // 新增测试单个平台发布的GET接口
+  app.get('/api/testSinglePlatform/:platform', async (req, res) => {
+    try {
+      const { platform } = req.params;
+      console.log(`收到测试单个平台发布请求，平台: ${platform}`);
+      
+      // 验证平台是否支持
+      const supportedPlatforms = ['xiaohongshu', 'douyin', 'kuaishou', 'weibo', 'bilibili'];
+      if (!supportedPlatforms.includes(platform)) {
+        return res.status(400).json({
+          code: 1,
+          status: false,
+          message: `不支持的平台: ${platform}`,
+          supportedPlatforms: supportedPlatforms
+        });
+      }
+
+      // 定义单个平台的测试内容
+      const testContent = {
+        platform: platform,
+        title: `测试发布 - ${platform}`,
+        content: `这是一条测试发布内容，用于验证${platform}平台发布功能。\n\n#测试 #发布 #功能验证`,
+        images: [
+          `https://picsum.photos/800/600?random=${Date.now()}`,
+          `https://picsum.photos/800/600?random=${Date.now() + 1}`
+        ],
+        tags: ['测试', '发布', '功能验证']
+      };
+
+      console.log(`开始执行${platform}平台测试发布...`);
+      const results = await PublishService.publishToMultiplePlatforms([testContent], 'test-single-platform');
+
+      res.status(200).json({
+        code: 0,
+        status: true,
+        message: `${platform}平台测试发布完成`,
+        data: {
+          platform: platform,
+          testContent: testContent,
+          result: results[0],
+          timestamp: new Date().toISOString()
+        }
+      });
+
+    } catch (error) {
+      console.error(`测试${req.params.platform}平台发布失败:`, error);
+      res.status(500).json({
+        code: 1,
+        status: false,
+        message: `测试${req.params.platform}平台发布失败`,
+        error: error instanceof Error ? error.message : '未知错误',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
 
 
   // 启动服务器
