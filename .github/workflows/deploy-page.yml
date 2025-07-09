@@ -28,6 +28,22 @@ jobs:
           timeout: "10m"
           debug: true
 
+      - name: Deploy Page to 1s.design/client
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 22
+          source: "page/**"
+          target: "/www/wwwroot/1s.design/client"
+          rm: false
+          strip_components: 1
+          overwrite: true
+          command_timeout: "10m"
+          timeout: "10m"
+          debug: true
+
       - name: Send Feishu Notification
         if: always()
         uses: actions/github-script@v6
