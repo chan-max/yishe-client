@@ -32,9 +32,10 @@ export async function publishToKuaishou(publishInfo): Promise<{ success: boolean
 
     // 上传所有图片（如有多张）
     if (publishInfo.images && Array.isArray(publishInfo.images) && publishInfo.images.length > 0) {
+      // 下载所有图片到本地
+      const tempPaths: string[] = []
       for (const imageUrl of publishInfo.images) {
         try {
-          // 下载图片到临时目录
           const tempDir = pathJoin(process.cwd(), 'temp')
           if (!fs.existsSync(tempDir)) {
             fs.mkdirSync(tempDir, { recursive: true })
@@ -44,8 +45,6 @@ export async function publishToKuaishou(publishInfo): Promise<{ success: boolean
             throw new Error(`下载图片失败: ${response.statusText}`)
           }
           const buffer = await response.arrayBuffer()
-
-          // 智能获取扩展名，默认jpg
           let extension = 'jpg'
           try {
             const urlObj = new URL(imageUrl)
@@ -60,47 +59,48 @@ export async function publishToKuaishou(publishInfo): Promise<{ success: boolean
           }
           const tempPath = pathJoin(tempDir, `${Date.now()}_kuaishou.${extension}`)
           await fs.promises.writeFile(tempPath, Buffer.from(buffer))
-
-          // 使用 fileChooser 方式模拟真实用户选择文件
-          const uploadButtons = await page.$$('button[class^="_upload-btn_"]')
-          const uploadButton = uploadButtons[1] // 取第二个
-          if (!uploadButton) {
-            throw new Error('未找到上传按钮')
-          }
-          const [fileChooser] = await Promise.all([
-            page.waitForFileChooser(),
-            uploadButton.click()
-          ])
-          await fileChooser.accept([tempPath])
-          console.log('已上传图片:', tempPath)
-          await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 2000)))
-          await fs.promises.unlink(tempPath).catch(err => {
-            console.warn('删除临时文件失败:', err)
-          })
+          tempPaths.push(tempPath)
         } catch (error) {
           console.error(`处理图片 ${imageUrl} 时出错:`, error)
           throw error
         }
       }
+      // 一次性上传所有图片
+      const uploadButtons = await page.$$('button[class^="_upload-btn_"]')
+      const uploadButton = uploadButtons[1]
+      if (!uploadButton) {
+        throw new Error('未找到上传按钮')
+      }
+      const [fileChooser] = await Promise.all([
+        page.waitForFileChooser(),
+        uploadButton.click()
+      ])
+      await fileChooser.accept(tempPaths)
+      console.log('已上传所有图片:', tempPaths)
+      await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 2000)))
+      for (const tempPath of tempPaths) {
+        await fs.promises.unlink(tempPath).catch(err => {
+          console.warn('删除临时文件失败:', err)
+        })
+      }
     }
 
-    // 填写标题
-    const titleSelector = 'input[placeholder*="标题"]'
-    await page.waitForSelector(titleSelector)
-    await page.type(titleSelector, publishInfo.title || '')
-    console.log('已填写标题')
-
-    // 填写正文内容
+    // 填写正文内容（富文本）
     const contentSelector = '#work-description-edit'
     await page.waitForSelector(contentSelector)
-    await page.type(contentSelector, publishInfo.content || '')
+    await page.evaluate((selector, content) => {
+      const el = document.querySelector(selector)
+      if (el) {
+        el.innerHTML = content
+      }
+    }, contentSelector, publishInfo.content || '')
     console.log('已填写正文内容')
 
     // 等待内容填写完成
     await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 1000)))
 
     // 点击发布按钮
-    const submitButton = await page.waitForSelector('[class^="_section-form-btns_"] div')
+    const submitButton = await page.waitForSelector('div[class^="_section-form-btns_"] > div:first-child')
     if (!submitButton) {
       throw new Error('未找到发布按钮')
     }
