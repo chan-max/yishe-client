@@ -61,12 +61,17 @@ export async function publishToKuaishou(publishInfo): Promise<{ success: boolean
           const tempPath = pathJoin(tempDir, `${Date.now()}_kuaishou.${extension}`)
           await fs.promises.writeFile(tempPath, Buffer.from(buffer))
 
-          // 关键：一步精准获取 input[type="file"]
-          const fileInput = await page.$('div[tabindex="0"] input[type="file"]')
-          if (!fileInput) {
-            throw new Error('未找到文件选择器')
+          // 使用 fileChooser 方式模拟真实用户选择文件
+          const uploadButtons = await page.$$('button[class^="_upload-btn_"]')
+          const uploadButton = uploadButtons[1] // 取第二个
+          if (!uploadButton) {
+            throw new Error('未找到上传按钮')
           }
-          await fileInput.uploadFile(tempPath)
+          const [fileChooser] = await Promise.all([
+            page.waitForFileChooser(),
+            uploadButton.click()
+          ])
+          await fileChooser.accept([tempPath])
           console.log('已上传图片:', tempPath)
           await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 2000)))
           await fs.promises.unlink(tempPath).catch(err => {
