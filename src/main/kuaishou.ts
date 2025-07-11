@@ -26,59 +26,73 @@ export async function publishToKuaishou(publishInfo): Promise<{ success: boolean
     await page.waitForSelector('#rc-tabs-0-panel-2', { timeout: 10000 })
     console.log('页面基本元素已加载')
 
-    // 获取图片的绝对路径
-    const imagePath = is.dev
-      ? pathJoin(__dirname, '../../resources/test.jpeg') // 开发环境
-      : pathJoin(process.resourcesPath, 'resources/test.jpeg') // 生产环境
+    // 等待文件选择器出现
+    await page.waitForSelector('input[type="file"]')
+    console.log('找到文件选择器')
 
-    console.log('图片路径:', imagePath)
+    // 上传所有图片（如有多张）
+    if (publishInfo.images && Array.isArray(publishInfo.images) && publishInfo.images.length > 0) {
+      for (const imageUrl of publishInfo.images) {
+        try {
+          // 下载图片到临时目录
+          const tempDir = pathJoin(process.cwd(), 'temp')
+          if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true })
+          }
+          const response = await fetch(imageUrl)
+          if (!response.ok) {
+            throw new Error(`下载图片失败: ${response.statusText}`)
+          }
+          const buffer = await response.arrayBuffer()
 
-    // 先点击上传按钮
-    const uploadButton = await page.waitForSelector('#rc-tabs-0-panel-2 button', { timeout: 5000 })
-    if (!uploadButton) {
-      throw new Error('未找到上传按钮')
+          // 智能获取扩展名，默认jpg
+          let extension = 'jpg'
+          try {
+            const urlObj = new URL(imageUrl)
+            const pathname = urlObj.pathname
+            const lastPart = pathname.split('/').pop()
+            if (lastPart && lastPart.includes('.')) {
+              extension = lastPart.split('.').pop() || 'jpg'
+            }
+          } catch (e) {
+            const urlParts = imageUrl.split('.')
+            extension = urlParts.length > 1 ? urlParts[urlParts.length - 1].split('?')[0] : 'jpg'
+          }
+          const tempPath = pathJoin(tempDir, `${Date.now()}_kuaishou.${extension}`)
+          await fs.promises.writeFile(tempPath, Buffer.from(buffer))
+
+          // 关键：一步精准获取 input[type="file"]
+          const fileInput = await page.$('div[tabindex="0"] input[type="file"]')
+          if (!fileInput) {
+            throw new Error('未找到文件选择器')
+          }
+          await fileInput.uploadFile(tempPath)
+          console.log('已上传图片:', tempPath)
+          await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 2000)))
+          await fs.promises.unlink(tempPath).catch(err => {
+            console.warn('删除临时文件失败:', err)
+          })
+        } catch (error) {
+          console.error(`处理图片 ${imageUrl} 时出错:`, error)
+          throw error
+        }
+      }
     }
-    await uploadButton.click()
-    console.log('已点击上传按钮')
-
-    // 等待文件输入框出现
-    const fileInput = await page.waitForSelector('#rc-tabs-0-panel-2 input[type="file"]', { timeout: 5000 })
-    if (!fileInput) {
-      throw new Error('未找到文件输入框')
-    }
-
-    await fileInput.uploadFile(imagePath)
-    console.log('已选择图片文件')
-
-
-    // 等待图片上传完成
-    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 2000))) // 给一些时间让图片上传
-
-        
-    // 关闭系统文件选择器弹窗
-    await page.keyboard.press('Escape')
-    // await page.keyboard.down('Escape');
-
-    console.log('已关闭系统文件选择器弹窗')
-
 
     // 填写标题
     const titleSelector = 'input[placeholder*="标题"]'
     await page.waitForSelector(titleSelector)
-    await page.type(titleSelector, '测试快手标题')
+    await page.type(titleSelector, publishInfo.title || '')
     console.log('已填写标题')
 
     // 填写正文内容
     const contentSelector = '#work-description-edit'
     await page.waitForSelector(contentSelector)
-
-    console.log(contentSelector)
-
-    await page.type(contentSelector, '快手发布内容')
+    await page.type(contentSelector, publishInfo.content || '')
     console.log('已填写正文内容')
 
     // 等待内容填写完成
-    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 3000)))
+    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 1000)))
 
     // 点击发布按钮
     const submitButton = await page.waitForSelector('[class^="_section-form-btns_"] div')
@@ -90,6 +104,8 @@ export async function publishToKuaishou(publishInfo): Promise<{ success: boolean
 
     // 等待发布完成
     await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 3000)))
+    
+    // 发布成功，返回结果
     return { success: true, message: '快手发布成功' }
   } catch (error) {
     console.error('快手发布过程出错:', error)

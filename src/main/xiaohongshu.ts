@@ -39,7 +39,11 @@ export async function publishToXiaohongshu(publishInfo): Promise<{ success: bool
             throw new Error(`下载图片失败: ${response.statusText}`)
           }
           const buffer = await response.arrayBuffer()
-          const tempPath = pathJoin(tempDir, `${Date.now()}_xiaohongshu.jpg`)
+          
+          // 从 URL 中提取文件扩展名，支持多种图片格式
+          const urlParts = imageUrl.split('.')
+          const extension = urlParts.length > 1 ? urlParts[urlParts.length - 1].split('?')[0] : 'jpg'
+          const tempPath = pathJoin(tempDir, `${Date.now()}_xiaohongshu.${extension}`)
           await fs.promises.writeFile(tempPath, Buffer.from(buffer))
 
           // 关键：每次都重新获取 input[type="file"]
