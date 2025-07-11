@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-08 23:07:32
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-07-01 08:32:33
+ * @LastEditTime: 2025-07-11 20:24:50
  * @FilePath: /yishe-electron/src/renderer/src/App.vue
  * @Description: 衣设程序主界面 - 暗色主题设计
 -->
@@ -19,6 +19,18 @@ const appVersion = ref('');
 const showModal = ref(false);
 const modalMessage = ref('');
 const modalTitle = ref('');
+
+const mediaPages = [
+  { name: '小红书', url: 'https://www.xiaohongshu.com/' },
+  { name: '抖音', url: 'https://www.douyin.com/' },
+  { name: '微博', url: 'https://weibo.com/' },
+  { name: '快手', url: 'https://www.kuaishou.com/' },
+  { name: 'B站', url: 'https://www.bilibili.com/' },
+];
+
+const openAllMediaPages = async () => {
+  await window.api.openAllMediaPages();
+};
 
 onMounted(() => {
   startServerPolling();
@@ -223,6 +235,7 @@ const closeModal = () => {
         <h3 class="mini-tools-title">功能合集</h3>
         <div class="mini-tools-links">
           <a href="javascript:void(0);" class="mini-tool-link" @click="checkSocialMediaStatus">检查社交媒体登录状态</a>
+          <a href="javascript:void(0);" class="mini-tool-link" @click="openAllMediaPages">打开所有媒体页面</a>
         </div>
       </section>
 
