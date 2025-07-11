@@ -455,16 +455,16 @@ export function startServer(port: number = 1519): void {
       
       // 定义默认的测试发布内容
       const testPublishContent = [
-        {
-          platform: 'xiaohongshu',
-          title: '记录美好生活的一天',
-          content: '今天分享一些生活中的小确幸，希望大家都能拥有美好心情。#生活 #分享 #美好时光',
-          images: [
-            'https://picsum.photos/800/600?random=1',
-            'https://picsum.photos/800/600?random=2'
-          ],
-          tags: ['生活', '分享', '美好时光']
-        },
+        // {
+        //   platform: 'xiaohongshu',
+        //   title: '记录美好生活的一天',
+        //   content: '今天分享一些生活中的小确幸，希望大家都能拥有美好心情。#生活 #分享 #美好时光',
+        //   images: [
+        //       'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png',
+        //       'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png'
+        //   ],
+        //   tags: ['生活', '分享', '美好时光']
+        // },
         // {
         //   platform: 'douyin',
         //   title: '生活点滴分享',
@@ -475,26 +475,26 @@ export function startServer(port: number = 1519): void {
         //   ],
         //   tags: ['生活', '记录', '日常']
         // },
-        // {
-        //   platform: 'kuaishou',
-        //   title: '日常生活分享',
-        //   content: '平凡的日子里也有属于自己的小幸福，与你们一起分享。#日常 #幸福 #分享',
-        //   images: [
-        //     'https://picsum.photos/800/600?random=5',
-        //     'https://picsum.photos/800/600?random=6'
-        //   ],
-        //   tags: ['日常', '幸福', '分享']
-        // },
         {
-          platform: 'weibo',
-          title: '今天的心情日记',
-          content: '有些美好值得被记录，愿你我都能感受到生活的温柔。#心情 #日记 #温柔',
+          platform: 'kuaishou',
+          title: '日常生活分享',
+          content: '平凡的日子里也有属于自己的小幸福，与你们一起分享。#日常 #幸福 #分享',
           images: [
-            'https://picsum.photos/800/600?random=7',
-            'https://picsum.photos/800/600?random=8'
+          'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png',
+          'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png'
           ],
-          tags: ['心情', '日记', '温柔']
+          tags: ['日常', '幸福', '分享']
         },
+        // {
+        //   platform: 'weibo',
+        //   title: '今天的心情日记',
+        //   content: '有些美好值得被记录，愿你我都能感受到生活的温柔。#心情 #日记 #温柔',
+        //   images: [
+        //       'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png',
+        //       'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png'
+        //   ],
+        //   tags: ['心情', '日记', '温柔']
+        // },
         // {
         //   platform: 'bilibili',
         //   title: '生活随拍',
@@ -568,8 +568,8 @@ export function startServer(port: number = 1519): void {
         title: `测试发布 - ${platform}`,
         content: `这是一条测试发布内容，用于验证${platform}平台发布功能。\n\n#测试 #发布 #功能验证`,
         images: [
-          `https://picsum.photos/800/600?random=${Date.now()}`,
-          `https://picsum.photos/800/600?random=${Date.now() + 1}`
+          'http://49.232.186.238:1523/logo.svg',
+          'http://49.232.186.238:1523/logo.svg'
         ],
         tags: ['测试', '发布', '功能验证']
       };

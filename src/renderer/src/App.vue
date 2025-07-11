@@ -167,10 +167,10 @@ const closeModal = () => {
     <!-- 主要内容区域 -->
     <main class="main-content">
       <!-- 顶部标题 -->
-      <div class="title-section">
+      <!-- <div class="title-section">
         <img alt="logo" class="logo" src="./assets/icon.png" />
         <h1 class="app-title">衣设 最具创意的设计工具</h1>
-      </div>
+      </div> -->
 
       <!-- 快速链接区域 -->
       <section class="links-section">

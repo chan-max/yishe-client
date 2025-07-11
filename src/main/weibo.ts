@@ -40,7 +40,11 @@ export async function publishToWeibo(publishInfo): Promise<{ success: boolean; m
             throw new Error(`下载图片失败: ${response.statusText}`)
           }
           const buffer = await response.arrayBuffer()
-          const tempPath = pathJoin(tempDir, `${Date.now()}_weibo.jpg`)
+          
+          // 从 URL 中提取文件扩展名，支持多种图片格式
+          const urlParts = imageUrl.split('.')
+          const extension = urlParts.length > 1 ? urlParts[urlParts.length - 1].split('?')[0] : 'jpg'
+          const tempPath = pathJoin(tempDir, `${Date.now()}_weibo.${extension}`)
           await fs.promises.writeFile(tempPath, Buffer.from(buffer))
           await fileInput.uploadFile(tempPath)
           console.log('已上传图片:', imageUrl)
