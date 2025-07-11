@@ -485,16 +485,16 @@ export function startServer(port: number = 1519): void {
         //   ],
         //   tags: ['日常', '幸福', '分享']
         // },
-        {
-          platform: 'weibo',
-          title: '今天的心情日记',
-          content: '有些美好值得被记录，愿你我都能感受到生活的温柔。#心情 #日记 #温柔',
-          images: [
-            'https://picsum.photos/800/600?random=7',
-            'https://picsum.photos/800/600?random=8'
-          ],
-          tags: ['心情', '日记', '温柔']
-        },
+        // {
+        //   platform: 'weibo',
+        //   title: '今天的心情日记',
+        //   content: '有些美好值得被记录，愿你我都能感受到生活的温柔。#心情 #日记 #温柔',
+        //   images: [
+        //     'https://picsum.photos/800/600?random=7',
+        //     'https://picsum.photos/800/600?random=8'
+        //   ],
+        //   tags: ['心情', '日记', '温柔']
+        // },
         // {
         //   platform: 'bilibili',
         //   title: '生活随拍',

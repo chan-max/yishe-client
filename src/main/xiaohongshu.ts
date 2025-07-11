@@ -26,12 +26,6 @@ export async function publishToXiaohongshu(publishInfo): Promise<{ success: bool
     await page.waitForSelector('input[type="file"]')
     console.log('找到文件选择器')
 
-    const fileInput = await page.$('input[type="file"]')
-    if (!fileInput) {
-      throw new Error('未找到文件选择器')
-    }
-
-    // 上传所有图片（如有多张）
     if (publishInfo.images && Array.isArray(publishInfo.images)) {
       for (const imageUrl of publishInfo.images) {
         try {
@@ -47,6 +41,13 @@ export async function publishToXiaohongshu(publishInfo): Promise<{ success: bool
           const buffer = await response.arrayBuffer()
           const tempPath = pathJoin(tempDir, `${Date.now()}_xiaohongshu.jpg`)
           await fs.promises.writeFile(tempPath, Buffer.from(buffer))
+
+          // 关键：每次都重新获取 input[type="file"]
+          const fileInput = await page.$('input[type="file"]')
+          if (!fileInput) {
+            throw new Error('未找到文件选择器')
+          }
+
           await fileInput.uploadFile(tempPath)
           console.log('已上传图片:', imageUrl)
           await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 2000)))
