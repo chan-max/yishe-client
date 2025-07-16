@@ -24,7 +24,9 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^4.0.0",
+    "axios": "^1.10.0",
     "cors": "^2.8.5",
+    "electron-store": "^10.1.0",
     "electron-updater": "^6.3.9",
     "express": "^5.1.0",
     "puppeteer": "^24.11.1",
