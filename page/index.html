@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-19 08:44:34
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-07-17 07:27:48
+ * @LastEditTime: 2025-07-17 07:57:42
  * @FilePath: /yishe-electron/page/index.html
  * @Description: 极简黑色风格客户端下载页
 -->
@@ -56,9 +56,16 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      flex: 1;
-      min-height: 70vh;
-      width: 100vw;
+      height: fit-content;
+      width: fit-content;
+      max-width: 700px;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 20px;
+      margin: 2rem;
+      padding: 6em;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
     .logo-card {
       position: relative;
@@ -112,17 +119,20 @@
       align-items: center;
       justify-content: center;
     }
+    .logo-card {
+      margin-bottom: 0.5rem;
+    }
     h1 {
       font-size: 1.25rem;
       font-weight: 700;
-      margin: 0 0 0.7rem 0;
+      margin: 0 0 0.5rem 0;
       letter-spacing: 0.01em;
       color: #fff;
     }
     .desc {
       font-size: 0.98rem;
-      color: #b0b0b8;
-      margin-bottom: 1.3rem;
+      color: #ffffff;
+      margin-bottom: 1rem;
       text-align: center;
       line-height: 1.6;
       max-width: 320px;
@@ -134,7 +144,7 @@
       width: 100%;
       align-items: stretch;
       justify-content: center;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
       max-width: 340px;
     }
     .download-col {
@@ -219,7 +229,7 @@
     }
     .tip {
       font-size: 0.89rem;
-      color: #6b7280;
+      color: #ffffff;
       margin-bottom: 0.3rem;
       text-align: center;
     }
@@ -232,15 +242,26 @@
       .btn { max-width: 100%; width: 100%; }
     }
     footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
       width: 100vw;
       text-align: center;
       color: #6b7280;
       font-size: 0.89rem;
-      margin-bottom: 1.1rem;
-      margin-top: auto;
+      padding: 1rem 0;
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
     }
     @media (max-width: 500px) {
-      .center { min-height: 60vh; }
+      .center { 
+        height: fit-content;
+        width: fit-content;
+        margin: 1rem;
+        padding: 1rem 1rem;
+        max-width: 90vw;
+      }
       .logo-card { width: 60px; height: 60px; }
       .logo-card::before {
         width: 84px;
@@ -270,14 +291,14 @@
       <div class="download-col">
         <a href="https://github.com/chan-max/yishe-client/releases/latest/download/yishe-client.exe" class="btn lang-zh"> Windows 版</a>
         <a href="https://github.com/chan-max/yishe-client/releases/latest/download/yishe-client.exe" class="btn lang-en" style="display:none;">for Wins</a>
-        <span class="tip lang-zh">适用于 Windows 10/11</span>
-        <span class="tip lang-en" style="display:none;">For Windows 10/11</span>
+        <span class="tip lang-zh">适用于 Windows </span>
+        <span class="tip lang-en" style="display:none;">For Windows</span>
       </div>
       <div class="download-col">
         <a href="https://github.com/chan-max/yishe-client/releases/latest/download/yishe-client.dmg" class="btn lang-zh"> macOS 版</a>
         <a href="https://github.com/chan-max/yishe-client/releases/latest/download/yishe-client.dmg" class="btn lang-en" style="display:none;"> for macOS</a>
-        <span class="tip lang-zh">适用于 macOS 10.15+</span>
-        <span class="tip lang-en" style="display:none;">For macOS 10.15+</span>
+        <span class="tip lang-zh">适用于 macOS </span>
+        <span class="tip lang-en" style="display:none;">For macOS </span>
       </div>
     </div>
   </div>
