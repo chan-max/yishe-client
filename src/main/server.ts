@@ -601,6 +601,36 @@ export function startServer(port: number = 1519): void {
     }
   });
 
+  // 新增：批量打开所有社交媒体页面接口
+  app.post('/api/openAllMediaPages', async (req, res) => {
+    try {
+      const browser = await getOrCreateBrowser();
+      const urls = [
+        'https://creator.xiaohongshu.com/publish/publish?target=image',
+        'https://creator.douyin.com/creator-micro/content/upload',
+        'https://cp.kuaishou.com/article/publish/video',
+        'https://weibo.com',
+        'https://member.bilibili.com/platform/upload/text/edit',
+      ];
+      for (const url of urls) {
+        const page = await browser.newPage();
+        await page.goto(url, { waitUntil: 'domcontentloaded' });
+      }
+      res.status(200).json({
+        message: '所有社交媒体页面已通过 puppeteer 打开',
+        urls,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('批量打开社交媒体页面失败:', error);
+      res.status(500).json({
+        message: '批量打开社交媒体页面失败',
+        error: error instanceof Error ? error.message : '未知错误',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
 
   // 启动服务器
   app.listen(port, () => {

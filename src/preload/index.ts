@@ -20,6 +20,8 @@ const api = {
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   checkSocialMediaLogin: () => ipcRenderer.invoke('check-social-media-login'),
   testPublishToSocialMedia: () => ipcRenderer.invoke('test-publish-to-social-media'),
+  openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
+  openAllMediaPages: () => fetch('http://localhost:1519/api/openAllMediaPages', { method: 'POST' }).then(res => res.json()),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
