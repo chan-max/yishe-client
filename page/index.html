@@ -18,7 +18,7 @@
         html, body { height: 100%; }
         body {
             font-family: 'Inter', 'Segoe UI', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background: #101014;
+            background: linear-gradient(120deg, #18181c 0%, #101014 100%);
             color: #f5f5f7;
             min-height: 100vh;
             margin: 0;
@@ -30,6 +30,15 @@
             z-index: -1;
             background: linear-gradient(120deg, #18181c 0%, #101014 100%);
         }
+        .main-bg::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            background: radial-gradient(circle at 70% 20%, #3b82f655 0%, transparent 60%),
+                        radial-gradient(circle at 20% 80%, #7c3aed44 0%, transparent 70%);
+            pointer-events: none;
+        }
         .lang-switch {
             position: absolute;
             top: 2.2rem;
@@ -37,13 +46,13 @@
             z-index: 10;
             display: flex;
             gap: 0.5rem;
-            background: #18181c;
+            background: rgba(36, 37, 50, 0.85);
             border-radius: 20px;
-            border: 1px solid #23232a;
+            border: 1.5px solid #23232a;
             padding: 0.18rem 0.7rem;
             align-items: center;
             font-size: 1.01rem;
-            box-shadow: 0 2px 8px #23232a22;
+            box-shadow: 0 2px 8px #3b82f622;
         }
         .lang-btn {
             background: none;
@@ -57,7 +66,7 @@
             transition: background 0.2s, color 0.2s;
         }
         .lang-btn.active, .lang-btn:hover {
-            background: #3b82f6;
+            background: linear-gradient(90deg, #3b82f6 0%, #7c3aed 100%);
             color: #fff;
         }
         .container {
@@ -81,14 +90,14 @@
             width: 52px;
             height: 52px;
             border-radius: 14px;
-            background: linear-gradient(135deg, #23232a 60%, #3b82f6 100%);
+            background: rgba(36, 37, 50, 0.85);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 2.1rem;
             color: #fff;
-            border: 1.5px solid #23232a;
-            box-shadow: 0 2px 16px #3b82f622;
+            border: 2px solid #3b82f6;
+            box-shadow: 0 0 24px #3b82f655;
         }
         .brand-title, .brand-title-cn {
             font-size: 2rem;
@@ -138,7 +147,7 @@
             opacity: 0.18;
         }
         .download-card {
-            background: #18181c;
+            background: rgba(24,24,28,0.85);
             border-radius: 16px;
             padding: 2.2rem 2rem 1.5rem;
             min-width: 260px;
@@ -147,16 +156,16 @@
             flex-direction: column;
             align-items: flex-start;
             border: 1.5px solid #23232a;
-            transition: border 0.2s, background 0.2s, transform 0.2s;
+            transition: border 0.2s, box-shadow 0.2s, transform 0.2s;
             text-decoration: none;
             position: relative;
             z-index: 1;
-            box-shadow: 0 2px 24px #23232a22;
+            box-shadow: 0 2px 24px #3b82f622;
         }
         .download-card:hover {
             border: 1.5px solid #3b82f6;
-            background: #15151a;
-            transform: translateY(-2px) scale(1.025);
+            box-shadow: 0 0 24px #3b82f6aa;
+            transform: translateY(-2px) scale(1.03);
         }
         .platform-icon {
             font-size: 2.3rem;
@@ -193,15 +202,15 @@
             margin-left: 0.5em;
         }
         .download-btn {
-            background: #23232a;
-            color: #f5f5f7;
+            background: transparent;
+            color: #3b82f6;
             padding: 0.7rem 2.1rem;
             border-radius: 8px;
             font-weight: 700;
             font-size: 1.05rem;
-            border: none;
+            border: 1.5px solid #3b82f6;
             cursor: pointer;
-            transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+            transition: background 0.2s, color 0.2s;
             outline: none;
             letter-spacing: 0.02em;
             margin-top: 0.5rem;
@@ -213,9 +222,9 @@
             color: #b0b0b8;
         }
         .download-btn:hover {
-            background: #3b82f6;
+            background: linear-gradient(90deg, #3b82f6 0%, #06b6d4 100%);
             color: #fff;
-            box-shadow: 0 2px 12px #3b82f655;
+            border: none;
         }
         .card-extra {
             margin-top: 1.2rem;
