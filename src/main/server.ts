@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-09 18:31:32
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-07-02 07:51:39
+ * @LastEditTime: 2025-07-16 21:53:02
  * @FilePath: /yishe-electron/src/main/server.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -10,6 +10,10 @@ import express from 'express';
 import cors from 'cors';  // 新增cors导入
 import puppeteer, { Browser } from 'puppeteer';  // 修复puppeteer导入
 import { PublishService } from './publishService';
+import { app, ipcMain } from 'electron';
+
+// 用内存变量存储 token
+let token: string | null = null;
 
 // 全局浏览器实例管理
 let browserInstance: Browser | null = null;
@@ -99,7 +103,8 @@ export function startServer(port: number = 1519): void {
       status: 'OK',
       timestamp: new Date().toISOString(),
       service: 'electron-server',
-      version: '1.0.0'
+      version: '1.0.0',
+      isAuthorized: !!token
     });
   });
 
@@ -629,6 +634,35 @@ export function startServer(port: number = 1519): void {
         timestamp: new Date().toISOString()
       });
     }
+  });
+
+  // token 持久化存储
+  ipcMain.handle('save-token', async (event, newToken) => {
+    token = newToken;
+    return true;
+  });
+  ipcMain.handle('get-token', async () => {
+    return token;
+  });
+  ipcMain.handle('is-token-exist', async () => {
+    return !!token;
+  });
+
+  // 新增保存 token 接口
+  app.post('/api/saveToken', (req, res) => {
+    const { token: newToken } = req.body;
+    if (!newToken) {
+      res.status(400).json({ success: false, message: 'token 不能为空' });
+      return;
+    }
+    token = newToken;
+    res.json({ success: true });
+  });
+
+  // 新增退出授权接口
+  app.post('/api/logoutToken', (req, res) => {
+    token = null;
+    res.json({ success: true });
   });
 
 

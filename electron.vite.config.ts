@@ -11,7 +11,8 @@ export default defineConfig({
       rollupOptions: {
         external: [
           'puppeteer-extra',
-          'puppeteer-extra-plugin-stealth'
+          'puppeteer-extra-plugin-stealth',
+          'electron-store'
         ]
       }
     }

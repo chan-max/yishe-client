@@ -24,6 +24,9 @@ declare global {
         msg?: string;
         error?: string;
       }>
+      saveToken(token: string): Promise<boolean>
+      getToken(): Promise<string | undefined>
+      isTokenExist(): Promise<boolean>
     }
   }
 }

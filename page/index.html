@@ -2,403 +2,338 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-19 08:44:34
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-06-19 09:01:03
+ * @LastEditTime: 2025-07-17 07:57:42
  * @FilePath: /yishe-electron/page/index.html
- * @Description: Black high-end rich flat design, bilingual switch, left-right layout
+ * @Description: 极简黑色风格客户端下载页
 -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yishe Client Download / 衣设客户端下载</title>
-    <meta name="description" content="Download Yishe Client for Windows and macOS. 设计师专业工具，支持 Windows 和 macOS。">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
-    <style>
-        html, body { height: 100%; }
-        body {
-            font-family: 'Inter', 'Segoe UI', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(120deg, #18181c 0%, #101014 100%);
-            color: #f5f5f7;
-            min-height: 100vh;
-            margin: 0;
-            letter-spacing: 0.01em;
-        }
-        .main-bg {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            background: linear-gradient(120deg, #18181c 0%, #101014 100%);
-        }
-        .main-bg::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            z-index: -2;
-            background: radial-gradient(circle at 70% 20%, #3b82f655 0%, transparent 60%),
-                        radial-gradient(circle at 20% 80%, #7c3aed44 0%, transparent 70%);
-            pointer-events: none;
-        }
-        .lang-switch {
-            position: absolute;
-            top: 2.2rem;
-            right: 2.2rem;
-            z-index: 10;
-            display: flex;
-            gap: 0.5rem;
-            background: rgba(36, 37, 50, 0.85);
-            border-radius: 20px;
-            border: 1.5px solid #23232a;
-            padding: 0.18rem 0.7rem;
-            align-items: center;
-            font-size: 1.01rem;
-            box-shadow: 0 2px 8px #3b82f622;
-        }
-        .lang-btn {
-            background: none;
-            border: none;
-            color: #b0b0b8;
-            font-weight: 600;
-            font-size: 1.01rem;
-            cursor: pointer;
-            padding: 0.2rem 0.5rem;
-            border-radius: 12px;
-            transition: background 0.2s, color 0.2s;
-        }
-        .lang-btn.active, .lang-btn:hover {
-            background: linear-gradient(90deg, #3b82f6 0%, #7c3aed 100%);
-            color: #fff;
-        }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 3.5rem 1.2rem 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
-        }
-        .brand {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 0.7rem;
-            margin-bottom: 2.2rem;
-        }
-        .brand-logo {
-            width: 52px;
-            height: 52px;
-            border-radius: 14px;
-            background: rgba(36, 37, 50, 0.85);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.1rem;
-            color: #fff;
-            border: 2px solid #3b82f6;
-            box-shadow: 0 0 24px #3b82f655;
-        }
-        .brand-title, .brand-title-cn {
-            font-size: 2rem;
-            font-weight: 800;
-            color: #f5f5f7;
-            letter-spacing: 0.01em;
-        }
-        .brand-title-cn {
-            font-size: 1.15rem;
-            font-weight: 500;
-            color: #b0b0b8;
-            margin-left: 0.7rem;
-            letter-spacing: 0.01em;
-        }
-        .desc {
-            font-size: 1.08rem;
-            color: #b0b0b8;
-            margin-bottom: 2.2rem;
-            text-align: center;
-            line-height: 1.7;
-            max-width: 700px;
-        }
-        .desc .cn {
-            display: block;
-            font-size: 1.01rem;
-            color: #8a8a96;
-            margin-top: 0.2em;
-        }
-        .download-section {
-            width: 100%;
-            display: flex;
-            flex-direction: row;
-            justify-content: center;
-            align-items: stretch;
-            gap: 2.5rem;
-            margin-bottom: 2.5rem;
-            position: relative;
-        }
-        .download-section::before {
-            content: '';
-            position: absolute;
-            top: 0; bottom: 0; left: 50%;
-            width: 1.5px;
-            background: linear-gradient(to bottom, #23232a 10%, #3b82f6 50%, #23232a 90%);
-            transform: translateX(-50%);
-            z-index: 0;
-            opacity: 0.18;
-        }
-        .download-card {
-            background: rgba(24,24,28,0.85);
-            border-radius: 16px;
-            padding: 2.2rem 2rem 1.5rem;
-            min-width: 260px;
-            max-width: 340px;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            border: 1.5px solid #23232a;
-            transition: border 0.2s, box-shadow 0.2s, transform 0.2s;
-            text-decoration: none;
-            position: relative;
-            z-index: 1;
-            box-shadow: 0 2px 24px #3b82f622;
-        }
-        .download-card:hover {
-            border: 1.5px solid #3b82f6;
-            box-shadow: 0 0 24px #3b82f6aa;
-            transform: translateY(-2px) scale(1.03);
-        }
-        .platform-icon {
-            font-size: 2.3rem;
-            margin-bottom: 1.1rem;
-            background: #23232a;
-            border-radius: 10px;
-            width: 48px;
-            height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .platform-name, .platform-name-cn {
-            font-size: 1.15rem;
-            font-weight: 700;
-            color: #f5f5f7;
-            margin-bottom: 0.2rem;
-        }
-        .platform-name-cn {
-            font-size: 1.01rem;
-            color: #b0b0b8;
-            margin-left: 0.5em;
-            font-weight: 400;
-        }
-        .platform-desc, .platform-desc-cn {
-            font-size: 0.98rem;
-            color: #8a8a96;
-            margin-bottom: 1.1rem;
-            text-align: left;
-        }
-        .platform-desc-cn {
-            font-size: 0.93rem;
-            color: #6b7280;
-            margin-left: 0.5em;
-        }
-        .download-btn {
-            background: transparent;
-            color: #3b82f6;
-            padding: 0.7rem 2.1rem;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 1.05rem;
-            border: 1.5px solid #3b82f6;
-            cursor: pointer;
-            transition: background 0.2s, color 0.2s;
-            outline: none;
-            letter-spacing: 0.02em;
-            margin-top: 0.5rem;
-        }
-        .download-btn .cn {
-            font-size: 0.98em;
-            font-weight: 400;
-            margin-left: 0.5em;
-            color: #b0b0b8;
-        }
-        .download-btn:hover {
-            background: linear-gradient(90deg, #3b82f6 0%, #06b6d4 100%);
-            color: #fff;
-            border: none;
-        }
-        .card-extra {
-            margin-top: 1.2rem;
-            font-size: 0.93rem;
-            color: #3b82f6;
-            background: #23232a;
-            border-radius: 6px;
-            padding: 0.3rem 0.8rem;
-            display: inline-block;
-            font-weight: 500;
-            letter-spacing: 0.01em;
-        }
-        .card-extra .cn {
-            color: #8a8a96;
-            margin-left: 0.5em;
-            font-size: 0.97em;
-        }
-        .footer {
-            margin-top: 2.5rem;
-            text-align: center;
-            color: #6b7280;
-            font-size: 0.97rem;
-        }
-        .version-info {
-            margin-top: 0.7rem;
-            background: #18181c;
-            border-radius: 7px;
-            display: inline-block;
-            padding: 0.6rem 1.1rem;
-            font-size: 0.91rem;
-            border: 1px solid #23232a;
-        }
-        .version-info a {
-            color: #3b82f6;
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.2s;
-        }
-        .version-info a:hover {
-            color: #fff;
-        }
-        .loading {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(16,16,20,0.92);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            color: #f5f5f7;
-            font-size: 1.1rem;
-            backdrop-filter: blur(4px);
-        }
-        .spinner {
-            width: 34px;
-            height: 34px;
-            border: 3px solid #23232a;
-            border-top: 3px solid #3b82f6;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 1.1rem;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        @media (max-width: 900px) {
-            .container { padding: 2rem 0.5rem 0; }
-            .download-section { gap: 1.2rem; }
-        }
-        @media (max-width: 700px) {
-            .download-section {
-                flex-direction: column;
-                gap: 1.5rem;
-            }
-            .download-section::before { display: none; }
-            .download-card { max-width: 98vw; min-width: 90vw; }
-        }
-        @media (max-width: 500px) {
-            .container { padding: 1.2rem 0.2rem 0; }
-            .brand-title { font-size: 1.2rem; }
-            .download-card { padding: 1.1rem 0.7rem 0.8rem; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>衣设客户端下载</title>
+  <meta name="description" content="衣设客户端，专业设计工具，支持 Windows 和 macOS。">
+  <link rel="icon" href="logo-pure.png">
+  <style>
+    html, body { height: 100%; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: #111216 url('bg.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: #f5f5f7;
+      font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .lang-switch {
+      position: absolute;
+      top: 1.2rem;
+      right: 1.2rem;
+      font-size: 0.98rem;
+      color: #b0b0b8;
+      z-index: 10;
+      user-select: none;
+    }
+    .lang-switch button {
+      background: none;
+      border: none;
+      color: #b0b0b8;
+      font-size: 0.98rem;
+      margin: 0 0.15em;
+      cursor: pointer;
+      padding: 0.08em 0.4em;
+      border-radius: 7px;
+      transition: background 0.2s, color 0.2s;
+    }
+    .lang-switch button.active, .lang-switch button:hover {
+      background: #23232a;
+      color: #fff;
+    }
+    .center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: fit-content;
+      width: fit-content;
+      max-width: 700px;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 20px;
+      margin: 2rem;
+      padding: 6em;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    .logo-card {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      background-color: transparent;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 1.1rem;
+    }
+    .logo-card::before {
+      content: '';
+      position: absolute;
+      left: -5px;
+      top: -5px;
+      width: 90px;
+      height: 90px;
+      border-radius: 24px;
+      background: linear-gradient(-45deg, #e81cff 0%, #40c9ff 100%);
+      z-index: -10;
+      pointer-events: none;
+      transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .logo-card::after {
+      content: "";
+      z-index: -1;
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(-45deg, #fc00ff 0%, #00dbde 100%);
+      transform: translate3d(0, 0, 0) scale(0.95);
+      filter: blur(20px);
+    }
+    .logo-card:hover::after {
+      filter: blur(30px);
+    }
+    .logo-card:hover::before {
+      transform: scale(1.1);
+    }
+    .logo {
+      width: 100%;
+      height: 100%;
+      border-radius: 6px;
+      background: transparent;
+      object-fit: contain;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo-card {
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem 0;
+      letter-spacing: 0.01em;
+      color: #fff;
+    }
+    .desc {
+      font-size: 0.98rem;
+      color: #ffffff;
+      margin-bottom: 1rem;
+      text-align: center;
+      line-height: 1.6;
+      max-width: 320px;
+    }
+    .download-btns {
+      display: flex;
+      flex-direction: row;
+      gap: 0.8rem;
+      width: 100%;
+      align-items: stretch;
+      justify-content: center;
+      margin-bottom: 1rem;
+      max-width: 340px;
+    }
+    .download-col {
+      flex: 1 1 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+    }
+    .btn {
+      position: relative;
+      display: block;
+      width: 100%;
+      max-width: 110px;
+      padding: 8px 16px;
+      border-radius: 7px;
+      border: 1px solid rgb(61, 106, 255);
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 2px;
+      background: transparent;
+      color: #fff;
+      text-decoration: none;
+      margin-bottom: 0.18rem;
+      overflow: hidden;
+      box-shadow: 0 0 0 0 transparent;
+      -webkit-transition: all 0.2s ease-in;
+      -moz-transition: all 0.2s ease-in;
+      transition: all 0.2s ease-in;
+      text-align: center;
+      outline: none;
+    }
+    .btn:hover {
+      background: rgb(61, 106, 255);
+      box-shadow: 0 0 30px 5px rgba(0, 142, 236, 0.815);
+      -webkit-transition: all 0.2s ease-out;
+      -moz-transition: all 0.2s ease-out;
+      transition: all 0.2s ease-out;
+    }
+    .btn:hover::before {
+      -webkit-animation: sh02 0.5s 0s linear;
+      -moz-animation: sh02 0.5s 0s linear;
+      animation: sh02 0.5s 0s linear;
+    }
+    .btn::before {
+      content: '';
+      display: block;
+      width: 0px;
+      height: 86%;
+      position: absolute;
+      top: 7%;
+      left: 0%;
+      opacity: 0;
+      background: #fff;
+      box-shadow: 0 0 50px 30px #fff;
+      -webkit-transform: skewX(-20deg);
+      -moz-transform: skewX(-20deg);
+      -ms-transform: skewX(-20deg);
+      -o-transform: skewX(-20deg);
+      transform: skewX(-20deg);
+    }
+    @keyframes sh02 {
+      from {
+        opacity: 0;
+        left: 0%;
+      }
+      50% {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+        left: 100%;
+      }
+    }
+    .btn:active {
+      box-shadow: 0 0 0 0 transparent;
+      -webkit-transition: box-shadow 0.2s ease-in;
+      -moz-transition: box-shadow 0.2s ease-in;
+      transition: box-shadow 0.2s ease-in;
+    }
+    .tip {
+      font-size: 0.89rem;
+      color: #ffffff;
+      margin-bottom: 0.3rem;
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      .download-btns {
+        flex-direction: column;
+        gap: 0.7rem;
+        max-width: 90vw;
+      }
+      .btn { max-width: 100%; width: 100%; }
+    }
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100vw;
+      text-align: center;
+      color: #6b7280;
+      font-size: 0.89rem;
+      padding: 1rem 0;
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+    }
+    @media (max-width: 500px) {
+      .center { 
+        height: fit-content;
+        width: fit-content;
+        margin: 1rem;
+        padding: 1rem 1rem;
+        max-width: 90vw;
+      }
+      .logo-card { width: 60px; height: 60px; }
+      .logo-card::before {
+        width: 84px;
+        height: 84px;
+        left: -12px;
+        top: -12px;
+      }
+      h1 { font-size: 1rem; }
+      .btn { font-size: 0.95rem; }
+    }
+  </style>
 </head>
 <body>
-    <div class="main-bg"></div>
-    <div class="lang-switch" id="lang-switch">
-        <button class="lang-btn active" id="btn-en" onclick="setLang('en')">EN</button>|
-        <button class="lang-btn" id="btn-zh" onclick="setLang('zh')">中文</button>
+  <div class="lang-switch">
+    <button class="active" id="btn-zh" onclick="setLang('zh')">中文</button>|
+    <button id="btn-en" onclick="setLang('en')">EN</button>
+  </div>
+  <div class="center">
+    <div class="logo-card">
+      <img src="logo-pure.png" class="logo" alt="logo" />
     </div>
-    <div class="loading" id="loading">
-        <div class="spinner"></div>
-        <span>
-            <span class="lang-en">Preparing your download...</span>
-            <span class="lang-zh" style="display:none;">正在准备下载...</span>
-        </span>
+    <h1 class="lang-zh">衣设客户端</h1>
+    <h1 class="lang-en" style="display:none;">Yishe Client</h1>
+    <p class="desc lang-zh">专业设计工具，支持 Windows 和 macOS</p>
+    <p class="desc lang-en" style="display:none;">Professional design tool for Wins and macOS</p>
+    <div class="download-btns">
+      <div class="download-col">
+        <a href="https://github.com/chan-max/yishe-client/releases/latest/download/yishe-client.exe" class="btn lang-zh"> Windows 版</a>
+        <a href="https://github.com/chan-max/yishe-client/releases/latest/download/yishe-client.exe" class="btn lang-en" style="display:none;">for Wins</a>
+        <span class="tip lang-zh">适用于 Windows </span>
+        <span class="tip lang-en" style="display:none;">For Windows</span>
+      </div>
+      <div class="download-col">
+        <a href="https://github.com/chan-max/yishe-client/releases/latest/download/yishe-client.dmg" class="btn lang-zh"> macOS 版</a>
+        <a href="https://github.com/chan-max/yishe-client/releases/latest/download/yishe-client.dmg" class="btn lang-en" style="display:none;"> for macOS</a>
+        <span class="tip lang-zh">适用于 macOS </span>
+        <span class="tip lang-en" style="display:none;">For macOS </span>
+      </div>
     </div>
-    <div class="container">
-        <div class="brand">
-            <div class="brand-logo">
-              <img src="logo-pure.png" alt="logo" style="width: 80%; height: 80%; object-fit: contain;" />
-            </div>
-            <div class="brand-title lang-en">Yishe Client</div>
-            <div class="brand-title-cn lang-zh" style="display:none;">衣设客户端</div>
-        </div>
-        <div class="desc">
-            <span class="lang-en">The professional design tool for creative minds. Download for Windows or macOS and unlock your creative potential.</span>
-            <span class="lang-zh" style="display:none;">专业设计工具，支持 Windows 和 macOS，释放你的创意潜能。</span>
-        </div>
-        <div class="download-section">
-            <a href="https://github.com/chan-max/yishe-client/releases/latest/download/yishe-client.exe"
-               class="download-card" onclick="showLoading()">
-                <div class="platform-icon">🪟</div>
-                <div class="platform-name lang-en">Windows</div>
-                <div class="platform-name-cn lang-zh" style="display:none;">微软系统</div>
-                <div class="platform-desc lang-en">For Windows 10/11</div>
-                <div class="platform-desc-cn lang-zh" style="display:none;">适用于 Windows 10/11</div>
-                <button class="download-btn"><span class="lang-en">Download</span><span class="lang-zh" style="display:none;">下载</span></button>
-                <div class="card-extra"><span class="lang-en">.exe installer</span><span class="lang-zh" style="display:none;">安装包</span></div>
-            </a>
-            <a href="https://github.com/chan-max/yishe-client/releases/latest/download/yishe-client.dmg"
-               class="download-card" onclick="showLoading()">
-                <div class="platform-icon">🍎</div>
-                <div class="platform-name lang-en">macOS</div>
-                <div class="platform-name-cn lang-zh" style="display:none;">苹果系统</div>
-                <div class="platform-desc lang-en">For macOS 10.15+</div>
-                <div class="platform-desc-cn lang-zh" style="display:none;">适用于 macOS 10.15+</div>
-                <button class="download-btn"><span class="lang-en">Download</span><span class="lang-zh" style="display:none;">下载</span></button>
-                <div class="card-extra"><span class="lang-en">.dmg installer</span><span class="lang-zh" style="display:none;">安装包</span></div>
-            </a>
-        </div>
-        <div class="footer">
-            <div>
-                <span class="lang-en">© 2024 Yishe Client - Design made simple</span>
-                <span class="lang-zh" style="display:none;">衣设客户端 - 让设计更简单</span>
-            </div>
-            <div class="version-info">
-                <span class="lang-en">Latest version: <a href="https://github.com/chan-max/yishe-client/releases/latest" target="_blank">GitHub Releases</a></span>
-                <span class="lang-zh" style="display:none;">最新版本信息请访问 <a href="https://github.com/chan-max/yishe-client/releases/latest" target="_blank">GitHub Releases</a></span>
-            </div>
-        </div>
+  </div>
+  <footer>
+    <span class="lang-zh">© 2024 衣设客户端</span>
+    <span class="lang-en" style="display:none;">© 2024 Yishe Client</span>
+    <div style="margin-top: 0.5rem; font-size: 0.7rem; color: #6b7280; letter-spacing: 0.5px;">
+      <span class="lang-zh">by Chen Zheng · Tel：18742539196</span>
+      <span class="lang-en" style="display:none;">by Chen Zheng · Tel：18742539196</span>
     </div>
-    <script>
-        function showLoading() {
-            document.getElementById('loading').style.display = 'flex';
-            setTimeout(() => {
-                document.getElementById('loading').style.display = 'none';
-            }, 3000);
-        }
-        function setLang(lang) {
-            var en = document.querySelectorAll('.lang-en');
-            var zh = document.querySelectorAll('.lang-zh');
-            var btnEn = document.getElementById('btn-en');
-            var btnZh = document.getElementById('btn-zh');
-            if(lang === 'en') {
-                en.forEach(e => e.style.display = '');
-                zh.forEach(e => e.style.display = 'none');
-                btnEn.classList.add('active');
-                btnZh.classList.remove('active');
-            } else {
-                en.forEach(e => e.style.display = 'none');
-                zh.forEach(e => e.style.display = '');
-                btnEn.classList.remove('active');
-                btnZh.classList.add('active');
-            }
-        }
-        // 自动根据浏览器语言切换
-        (function(){
-            var lang = navigator.language || navigator.userLanguage;
-            if(lang.startsWith('zh')) setLang('zh');
-            else setLang('en');
-        })();
-    </script>
+  </footer>
+  <script>
+    function setLang(lang) {
+      var en = document.querySelectorAll('.lang-en');
+      var zh = document.querySelectorAll('.lang-zh');
+      var btnEn = document.getElementById('btn-en');
+      var btnZh = document.getElementById('btn-zh');
+      if(lang === 'en') {
+        en.forEach(e => e.style.display = '');
+        zh.forEach(e => e.style.display = 'none');
+        btnEn.classList.add('active');
+        btnZh.classList.remove('active');
+      } else {
+        en.forEach(e => e.style.display = 'none');
+        zh.forEach(e => e.style.display = '');
+        btnEn.classList.remove('active');
+        btnZh.classList.add('active');
+      }
+    }
+    // 自动根据浏览器语言切换
+    (function(){
+      var lang = navigator.language || navigator.userLanguage;
+      if(lang.startsWith('zh')) setLang('zh');
+      else setLang('en');
+    })();
+  </script>
 </body>
 </html>

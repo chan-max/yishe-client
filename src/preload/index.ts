@@ -22,6 +22,10 @@ const api = {
   testPublishToSocialMedia: () => ipcRenderer.invoke('test-publish-to-social-media'),
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
   openAllMediaPages: () => fetch('http://localhost:1519/api/openAllMediaPages', { method: 'POST' }).then(res => res.json()),
+  // 新增 token 相关方法
+  saveToken: (token: string) => ipcRenderer.invoke('save-token', token),
+  getToken: () => ipcRenderer.invoke('get-token'),
+  isTokenExist: () => ipcRenderer.invoke('is-token-exist'),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

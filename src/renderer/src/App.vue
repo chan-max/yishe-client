@@ -2,13 +2,15 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-08 23:07:32
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-07-11 20:24:50
+ * @LastEditTime: 2025-07-16 21:59:10
  * @FilePath: /yishe-electron/src/renderer/src/App.vue
  * @Description: 衣设程序主界面 - 暗色主题设计
 -->
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
 import Versions from "./components/Versions.vue";
+import request from './api/request'
+import { isClientAuthorized, logoutToken } from './api/user'
 
 const serverStatus = ref(false);
 const remoteServerStatus = ref(false);
@@ -19,6 +21,7 @@ const appVersion = ref('');
 const showModal = ref(false);
 const modalMessage = ref('');
 const modalTitle = ref('');
+const isAuthorized = ref(true)
 
 const mediaPages = [
   { name: '小红书', url: 'https://www.xiaohongshu.com/' },
@@ -32,10 +35,25 @@ const openAllMediaPages = async () => {
   await window.api.openAllMediaPages();
 };
 
+const checkAuthStatus = async () => {
+  try {
+    isAuthorized.value = await isClientAuthorized()
+  } catch {
+    isAuthorized.value = false
+  }
+}
+
+const handleLogout = async () => {
+  await logoutToken()
+  await checkAuthStatus()
+}
+
 onMounted(() => {
   startServerPolling();
   startRemoteServerPolling();
   window.api.getAppVersion().then(v => appVersion.value = v);
+  checkAuthStatus()
+  setInterval(checkAuthStatus, 5000)
 });
 
 onUnmounted(() => {
@@ -76,14 +94,13 @@ const checkServerStatus = async () => {
 
 const checkRemoteServerStatus = async () => {
   try {
-    const response = await fetch("https://1s.design:1520/api/test");
-    remoteServerStatus.value = response.ok;
-    
-    const indicator = document.querySelector(".remote-server-indicator");
-    if (response.ok) {
-      indicator?.classList.add("status-online");
+    const response = await request.get({ url: '/test' });
+    remoteServerStatus.value = true;
+    const indicator = document.querySelector('.remote-server-indicator');
+    if (response) {
+      indicator?.classList.add('status-online');
       setTimeout(() => {
-        indicator?.classList.remove("status-online");
+        indicator?.classList.remove('status-online');
       }, 500);
     }
   } catch {
@@ -152,6 +169,21 @@ const closeModal = () => {
 
 <template>
   <div class="app-container">
+    <div v-if="!isAuthorized" class="auth-locked-overlay">
+      <div class="auth-locked-content">
+        <div class="lock-icon-ani">
+          <svg width="38" height="38" viewBox="0 0 38 38" fill="none">
+            <rect x="7" y="17" width="24" height="15" rx="5" fill="#191919" stroke="#ff4444" stroke-width="1.5"/>
+            <path d="M12 17v-4a7 7 0 1 1 14 0v4" stroke="#ff4444" stroke-width="1.5" fill="none"/>
+            <circle cx="19" cy="26" r="2" fill="#ff4444"/>
+            <rect x="18" y="26" width="2" height="4" rx="1" fill="#ff4444"/>
+          </svg>
+        </div>
+        <h2 class="locked-title small">客户端未授权</h2>
+        <p class="locked-desc small">请前往管理后台完成授权<br/>授权后即可正常使用</p>
+        <button class="auth-btn small" @click="checkAuthStatus">重新检测授权</button>
+      </div>
+    </div>
     <!-- 左上角状态指示器 -->
     <div class="status-corner">
       <div class="status-item" :class="{ 'status-online': serverStatus, 'status-offline': !serverStatus }">
@@ -174,15 +206,16 @@ const closeModal = () => {
         </svg>
         隐藏到托盘
       </button>
+      <button v-if="isAuthorized" @click="handleLogout" class="tray-btn" style="margin-left:10px;background:#ff4444;color:#fff;">退出授权</button>
     </div>
 
     <!-- 主要内容区域 -->
     <main class="main-content">
       <!-- 顶部标题 -->
-      <!-- <div class="title-section">
+      <div class="title-section">
         <img alt="logo" class="logo" src="./assets/icon.png" />
         <h1 class="app-title">衣设 最具创意的设计工具</h1>
-      </div> -->
+      </div>
 
       <!-- 快速链接区域 -->
       <section class="links-section">
@@ -575,6 +608,7 @@ body {
   .tray-corner {
     top: 10px;
     right: 10px;
+    display: flex;
   }
   
   .status-item {
@@ -694,6 +728,7 @@ body {
   top: 20px;
   right: 20px;
   z-index: 1000;
+  display: flex;
 }
 
 .tray-btn {
@@ -901,5 +936,89 @@ body {
   .modal-message {
     font-size: 13px;
   }
+}
+.auth-locked-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.92);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-locked-content {
+  background: #181818;
+  border-radius: 16px;
+  padding: 48px 32px 32px 32px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  text-align: center;
+  min-width: 320px;
+  animation: fadeInUp 0.7s cubic-bezier(.23,1.01,.32,1) both;
+}
+.lock-icon-ani {
+  margin-bottom: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: lockBounce 1.2s cubic-bezier(.23,1.01,.32,1) infinite alternate;
+}
+.locked-title {
+  color: #ff4444;
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+  font-weight: 700;
+  animation: fadeIn 1.2s cubic-bezier(.23,1.01,.32,1) both;
+}
+.locked-desc {
+  color: #fff;
+  font-size: 1rem;
+  margin-bottom: 22px;
+  line-height: 1.7;
+  animation: fadeIn 1.5s cubic-bezier(.23,1.01,.32,1) both;
+}
+.auth-btn {
+  background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+  color: #000;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,255,136,0.12);
+  animation: fadeIn 1.8s cubic-bezier(.23,1.01,.32,1) both;
+}
+.auth-btn:hover {
+  background: #00cc6a;
+}
+@keyframes lockBounce {
+  0% { transform: translateY(0) scale(1); }
+  60% { transform: translateY(-8px) scale(1.08); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes fadeInUp {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.locked-title.small {
+  font-size: 1.08rem;
+  margin-bottom: 7px;
+}
+.locked-desc.small {
+  font-size: 0.92rem;
+  margin-bottom: 14px;
+}
+.auth-btn.small {
+  font-size: 0.95rem;
+  padding: 8px 20px;
 }
 </style>
