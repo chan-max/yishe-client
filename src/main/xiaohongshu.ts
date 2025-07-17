@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-09 00:09:21
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-07-02 08:20:20
+ * @LastEditTime: 2025-07-18 07:11:53
  * @FilePath: /yishe-electron/src/main/xiaohongshu.ts
  * @Description: 小红书发布功能
  */
@@ -21,6 +21,17 @@ export async function publishToXiaohongshu(publishInfo): Promise<{ success: bool
     
     await page.goto(SocialMediaUploadUrl.xiaohongshu_pic)
     console.log('已打开小红书发布页面')
+
+    // 新增：点击进入第3个tab
+    await page.waitForSelector('.header .creator-tab:nth-of-type(3)')
+    await page.evaluate(() => {
+      const el = document.querySelector('.header .creator-tab:nth-of-type(3)')
+      if (el) (el as HTMLElement).click()
+    })
+    console.log('已点击第3个tab')
+
+    // 等待tab切换完成
+    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 1000)))
 
     // 等待文件选择器出现
     await page.waitForSelector('input[type="file"]')

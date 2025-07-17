@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-09 18:31:32
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-07-16 21:53:02
+ * @LastEditTime: 2025-07-18 07:28:19
  * @FilePath: /yishe-electron/src/main/server.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -460,16 +460,16 @@ export function startServer(port: number = 1519): void {
       
       // 定义默认的测试发布内容
       const testPublishContent = [
-        // {
-        //   platform: 'xiaohongshu',
-        //   title: '记录美好生活的一天',
-        //   content: '今天分享一些生活中的小确幸，希望大家都能拥有美好心情。#生活 #分享 #美好时光',
-        //   images: [
-        //       'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png',
-        //       'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png'
-        //   ],
-        //   tags: ['生活', '分享', '美好时光']
-        // },
+        {
+          platform: 'xiaohongshu',
+          title: '记录美好生活的一天',
+          content: '今天分享一些生活中的小确幸，希望大家都能拥有美好心情。#生活 #分享 #美好时光',
+          images: [
+              'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png',
+              'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png'
+          ],
+          tags: ['生活', '分享', '美好时光']
+        },
         // {
         //   platform: 'douyin',
         //   title: '生活点滴分享',
@@ -480,16 +480,16 @@ export function startServer(port: number = 1519): void {
         //   ],
         //   tags: ['生活', '记录', '日常']
         // },
-        {
-          platform: 'kuaishou',
-          title: '日常生活分享',
-          content: '平凡的日子里也有属于自己的小幸福，与你们一起分享。#日常 #幸福 #分享',
-          images: [
-          'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png',
-          'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png'
-          ],
-          tags: ['日常', '幸福', '分享']
-        },
+        // {
+        //   platform: 'kuaishou',
+        //   title: '日常生活分享',
+        //   content: '平凡的日子里也有属于自己的小幸福，与你们一起分享。#日常 #幸福 #分享',
+        //   images: [
+        //   'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png',
+        //   'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png'
+        //   ],
+        //   tags: ['日常', '幸福', '分享']
+        // },
         // {
         //   platform: 'weibo',
         //   title: '今天的心情日记',
