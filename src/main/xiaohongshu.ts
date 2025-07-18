@@ -9,7 +9,7 @@
 import { SocialMediaUploadUrl } from './const'
 import { join as pathJoin } from 'path'
 import { is } from '@electron-toolkit/utils'
-import { getOrCreateBrowser } from './server'
+import { getOrCreateBrowser, setupAntiDetection } from './server'
 import fs from 'fs'
 
 export async function publishToXiaohongshu(publishInfo): Promise<{ success: boolean; message?: string; data?: any }> {
@@ -19,9 +19,17 @@ export async function publishToXiaohongshu(publishInfo): Promise<{ success: bool
     const page = await browser.newPage()
     console.log('新页面创建成功')
     
-    await page.goto(SocialMediaUploadUrl.xiaohongshu_pic)
+    // 应用反检测脚本
+    await setupAntiDetection(page)
+    console.log('反检测脚本已应用')
+    
+    // 随机延迟，模拟真实用户行为
+    const randomDelay = Math.floor(Math.random() * 2000) + 1000
+    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, randomDelay)))
+    
+    await page.goto(SocialMediaUploadUrl.xiaohongshu_pic, { waitUntil: 'networkidle2' })
     console.log('已打开小红书发布页面')
-
+    
     // 新增：点击进入第3个tab
     await page.waitForSelector('.header .creator-tab:nth-of-type(3)')
     await page.evaluate(() => {
@@ -31,7 +39,7 @@ export async function publishToXiaohongshu(publishInfo): Promise<{ success: bool
     console.log('已点击第3个tab')
 
     // 等待tab切换完成
-    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 1000)))
+    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 2000)))
 
     // 等待文件选择器出现
     await page.waitForSelector('input[type="file"]')
@@ -65,7 +73,11 @@ export async function publishToXiaohongshu(publishInfo): Promise<{ success: bool
 
           await fileInput.uploadFile(tempPath)
           console.log('已上传图片:', imageUrl)
-          await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 2000)))
+          
+          // 增加随机延迟，模拟真实用户行为
+          const uploadDelay = Math.floor(Math.random() * 3000) + 2000
+          await page.evaluate(() => new Promise(resolve => setTimeout(resolve, uploadDelay)))
+          
           await fs.promises.unlink(tempPath).catch(err => {
             console.warn('删除临时文件失败:', err)
           })
@@ -76,31 +88,42 @@ export async function publishToXiaohongshu(publishInfo): Promise<{ success: bool
       }
     }
 
+    // 等待图片上传完成
+    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 3000)))
+
     // 填写标题
     const titleSelector = 'input[placeholder*="标题"]'
     await page.waitForSelector(titleSelector)
-    await page.type(titleSelector, publishInfo.title || '')
+    
+    // 模拟真实用户输入行为
+    await page.type(titleSelector, publishInfo.title || '', { delay: 100 })
     console.log('已填写标题')
 
     // 填写正文内容
     const contentSelector = '.ql-editor'
     await page.waitForSelector(contentSelector)
-    await page.type(contentSelector, publishInfo.content || '')
+    
+    // 模拟真实用户输入行为
+    await page.type(contentSelector, publishInfo.content || '', { delay: 50 })
     console.log('已填写正文内容')
 
     // 等待内容填写完成
-    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 1000)))
+    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 2000)))
 
     // 点击发布按钮
     const submitButton = await page.waitForSelector('.submit button')
     if (!submitButton) {
       throw new Error('未找到发布按钮')
     }
+    
+    // 模拟真实用户点击行为
+    await submitButton.hover()
+    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 500)))
     await submitButton.click()
     console.log('已点击发布按钮')
 
     // 等待发布完成
-    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 3000)))
+    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 5000)))
     
     // 发布成功，返回结果
     return { success: true, message: '发布成功' }
