@@ -68,13 +68,13 @@
       "target": [
         "dmg"
       ],
-      "artifactName": "yishe-client-${version}.${ext}"
+      "artifactName": "yishe-client.${ext}"
     },
     "win": {
       "target": [
         "portable"
       ],
-      "artifactName": "yishe-client-${version}.${ext}"
+      "artifactName": "yishe-client.${ext}"
     },
     "publish": {
       "provider": "github",
