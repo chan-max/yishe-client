@@ -1,6 +1,6 @@
 {
   "name": "yishe-electron",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "1s client",
   "main": "./out/main/index.js",
   "author": "Jc",
@@ -68,13 +68,13 @@
       "target": [
         "dmg"
       ],
-      "artifactName": "yishe-client.${ext}"
+      "artifactName": "yishe-client-${version}.${ext}"
     },
     "win": {
       "target": [
         "portable"
       ],
-      "artifactName": "yishe-client.${ext}"
+      "artifactName": "yishe-client-${version}.${ext}"
     },
     "publish": {
       "provider": "github",
