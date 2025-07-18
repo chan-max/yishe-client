@@ -1,6 +1,6 @@
 {
   "name": "yishe-electron",
-  "version": "1.0.34",
+  "version": "1.0.35",
   "description": "1s client",
   "main": "./out/main/index.js",
   "author": "Jc",
