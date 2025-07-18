@@ -135,6 +135,26 @@
       color: #fff;
       z-index: 11;
     }
+    .title-cool {
+      font-size: 2.1rem;
+      font-weight: 400;
+      color: #fff;
+      letter-spacing: 0.08em;
+      /* 立体阴影 */
+      text-shadow:
+        0 2px 4px rgba(0,0,0,0.35),
+        0 6px 16px rgba(0,0,0,0.25),
+        0 1px 0 #333,
+        1px 1px 0 #333,
+        2px 2px 0 #222;
+      /* 白色描边 */
+      -webkit-text-stroke: 1.2px #fff;
+      text-stroke: 1.2px #fff;
+      margin-bottom: 0.7rem;
+      margin-top: -0.2rem;
+      font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+      transition: all 0.3s;
+    }
     .desc {
       font-size: 0.98rem;
       color: #ffffff;
@@ -280,6 +300,11 @@
       }
       h1 { font-size: 1rem; }
       .btn { font-size: 0.95rem; }
+      .title-cool {
+        font-size: 1.3rem;
+        -webkit-text-stroke: 0.8px #fff;
+        text-stroke: 0.8px #fff;
+      }
     }
     .bg-decor {
       position: fixed;
@@ -305,6 +330,7 @@
         <b></b>
         <img src="logo-pure.png" class="logo" alt="logo" />
     </div>
+    <h1 class="title-cool lang-zh">衣设客户端</h1>
     <!-- <h1 class="lang-zh">衣设</h1> -->
     <p class="desc lang-zh"> 商品有价，创意无价 </p>
     <div class="download-btns">
