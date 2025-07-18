@@ -2,23 +2,26 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-09 18:31:32
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-07-16 21:53:02
+ * @LastEditTime: 2025-07-18 08:47:03
  * @FilePath: /yishe-electron/src/main/server.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 import express from 'express';
 import cors from 'cors';  // 新增cors导入
-import puppeteer, { Browser } from 'puppeteer';  // 修复puppeteer导入
+import puppeteer from 'puppeteer-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import { Browser } from 'puppeteer';
 import { PublishService } from './publishService';
 import { app, ipcMain } from 'electron';
+
+// 使用 stealth 插件
+puppeteer.use(StealthPlugin());
 
 // 用内存变量存储 token
 let token: string | null = null;
 
 // 全局浏览器实例管理
 let browserInstance: Browser | null = null;
-
-
 
 // 获取或创建浏览器实例
 export async function getOrCreateBrowser(): Promise<Browser> {
@@ -53,12 +56,294 @@ export async function getOrCreateBrowser(): Promise<Browser> {
       '--disable-dev-shm-usage',
       '--disable-blink-features=AutomationControlled', // 隐藏自动化标识
       '--disable-web-security',
-      '--disable-features=VizDisplayCompositor'
+      '--disable-features=VizDisplayCompositor',
+      '--disable-extensions-except',
+      '--disable-plugins-discovery',
+      '--disable-default-apps',
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding',
+      '--disable-features=TranslateUI',
+      '--disable-ipc-flooding-protection',
+      '--disable-hang-monitor',
+      '--disable-prompt-on-repost',
+      '--disable-domain-reliability',
+      '--disable-component-extensions-with-background-pages',
+      '--disable-background-networking',
+      '--disable-sync',
+      '--metrics-recording-only',
+      '--no-report-upload',
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding',
+      '--disable-features=TranslateUI',
+      '--disable-ipc-flooding-protection',
+      '--disable-hang-monitor',
+      '--disable-prompt-on-repost',
+      '--disable-domain-reliability',
+      '--disable-component-extensions-with-background-pages',
+      '--disable-background-networking',
+      '--disable-sync',
+      '--metrics-recording-only',
+      '--no-report-upload'
     ]
   });
 
   console.log('新浏览器实例启动成功，用户数据目录:', userDataDir);
   return browserInstance;
+}
+
+// 新增：为页面添加反检测脚本
+export async function setupAntiDetection(page: any): Promise<void> {
+  // 设置更真实的 user-agent
+  await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+  
+  // 注入反检测脚本
+  await page.evaluateOnNewDocument(() => {
+    // 更彻底的 webdriver 伪装
+    // 方法1: 删除原型链上的 webdriver 属性
+    delete (navigator as any).__proto__.webdriver;
+    
+    // 方法2: 使用 Object.defineProperty 重新定义
+    Object.defineProperty(navigator, 'webdriver', {
+      get: () => false,
+      configurable: true,
+      enumerable: false
+    });
+    
+    // 方法3: 确保在 navigator 对象上也不存在
+    if ('webdriver' in navigator) {
+      delete (navigator as any).webdriver;
+    }
+    
+    // 方法4: 使用 Proxy 来拦截所有访问
+    const originalNavigator = navigator;
+    const navigatorProxy = new Proxy(originalNavigator, {
+      get: function(target, prop) {
+        if (prop === 'webdriver') {
+          return false;
+        }
+        return target[prop as keyof Navigator];
+      },
+      has: function(target, prop) {
+        if (prop === 'webdriver') {
+          return false;
+        }
+        return prop in target;
+      }
+    });
+    
+    // 尝试替换全局 navigator
+    try {
+      Object.defineProperty(window, 'navigator', {
+        value: navigatorProxy,
+        writable: false,
+        configurable: false
+      });
+    } catch (e) {
+      // 如果无法替换，至少确保 webdriver 返回 false
+      console.log('无法替换全局 navigator，使用备用方案');
+    }
+
+    // 伪装插件
+    Object.defineProperty(navigator, 'plugins', {
+      get: () => [1, 2, 3, 4, 5],
+    });
+
+    // 伪装语言
+    Object.defineProperty(navigator, 'languages', {
+      get: () => ['zh-CN', 'zh', 'en'],
+    });
+
+    // 伪装平台
+    Object.defineProperty(navigator, 'platform', {
+      get: () => 'MacIntel',
+    });
+
+    // 伪装硬件并发数
+    Object.defineProperty(navigator, 'hardwareConcurrency', {
+      get: () => 8,
+    });
+
+    // 伪装设备内存
+    Object.defineProperty(navigator, 'deviceMemory', {
+      get: () => 8,
+    });
+
+    // 伪装连接
+    Object.defineProperty(navigator, 'connection', {
+      get: () => ({
+        effectiveType: '4g',
+        rtt: 50,
+        downlink: 10,
+        saveData: false,
+      }),
+    });
+
+    // 伪装 Chrome 运行时
+    (window as any).chrome = {
+      runtime: {},
+    };
+
+    // 伪装 WebGL
+    const getParameter = WebGLRenderingContext.prototype.getParameter;
+    WebGLRenderingContext.prototype.getParameter = function(parameter) {
+      if (parameter === 37445) {
+        return 'Intel Inc.';
+      }
+      if (parameter === 37446) {
+        return 'Intel(R) Iris(TM) Graphics 6100';
+      }
+      return getParameter.call(this, parameter);
+    };
+
+    // 伪装 Canvas
+    const originalGetContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function(type, ...args) {
+      const context = originalGetContext.call(this, type, ...args);
+      if (type === '2d') {
+        const originalFillText = context.fillText;
+        context.fillText = function(...args) {
+          return originalFillText.apply(this, args);
+        };
+      }
+      return context;
+    };
+
+    // 伪装 AudioContext
+    const originalAudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (originalAudioContext) {
+      window.AudioContext = originalAudioContext;
+      (window as any).webkitAudioContext = originalAudioContext;
+    }
+
+    // 伪装 MediaDevices
+    if (navigator.mediaDevices) {
+      const originalGetUserMedia = navigator.mediaDevices.getUserMedia;
+      navigator.mediaDevices.getUserMedia = function(constraints) {
+        return Promise.reject(new Error('Not allowed'));
+      };
+    }
+
+    // 伪装 Battery API
+    if ('getBattery' in navigator) {
+      navigator.getBattery = () => Promise.resolve({
+        charging: true,
+        chargingTime: Infinity,
+        dischargingTime: Infinity,
+        level: 1,
+      });
+    }
+
+    // 伪装 Notification
+    if ('Notification' in window) {
+      Object.defineProperty(Notification, 'permission', {
+        get: () => 'granted',
+      });
+    }
+
+    // 伪装 ServiceWorker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register = () => Promise.resolve({
+        scope: '',
+        updateViaCache: 'all',
+        scriptURL: '',
+        state: 'activated',
+        unregister: () => Promise.resolve(true),
+        update: () => Promise.resolve(),
+      } as any);
+    }
+
+    // 伪装 WebDriver
+    Object.defineProperty(navigator, 'webdriver', {
+      get: () => false,
+    });
+
+    // 伪装 Automation
+    Object.defineProperty(window, 'navigator', {
+      writable: true,
+      value: {
+        ...navigator,
+        webdriver: false,
+      },
+    });
+
+    // 伪装 Chrome 对象
+    (window as any).chrome = {
+      app: {
+        isInstalled: false,
+        InstallState: {
+          DISABLED: 'disabled',
+          INSTALLED: 'installed',
+          NOT_INSTALLED: 'not_installed',
+        },
+        RunningState: {
+          CANNOT_RUN: 'cannot_run',
+          READY_TO_RUN: 'ready_to_run',
+          RUNNING: 'running',
+        },
+      },
+      runtime: {
+        OnInstalledReason: {
+          CHROME_UPDATE: 'chrome_update',
+          INSTALL: 'install',
+          SHARED_MODULE_UPDATE: 'shared_module_update',
+          UPDATE: 'update',
+        },
+        OnRestartRequiredReason: {
+          APP_UPDATE: 'app_update',
+          OS_UPDATE: 'os_update',
+          PERIODIC: 'periodic',
+        },
+        PlatformArch: {
+          ARM: 'arm',
+          ARM64: 'arm64',
+          MIPS: 'mips',
+          MIPS64: 'mips64',
+          X86_32: 'x86-32',
+          X86_64: 'x86-64',
+        },
+        PlatformNaclArch: {
+          ARM: 'arm',
+          MIPS: 'mips',
+          MIPS64: 'mips64',
+          X86_32: 'x86-32',
+          X86_64: 'x86-64',
+        },
+        PlatformOs: {
+          ANDROID: 'android',
+          CROS: 'cros',
+          LINUX: 'linux',
+          MAC: 'mac',
+          OPENBSD: 'openbsd',
+          WIN: 'win',
+        },
+        RequestUpdateCheckStatus: {
+          NO_UPDATE: 'no_update',
+          THROTTLED: 'throttled',
+          UPDATE_AVAILABLE: 'update_available',
+        },
+      },
+    };
+  });
+
+  // 设置视口大小
+  await page.setViewport({
+    width: 1920,
+    height: 1080,
+    deviceScaleFactor: 1,
+  });
+
+  // 设置额外的请求头
+  await page.setExtraHTTPHeaders({
+    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache',
+  });
 }
 
 // 关闭浏览器实例
@@ -460,16 +745,16 @@ export function startServer(port: number = 1519): void {
       
       // 定义默认的测试发布内容
       const testPublishContent = [
-        // {
-        //   platform: 'xiaohongshu',
-        //   title: '记录美好生活的一天',
-        //   content: '今天分享一些生活中的小确幸，希望大家都能拥有美好心情。#生活 #分享 #美好时光',
-        //   images: [
-        //       'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png',
-        //       'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png'
-        //   ],
-        //   tags: ['生活', '分享', '美好时光']
-        // },
+        {
+          platform: 'xiaohongshu',
+          title: '记录美好生活的一天',
+          content: '今天分享一些生活中的小确幸，希望大家都能拥有美好心情。#生活 #分享 #美好时光',
+          images: [
+              'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png',
+              'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png'
+          ],
+          tags: ['生活', '分享', '美好时光']
+        },
         // {
         //   platform: 'douyin',
         //   title: '生活点滴分享',
@@ -480,16 +765,16 @@ export function startServer(port: number = 1519): void {
         //   ],
         //   tags: ['生活', '记录', '日常']
         // },
-        {
-          platform: 'kuaishou',
-          title: '日常生活分享',
-          content: '平凡的日子里也有属于自己的小幸福，与你们一起分享。#日常 #幸福 #分享',
-          images: [
-          'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png',
-          'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png'
-          ],
-          tags: ['日常', '幸福', '分享']
-        },
+        // {
+        //   platform: 'kuaishou',
+        //   title: '日常生活分享',
+        //   content: '平凡的日子里也有属于自己的小幸福，与你们一起分享。#日常 #幸福 #分享',
+        //   images: [
+        //   'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png',
+        //   'http://49.232.186.238:1521/assets/avatar-DAl8kH7V.png'
+        //   ],
+        //   tags: ['日常', '幸福', '分享']
+        // },
         // {
         //   platform: 'weibo',
         //   title: '今天的心情日记',
