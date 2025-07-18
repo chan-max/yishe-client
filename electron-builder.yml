@@ -12,13 +12,14 @@ files:
 asarUnpack:
   - resources/**
 win:
+  artifactName: yishe-client-${version}.${ext}
   executableName: yishe-electron
 nsis:
-  artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  artifactName: yishe-client-${version}.${ext}
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
     - NSCameraUsageDescription: Application requests access to the device's camera.
@@ -26,8 +27,6 @@ mac:
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
-dmg:
-  artifactName: ${name}-${version}.${ext}
 linux:
   target:
     - AppImage
@@ -35,8 +34,7 @@ linux:
     - deb
   maintainer: electronjs.org
   category: Utility
-appImage:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: yishe-client-${version}.${ext}
 npmRebuild: false
 publish:
   provider: generic
