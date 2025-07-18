@@ -23,9 +23,7 @@ export async function publishToXiaohongshu(publishInfo): Promise<{ success: bool
     await setupAntiDetection(page)
     console.log('反检测脚本已应用')
     
-    // 随机延迟，模拟真实用户行为
-    const randomDelay = Math.floor(Math.random() * 2000) + 1000
-    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, randomDelay)))
+    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 1000)))
     
     await page.goto(SocialMediaUploadUrl.xiaohongshu_pic, { waitUntil: 'networkidle2' })
     console.log('已打开小红书发布页面')
@@ -74,9 +72,8 @@ export async function publishToXiaohongshu(publishInfo): Promise<{ success: bool
           await fileInput.uploadFile(tempPath)
           console.log('已上传图片:', imageUrl)
           
-          // 增加随机延迟，模拟真实用户行为
-          const uploadDelay = Math.floor(Math.random() * 3000) + 2000
-          await page.evaluate(() => new Promise(resolve => setTimeout(resolve, uploadDelay)))
+
+          await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 999)))
           
           await fs.promises.unlink(tempPath).catch(err => {
             console.warn('删除临时文件失败:', err)

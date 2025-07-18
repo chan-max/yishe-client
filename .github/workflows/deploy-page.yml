@@ -12,6 +12,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Update download links with version
+        run: node update-download-links.js
+
       - name: Deploy Page to Tencent Cloud
         uses: appleboy/scp-action@v0.1.7
         with:
