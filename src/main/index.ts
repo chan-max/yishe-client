@@ -101,10 +101,17 @@ function createWindow(): void {
 function createTray(): void {
   const { nativeImage } = require('electron')
   const path = require('path')
-  const trayIconPath = path.join(__dirname, '../../resources/tray-icon.png')
+  let trayIconPath: string
+  if (process.platform === 'win32') {
+    trayIconPath = path.join(__dirname, '../../resources/tray-icon.ico')
+  } else {
+    trayIconPath = path.join(__dirname, '../../resources/tray-icon.png')
+  }
   let trayIcon = nativeImage.createFromPath(trayIconPath)
-  // 缩放为 20x20，适配 macOS 托盘
-  trayIcon = trayIcon.resize({ width: 20, height: 20 })
+  // 只在 macOS 下 resize
+  if (process.platform === 'darwin') {
+    trayIcon = trayIcon.resize({ width: 20, height: 20 })
+  }
   tray = new Tray(trayIcon)
   tray.setToolTip('衣设程序')
   
