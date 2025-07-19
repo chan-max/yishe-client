@@ -73,8 +73,9 @@ jobs:
               msg_type: "text",
               content: {
                 text: `${emoji}  客户端下载页面部署${status === 'success' ? '成功' : '失败'}通知\n\n` +
+                      `版本: v1.2.0
                       `版本: v1.0.6
-                      `版本: v1.0.6
+版本: v1.2.0
 项目: ${{ github.repository }}\n` +
                       `分支: main\n` +
                       `提交: ${commitSha}\n` +
