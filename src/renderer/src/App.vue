@@ -160,6 +160,8 @@ const checkSocialMediaStatus = async () => {
   }
 };
 
+
+
 const closeModal = () => {
   showModal.value = false;
   modalMessage.value = '';

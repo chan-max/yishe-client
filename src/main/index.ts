@@ -10,7 +10,7 @@ import { publishToKuaishou } from './kuaishou'
 import { spawn } from 'child_process'
 import { homedir } from 'os'
 import { join as pathJoin } from 'path'
-import { startServer } from './server';
+import { startServer, getOrCreateBrowser } from './server';
 import { PublishService } from './publishService';
 
 // 扩展app对象的类型
@@ -387,6 +387,8 @@ ipcMain.handle('check-social-media-login', async () => {
     };
   }
 });
+
+
 
 ipcMain.handle('open-external', async (event, url: string) => {
   await shell.openExternal(url);

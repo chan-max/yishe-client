@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-01-01 00:00:00
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-07-03 00:22:44
+ * @LastEditTime: 2025-07-27 12:31:05
  * @FilePath: /yishe-electron/src/main/publishService.ts
  * @Description: 发布服务类 - 统一管理发布相关逻辑
  */
@@ -41,6 +41,7 @@ export interface LoginStatus {
   status: string;
   message: string;
   timestamp?: number; // 添加时间戳用于缓存控制
+  details?: any; // 添加详细信息字段，用于存储检测详情
 }
 
 // 登录状态结果接口
@@ -294,6 +295,73 @@ export class PublishService {
   }
 
   /**
+   * 专门检测抖音登录状态的方法
+   */
+  static async checkDouyinLoginStatus(page: any): Promise<{ isLoggedIn: boolean; details: any }> {
+    try {
+      // 等待页面完全加载
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // 获取当前URL，检查是否被重定向到登录页面
+      const currentUrl = page.url();
+      console.log('抖音当前URL:', currentUrl);
+      
+      // 检查是否在登录页面
+      const isOnLoginPage = currentUrl.includes('login') || 
+                           currentUrl.includes('auth') || 
+                           currentUrl.includes('signin') ||
+                           currentUrl.includes('passport');
+      
+      if (isOnLoginPage) {
+        console.log('检测到在登录页面，未登录');
+        return { 
+          isLoggedIn: false, 
+          details: { 
+            reason: 'redirected_to_login_page',
+            currentUrl: currentUrl 
+          } 
+        };
+      }
+      
+      // 执行页面内的登录状态检测
+      const loginStatus = await page.evaluate(() => {
+        // 直接检查 #header-avatar 元素
+        const headerAvatar = document.querySelector('#header-avatar');
+        const isLoggedIn = !!headerAvatar;
+        
+        const details = {
+          userElementsFound: headerAvatar ? ['#header-avatar'] : [],
+          loginElementsFound: [],
+          pageTitle: document.title,
+          currentUrl: window.location.href,
+          hasHeaderAvatar: !!headerAvatar,
+          hasUserElement: !!headerAvatar,
+          hasLoginElement: false,
+          hasUserRelatedText: false
+        };
+        
+        return {
+          isLoggedIn,
+          details
+        };
+      });
+      
+      console.log('抖音登录状态检测结果:', loginStatus);
+      return loginStatus;
+      
+    } catch (error) {
+      console.error('抖音登录状态检测失败:', error);
+      return { 
+        isLoggedIn: false, 
+        details: { 
+          error: error instanceof Error ? error.message : '检测失败',
+          reason: 'detection_error'
+        } 
+      };
+    }
+  }
+
+  /**
    * 检查社交媒体登录状态
    */
   static async checkSocialMediaLoginStatus(forceRefresh: boolean = false): Promise<LoginStatusResult> {
@@ -320,8 +388,8 @@ export class PublishService {
           name: 'douyin',
           url: 'https://creator.douyin.com/creator-micro/content/upload',
           selectors: {
-            userElements: ['.user-info', '.header-user', '.user-avatar'],
-            loginElements: ['.login-btn', '.login-button', '.login-entry']
+            userElements: ['#header-avatar'],
+            loginElements: []
           }
         },
         {
@@ -443,50 +511,88 @@ export class PublishService {
           console.log(`开始检查 ${config.name} 的登录状态...`);
 
           let isLoggedIn = false;
-          try {
-            isLoggedIn = await page.evaluate((selectors) => {
-              try {
-                if (!selectors || !selectors.userElements || !selectors.loginElements) {
+          let loginDetails = null;
+          
+          // 为抖音使用专门的检测方法
+          if (config.name === 'douyin') {
+            try {
+              const douyinResult = await this.checkDouyinLoginStatus(page);
+              isLoggedIn = douyinResult.isLoggedIn;
+              loginDetails = douyinResult.details;
+              console.log('抖音登录检测详情:', loginDetails);
+            } catch (douyinError) {
+              console.error('抖音专门检测失败:', douyinError);
+              loginStatus[config.name] = {
+                isLoggedIn: false,
+                status: 'error',
+                message: douyinError instanceof Error ? douyinError.message : '抖音登录检测失败',
+                timestamp: Date.now()
+              };
+              return;
+            }
+          } else {
+            // 其他平台使用通用检测方法
+            try {
+              isLoggedIn = await page.evaluate((selectors) => {
+                try {
+                  if (!selectors || !selectors.userElements || !selectors.loginElements) {
+                    return false;
+                  }
+                  const hasUserElement = selectors.userElements.some(selector => {
+                    try {
+                      const element = document.querySelector(selector);
+                      return !!element;
+                    } catch {
+                      return false;
+                    }
+                  });
+                  const hasLoginElement = selectors.loginElements.some(selector => {
+                    try {
+                      const element = document.querySelector(selector);
+                      return !!element;
+                    } catch {
+                      return false;
+                    }
+                  });
+                  return hasUserElement && !hasLoginElement;
+                } catch {
                   return false;
                 }
-                const hasUserElement = selectors.userElements.some(selector => {
-                  try {
-                    const element = document.querySelector(selector);
-                    return !!element;
-                  } catch {
-                    return false;
-                  }
-                });
-                const hasLoginElement = selectors.loginElements.some(selector => {
-                  try {
-                    const element = document.querySelector(selector);
-                    return !!element;
-                  } catch {
-                    return false;
-                  }
-                });
-                return hasUserElement && !hasLoginElement;
-              } catch {
-                return false;
-              }
-            }, config.selectors);
-          } catch (evaluateError) {
-            console.error(`${config.name} 登录状态检查失败:`, evaluateError);
-            loginStatus[config.name] = {
-              isLoggedIn: false,
-              status: 'error',
-              message: evaluateError instanceof Error ? evaluateError.message : '登录状态检查失败',
-              timestamp: Date.now()
-            };
-            return;
+              }, config.selectors);
+            } catch (evaluateError) {
+              console.error(`${config.name} 登录状态检查失败:`, evaluateError);
+              loginStatus[config.name] = {
+                isLoggedIn: false,
+                status: 'error',
+                message: evaluateError instanceof Error ? evaluateError.message : '登录状态检查失败',
+                timestamp: Date.now()
+              };
+              return;
+            }
           }
 
           console.log(`${config.name} 登录状态检查结果:`, isLoggedIn);
+          
+          // 根据检测结果设置详细消息
+          let statusMessage = isLoggedIn ? '已登录' : '未登录';
+          if (config.name === 'douyin' && loginDetails) {
+            if (loginDetails.reason === 'redirected_to_login_page') {
+              statusMessage = '被重定向到登录页面';
+            } else if (loginDetails.reason === 'detection_error') {
+              statusMessage = '检测过程出错';
+            } else if (isLoggedIn && loginDetails.hasHeaderAvatar) {
+              statusMessage = '已登录 (检测到头像元素)';
+            } else {
+              statusMessage = '未登录 (未检测到头像元素)';
+            }
+          }
+          
           loginStatus[config.name] = {
             isLoggedIn,
             status: 'success',
-            message: isLoggedIn ? '已登录' : '未登录',
-            timestamp: Date.now()
+            message: statusMessage,
+            timestamp: Date.now(),
+            details: config.name === 'douyin' ? loginDetails : undefined
           };
           console.log(`${config.name} 检查完成`);
           

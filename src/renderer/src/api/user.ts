@@ -25,4 +25,11 @@ export function logoutToken(): Promise<boolean> {
       return Promise.reject(new Error(data.message || '退出授权失败'))
     })
 }
+
+// 社交媒体登录状态检测
+export function checkSocialMediaLogin() {
+  return request.get({
+    url: '/checkSocialMediaLogin'
+  })
+}
  
