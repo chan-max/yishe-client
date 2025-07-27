@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-01-01 00:00:00
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-07-27 12:31:05
+ * @LastEditTime: 2025-07-27 12:41:12
  * @FilePath: /yishe-electron/src/main/publishService.ts
  * @Description: 发布服务类 - 统一管理发布相关逻辑
  */
