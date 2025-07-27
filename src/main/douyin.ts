@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-09 00:09:21
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-06-30 23:43:44
+ * @LastEditTime: 2025-07-27 14:06:02
  * @FilePath: /yishe-electron/src/main/douyin.ts
  * @Description: 抖音发布功能
  */
@@ -13,8 +13,8 @@ import fs from 'fs'
 
 interface PublishInfo {
   platform: string;
-  name: string;
-  description: string;
+  title: string;
+  content: string;
   images: string[];
 }
 
@@ -87,25 +87,52 @@ export async function publishToDouyin(publishInfo: PublishInfo): Promise<{ succe
     // 填写标题
     const titleSelector = 'input[placeholder*="标题"]'
     await page.waitForSelector(titleSelector)
-    await page.type(titleSelector, publishInfo.name)
-    console.log('已填写标题')
+    const titleText = String(publishInfo.title || '')
+    if (titleText.trim()) {
+      await page.type(titleSelector, titleText)
+      console.log('已填写标题:', titleText)
+    } else {
+      console.log('标题为空，跳过填写')
+    }
 
     // 填写正文内容
     const contentSelector = '.editor-kit-container'
     await page.waitForSelector(contentSelector)
-    await page.type(contentSelector, publishInfo.description)
-    console.log('已填写正文内容')
+    const contentText = String(publishInfo.content || '')
+    if (contentText.trim()) {
+      await page.type(contentSelector, contentText)
+      console.log('已填写正文内容:', contentText)
+    } else {
+      console.log('正文内容为空，跳过填写')
+    }
 
     // 等待内容填写完成
     await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 3000)))
 
-    // 点击发布按钮
-    const submitButton = await page.waitForSelector('[class^="content-confirm-container-"] button')
-    if (!submitButton) {
-      throw new Error('未找到发布按钮')
+    // 等待页面稳定，确保所有元素都已加载
+    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 2000)))
+
+    // 点击发布按钮 - 使用指定的 CSS 选择器
+    try {
+      const buttonSelector = 'button.button-dhlUZE.primary-cECiOJ.fixed-J9O8Yw'
+      await page.waitForSelector(buttonSelector, { timeout: 5000 })
+      const publishButton = await page.$(buttonSelector)
+      
+      if (!publishButton) {
+        throw new Error('未找到发布按钮：' + buttonSelector)
+      }
+
+      await page.evaluate((selector) => {
+        const button = document.querySelector(selector) as HTMLElement
+        if (button) {
+          button.click()
+        }
+      }, buttonSelector)
+      console.log('已点击发布按钮')
+    } catch (error) {
+      console.error('点击发布按钮失败:', error)
+      throw new Error(`发布按钮点击失败: ${error.message}`)
     }
-    await submitButton.click()
-    console.log('已点击发布按钮')
 
     // 等待发布完成
     await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 3000)))
@@ -115,4 +142,4 @@ export async function publishToDouyin(publishInfo: PublishInfo): Promise<{ succe
     console.error('抖音发布过程出错:', error)
     return { success: false, message: error?.message || '未知错误', data: error }
   }
-} 
+}

@@ -325,18 +325,71 @@ export class PublishService {
       
       // 执行页面内的登录状态检测
       const loginStatus = await page.evaluate(() => {
-        // 直接检查 #header-avatar 元素
-        const headerAvatar = document.querySelector('#header-avatar');
-        const isLoggedIn = !!headerAvatar;
+        // 检查用户相关元素
+        const userElements = [
+          '#header-avatar',
+          '.user-avatar',
+          '.user-info',
+          '.header-user',
+          '[data-testid="user-avatar"]',
+          '.creator-header'
+        ];
+        
+        // 检查登录相关元素
+        const loginElements = [
+          '.login-btn',
+          '.login-button',
+          '.login-entry',
+          'button[data-testid="login-button"]',
+          '.login-text',
+          '.login-link',
+          '.login-prompt',
+          '[class*="login"]',
+          '.auth-btn',
+          '.sign-in-btn'
+        ];
+        
+        // 查找用户元素
+        const foundUserElements = [];
+        let hasUserElement = false;
+        userElements.forEach(selector => {
+          try {
+            const element = document.querySelector(selector);
+            if (element) {
+              foundUserElements.push(selector);
+              hasUserElement = true;
+            }
+          } catch (e) {
+            // 忽略无效选择器
+          }
+        });
+        
+        // 查找登录元素
+        const foundLoginElements = [];
+        let hasLoginElement = false;
+        loginElements.forEach(selector => {
+          try {
+            const element = document.querySelector(selector);
+            if (element) {
+              foundLoginElements.push(selector);
+              hasLoginElement = true;
+            }
+          } catch (e) {
+            // 忽略无效选择器
+          }
+        });
+        
+        // 判断登录状态：有用户元素且没有登录元素
+        const isLoggedIn = hasUserElement && !hasLoginElement;
         
         const details = {
-          userElementsFound: headerAvatar ? ['#header-avatar'] : [],
-          loginElementsFound: [],
+          userElementsFound: foundUserElements,
+          loginElementsFound: foundLoginElements,
           pageTitle: document.title,
           currentUrl: window.location.href,
-          hasHeaderAvatar: !!headerAvatar,
-          hasUserElement: !!headerAvatar,
-          hasLoginElement: false,
+          hasUserElement,
+          hasLoginElement,
+          hasHeaderAvatar: foundUserElements.includes('#header-avatar'),
           hasUserRelatedText: false
         };
         
@@ -388,8 +441,26 @@ export class PublishService {
           name: 'douyin',
           url: 'https://creator.douyin.com/creator-micro/content/upload',
           selectors: {
-            userElements: ['#header-avatar'],
-            loginElements: []
+            userElements: [
+              '#header-avatar',
+              '.user-avatar',
+              '.user-info',
+              '.header-user',
+              '[data-testid="user-avatar"]',
+              '.creator-header'
+            ],
+            loginElements: [
+              '.login-btn',
+              '.login-button',
+              '.login-entry',
+              'button[data-testid="login-button"]',
+              '.login-text',
+              '.login-link',
+              '.login-prompt',
+              '[class*="login"]',
+              '.auth-btn',
+              '.sign-in-btn'
+            ]
           }
         },
         {
@@ -580,10 +651,18 @@ export class PublishService {
               statusMessage = '被重定向到登录页面';
             } else if (loginDetails.reason === 'detection_error') {
               statusMessage = '检测过程出错';
-            } else if (isLoggedIn && loginDetails.hasHeaderAvatar) {
-              statusMessage = '已登录 (检测到头像元素)';
+            } else if (isLoggedIn) {
+              if (loginDetails.hasHeaderAvatar) {
+                statusMessage = '已登录 (检测到头像元素)';
+              } else {
+                statusMessage = '已登录 (检测到用户元素)';
+              }
             } else {
-              statusMessage = '未登录 (未检测到头像元素)';
+              if (loginDetails.hasLoginElement) {
+                statusMessage = '未登录 (检测到登录按钮)';
+              } else {
+                statusMessage = '未登录 (未检测到用户元素)';
+              }
             }
           }
           
