@@ -23,6 +23,16 @@ const modalMessage = ref('');
 const modalTitle = ref('');
 const isAuthorized = ref(true)
 
+// 连接状态相关
+const connectionStatus = ref({
+  isConnected: false,
+  lastError: null as string | null,
+  retryCount: 0,
+  lastAttempt: null as Date | null,
+  reconnecting: false,
+  maxRetriesReached: false
+});
+
 const mediaPages = [
   { name: '小红书', url: 'https://www.xiaohongshu.com/' },
   { name: '抖音', url: 'https://www.douyin.com/' },
@@ -54,6 +64,11 @@ onMounted(() => {
   window.api.getAppVersion().then(v => appVersion.value = v);
   checkAuthStatus()
   setInterval(checkAuthStatus, 5000)
+  
+  // 监听连接状态事件
+  window.api.onConnectionStatus((status: any) => {
+    connectionStatus.value = { ...connectionStatus.value, ...status };
+  });
 });
 
 onUnmounted(() => {
@@ -133,7 +148,8 @@ const updateTrayStatus = async (): Promise<void> => {
 
 const checkSocialMediaStatus = async () => {
   try {
-    const res = await window.api.checkSocialMediaLogin();
+    // 手动检测时强制刷新缓存，确保获取最新的登录状态
+    const res = await window.api.checkSocialMediaLogin(true);
     const result = res.data;
     if (!result) throw new Error('无返回数据');
     const statusMap = {
@@ -195,6 +211,20 @@ const closeModal = () => {
       <div class="status-item" :class="{ 'status-online': remoteServerStatus, 'status-offline': !remoteServerStatus }">
         <div class="status-indicator remote-server-indicator"></div>
         <span class="status-text">远程服务</span>
+      </div>
+      <div class="status-item" :class="{ 
+        'status-online': connectionStatus.isConnected, 
+        'status-offline': !connectionStatus.isConnected && !connectionStatus.reconnecting,
+        'status-connecting': connectionStatus.reconnecting 
+      }">
+        <div class="status-indicator browser-connection-indicator"></div>
+        <span class="status-text">浏览器连接</span>
+        <span v-if="connectionStatus.lastError" class="error-text" :title="connectionStatus.lastError">
+          (错误)
+        </span>
+        <span v-if="connectionStatus.retryCount > 0" class="retry-text">
+          (重试: {{ connectionStatus.retryCount }})
+        </span>
       </div>
     </div>
 
@@ -1010,6 +1040,50 @@ body {
 @keyframes fadeIn {
   0% { opacity: 0; }
   100% { opacity: 1; }
+}
+
+/* 连接状态相关样式 */
+.error-text {
+  color: #ff4444;
+  font-size: 11px;
+  margin-left: 4px;
+  opacity: 0.8;
+}
+
+.retry-text {
+  color: #ffaa00;
+  font-size: 11px;
+  margin-left: 4px;
+  opacity: 0.8;
+}
+
+.status-connecting {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.browser-connection-indicator {
+  background: #666;
+}
+
+.browser-connection-indicator.status-online {
+  background: #00ff88;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
+}
+
+.browser-connection-indicator.status-offline {
+  background: #ff4444;
+  box-shadow: 0 0 8px rgba(255, 68, 68, 0.6);
+}
+
+.browser-connection-indicator.status-connecting {
+  background: #ffaa00;
+  box-shadow: 0 0 8px rgba(255, 170, 0, 0.6);
 }
 .locked-title.small {
   font-size: 1.08rem;

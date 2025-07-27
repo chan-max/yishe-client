@@ -15,6 +15,7 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { Browser } from 'puppeteer';
 import { PublishService } from './publishService';
 import { app, ipcMain } from 'electron';
+import { connectionManager } from './connectionManager';
 
 // 使用 stealth 插件
 puppeteer.use(StealthPlugin());
@@ -27,12 +28,17 @@ let browserInstance: Browser | null = null;
 
 // 获取或创建浏览器实例
 export async function getOrCreateBrowser(): Promise<Browser> {
+  // 检查现有浏览器实例
   if (browserInstance) {
     try {
-      // 检查浏览器是否仍然连接
+      // 简单检查浏览器是否仍然连接
       const pages = await browserInstance.pages();
       console.log('浏览器已存在且连接正常，页面数量:', pages.length);
+      
+      // 设置连接管理器的浏览器实例
+      connectionManager.setBrowser(browserInstance);
       return browserInstance;
+      
     } catch (error) {
       console.log('浏览器连接已断开，重新启动...');
       browserInstance = null;
@@ -42,59 +48,69 @@ export async function getOrCreateBrowser(): Promise<Browser> {
   // 创建新的浏览器实例
   console.log('启动新的浏览器实例...');
   
-  // 设置用户数据目录，用于保存登录信息
-  const userDataDir = process.platform === 'win32' 
-    ? 'C:\\temp\\puppeteer-user-data'  // Windows
-    : '/tmp/puppeteer-user-data';      // Linux/Mac
-  
-  browserInstance = await puppeteer.launch({
-    headless: false, // 设置为false以显示浏览器窗口
-    defaultViewport: null, // 使用默认视口大小
-    userDataDir: userDataDir, // 保存用户数据，包括登录信息
-    args: [
-      '--start-maximized',
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-blink-features=AutomationControlled', // 隐藏自动化标识
-      '--disable-web-security',
-      '--disable-features=VizDisplayCompositor',
-      '--disable-extensions-except',
-      '--disable-plugins-discovery',
-      '--disable-default-apps',
-      '--no-first-run',
-      '--no-default-browser-check',
-      '--disable-background-timer-throttling',
-      '--disable-backgrounding-occluded-windows',
-      '--disable-renderer-backgrounding',
-      '--disable-features=TranslateUI',
-      '--disable-ipc-flooding-protection',
-      '--disable-hang-monitor',
-      '--disable-prompt-on-repost',
-      '--disable-domain-reliability',
-      '--disable-component-extensions-with-background-pages',
-      '--disable-background-networking',
-      '--disable-sync',
-      '--metrics-recording-only',
-      '--no-report-upload',
-      '--disable-background-timer-throttling',
-      '--disable-backgrounding-occluded-windows',
-      '--disable-renderer-backgrounding',
-      '--disable-features=TranslateUI',
-      '--disable-ipc-flooding-protection',
-      '--disable-hang-monitor',
-      '--disable-prompt-on-repost',
-      '--disable-domain-reliability',
-      '--disable-component-extensions-with-background-pages',
-      '--disable-background-networking',
-      '--disable-sync',
-      '--metrics-recording-only',
-      '--no-report-upload'
-    ]
-  });
+  try {
+    // 设置用户数据目录，用于保存登录信息
+    const userDataDir = process.platform === 'win32' 
+      ? 'C:\\temp\\puppeteer-user-data'  // Windows
+      : '/tmp/puppeteer-user-data';      // Linux/Mac
+    
+    browserInstance = await puppeteer.launch({
+      headless: false, // 设置为false以显示浏览器窗口
+      defaultViewport: null, // 使用默认视口大小
+      userDataDir: userDataDir, // 保存用户数据，包括登录信息
+      args: [
+        '--start-maximized',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-blink-features=AutomationControlled', // 隐藏自动化标识
+        '--disable-web-security',
+        '--disable-features=VizDisplayCompositor',
+        '--disable-extensions-except',
+        '--disable-plugins-discovery',
+        '--disable-default-apps',
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-features=TranslateUI',
+        '--disable-ipc-flooding-protection',
+        '--disable-hang-monitor',
+        '--disable-prompt-on-repost',
+        '--disable-domain-reliability',
+        '--disable-component-extensions-with-background-pages',
+        '--disable-background-networking',
+        '--disable-sync',
+        '--metrics-recording-only',
+        '--no-report-upload',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-features=TranslateUI',
+        '--disable-ipc-flooding-protection',
+        '--disable-hang-monitor',
+        '--disable-prompt-on-repost',
+        '--disable-domain-reliability',
+        '--disable-component-extensions-with-background-pages',
+        '--disable-background-networking',
+        '--disable-sync',
+        '--metrics-recording-only',
+        '--no-report-upload'
+      ]
+    });
 
-  console.log('新浏览器实例启动成功，用户数据目录:', userDataDir);
-  return browserInstance;
+    console.log('新浏览器实例启动成功，用户数据目录:', userDataDir);
+    
+    // 设置连接管理器的浏览器实例
+    connectionManager.setBrowser(browserInstance);
+    
+    return browserInstance;
+    
+  } catch (error) {
+    console.error('❌ 浏览器启动失败:', error);
+    throw error;
+  }
 }
 
 // 新增：为页面添加反检测脚本
@@ -350,15 +366,22 @@ export async function setupAntiDetection(page: any): Promise<void> {
 
 // 关闭浏览器实例
 export async function closeBrowser(): Promise<void> {
-  if (browserInstance) {
-    try {
-      await browserInstance.close();
-      console.log('浏览器实例已关闭');
-    } catch (error) {
-      console.error('关闭浏览器时出错:', error);
-    } finally {
-      browserInstance = null;
+  try {
+    // 使用连接管理器清理资源
+    await connectionManager.cleanup();
+    
+    if (browserInstance) {
+      try {
+        await browserInstance.close();
+        console.log('浏览器实例已关闭');
+      } catch (error) {
+        console.error('关闭浏览器实例时出错:', error);
+      } finally {
+        browserInstance = null;
+      }
     }
+  } catch (error) {
+    console.error('清理连接管理器时出错:', error);
   }
 }
 
@@ -418,13 +441,78 @@ export function startServer(port: number = 1519): void {
    *               $ref: '#/components/schemas/ErrorResponse'
    */
   app.get('/api/health', (req, res) => {
+    const connectionStatus = connectionManager.getStatus();
+    
     res.status(200).json({
       status: 'OK',
       timestamp: new Date().toISOString(),
       service: 'electron-server',
       version: '1.0.0',
-      isAuthorized: !!token
+      isAuthorized: !!token,
+      connection: {
+        isConnected: connectionStatus.isConnected,
+        lastError: connectionStatus.lastError,
+        retryCount: connectionStatus.retryCount,
+        lastAttempt: connectionStatus.lastAttempt?.toISOString()
+      }
     });
+  });
+
+  /**
+   * @swagger
+   * /api/connection/status:
+   *   get:
+   *     summary: 获取连接状态
+   *     description: 获取浏览器连接状态和错误信息
+   *     tags: [连接管理]
+   *     responses:
+   *       200:
+   *         description: 连接状态信息
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 isConnected:
+   *                   type: boolean
+   *                 lastError:
+   *                   type: string
+   *                 retryCount:
+   *                   type: number
+   *                 lastAttempt:
+   *                   type: string
+   *       500:
+   *         description: 服务器错误
+   */
+  app.get('/api/connection/status', (req, res) => {
+    const status = connectionManager.getStatus();
+    res.status(200).json(status);
+  });
+
+  /**
+   * @swagger
+   * /api/connection/reconnect:
+   *   post:
+   *     summary: 手动重连
+   *     description: 手动触发重新连接
+   *     tags: [连接管理]
+   *     responses:
+   *       200:
+   *         description: 重连成功
+   *       500:
+   *         description: 重连失败
+   */
+  app.post('/api/connection/reconnect', async (req, res) => {
+    try {
+      const success = await connectionManager.reconnect();
+      if (success) {
+        res.status(200).json({ message: '重连请求已发送' });
+      } else {
+        res.status(500).json({ error: '重连失败' });
+      }
+    } catch (error) {
+      res.status(500).json({ error: '重连过程中发生错误' });
+    }
   });
 
   /**

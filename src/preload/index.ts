@@ -18,7 +18,7 @@ const api = {
   showMainWindow: () => ipcRenderer.invoke('show-main-window'),
   confirmExit: () => ipcRenderer.invoke('confirm-exit'),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
-  checkSocialMediaLogin: () => ipcRenderer.invoke('check-social-media-login'),
+  checkSocialMediaLogin: (forceRefresh: boolean = false) => ipcRenderer.invoke('check-social-media-login', forceRefresh),
   testPublishToSocialMedia: () => ipcRenderer.invoke('test-publish-to-social-media'),
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
   openAllMediaPages: () => fetch('http://localhost:1519/api/openAllMediaPages', { method: 'POST' }).then(res => res.json()),
@@ -26,6 +26,12 @@ const api = {
   saveToken: (token: string) => ipcRenderer.invoke('save-token', token),
   getToken: () => ipcRenderer.invoke('get-token'),
   isTokenExist: () => ipcRenderer.invoke('is-token-exist'),
+  // 连接状态相关方法
+  onConnectionStatus: (callback: (status: any) => void) => {
+    ipcRenderer.on('connection-status', (event, status) => callback(status));
+  },
+  getConnectionStatus: () => fetch('http://localhost:1519/api/connection/status').then(res => res.json()),
+  reconnect: () => fetch('http://localhost:1519/api/connection/reconnect', { method: 'POST' }).then(res => res.json()),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

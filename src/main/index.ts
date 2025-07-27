@@ -12,6 +12,7 @@ import { homedir } from 'os'
 import { join as pathJoin } from 'path'
 import { startServer, getOrCreateBrowser } from './server';
 import { PublishService } from './publishService';
+import { connectionManager } from './connectionManager';
 
 // 扩展app对象的类型
 declare global {
@@ -29,6 +30,65 @@ declare global {
 let tray: Tray | null = null
 let mainWindow: BrowserWindow | null = null
 
+// 设置连接管理器事件监听
+function setupConnectionManagerEvents(): void {
+  // 连接成功事件
+  connectionManager.on('connected', () => {
+    console.log('✅ 浏览器连接成功');
+    if (mainWindow) {
+      mainWindow.webContents.send('connection-status', { isConnected: true });
+    }
+  });
+
+  // 连接错误事件
+  connectionManager.on('error', (error) => {
+    console.error('❌ 浏览器连接错误:', error);
+    if (mainWindow) {
+      mainWindow.webContents.send('connection-status', { 
+        isConnected: false, 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+
+  // 重连事件
+  connectionManager.on('reconnecting', () => {
+    console.log('🔄 正在重新连接...');
+    if (mainWindow) {
+      mainWindow.webContents.send('connection-status', { isConnected: false, reconnecting: true });
+    }
+  });
+
+  // 状态变化事件
+  connectionManager.on('statusChanged', (status) => {
+    console.log('📊 连接状态变化:', status);
+    if (mainWindow) {
+      mainWindow.webContents.send('connection-status', status);
+    }
+  });
+
+  // 操作成功事件
+  connectionManager.on('operationSuccess', (operationName) => {
+    console.log(`✅ 操作成功: ${operationName}`);
+  });
+
+  // 操作失败事件
+  connectionManager.on('operationFailed', (operationName, error) => {
+    console.error(`❌ 操作失败: ${operationName}`, error);
+  });
+
+  // 达到最大重试次数事件
+  connectionManager.on('maxRetriesReached', () => {
+    console.warn('⚠️ 已达到最大重试次数');
+    if (mainWindow) {
+      mainWindow.webContents.send('connection-status', { 
+        isConnected: false, 
+        maxRetriesReached: true 
+      });
+    }
+  });
+}
+
 function createWindow(): void {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -43,6 +103,9 @@ function createWindow(): void {
       sandbox: false
     }
   })
+
+  // 设置连接管理器事件监听
+  setupConnectionManagerEvents();
 
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
@@ -366,10 +429,16 @@ ipcMain.on('toggle-devtools', (event) => {
 ipcMain.handle('get-app-version', () => app.getVersion())
 
 // 在主进程暴露社交媒体登录状态检测方法
-ipcMain.handle('check-social-media-login', async () => {
+ipcMain.handle('check-social-media-login', async (_, forceRefresh: boolean = false) => {
   try {
-    // 直接调用PublishService方法，而不是通过HTTP接口
-    const result = await PublishService.checkSocialMediaLoginStatus();
+    // 如果强制刷新，先清除缓存
+    if (forceRefresh) {
+      console.log('[IPC] 强制刷新模式，清除缓存');
+      PublishService.clearLoginStatusCache();
+    }
+    
+    // 直接调用PublishService方法，传递forceRefresh参数
+    const result = await PublishService.checkSocialMediaLoginStatus(forceRefresh);
     return {
       code: 0,
       status: true,

@@ -11,7 +11,7 @@ declare global {
       showMainWindow(): Promise<void>
       confirmExit(): Promise<'tray' | 'quit' | 'cancel'>
       getAppVersion(): Promise<string>
-      checkSocialMediaLogin(): Promise<Record<string, { isLoggedIn: boolean; status: string; message: string }>>
+      checkSocialMediaLogin(forceRefresh?: boolean): Promise<Record<string, { isLoggedIn: boolean; status: string; message: string }>>
       testPublishToSocialMedia(): Promise<{
         code: number;
         status: boolean;
