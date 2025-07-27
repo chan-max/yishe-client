@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-08 23:07:32
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-07-16 21:59:10
+ * @LastEditTime: 2025-07-27 10:04:40
  * @FilePath: /yishe-electron/src/renderer/src/App.vue
  * @Description: 衣设程序主界面 - 暗色主题设计
 -->
@@ -214,7 +214,7 @@ const closeModal = () => {
       <!-- 顶部标题 -->
       <div class="title-section">
         <img alt="logo" class="logo" src="./assets/icon.png" />
-        <h1 class="app-title">衣设 最具创意的设计工具</h1>
+        <h1 class="app-title">衣设 最具创意的设计工具!!!</h1>
       </div>
 
       <!-- 快速链接区域 -->

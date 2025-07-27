@@ -2,12 +2,14 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-09 18:31:32
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-07-18 08:47:03
+ * @LastEditTime: 2025-07-27 11:06:23
  * @FilePath: /yishe-electron/src/main/server.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 import express from 'express';
-import cors from 'cors';  // 新增cors导入
+import cors from 'cors';
+import swaggerUi from 'swagger-ui-express';
+import { specs } from './swagger';  // 新增cors导入
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { Browser } from 'puppeteer';
@@ -363,6 +365,12 @@ export async function closeBrowser(): Promise<void> {
 export function startServer(port: number = 1519): void {
   const app = express();
   
+  console.log('🚀 启动 Express 服务器...');
+  console.log(`📡 服务端口: ${port}`);
+  console.log(`📚 API 文档: http://localhost:${port}/api-docs`);
+  console.log(`🏥 健康检查: http://localhost:${port}/api/health`);
+  console.log('─'.repeat(50));
+  
   // 配置 CORS 选项
   const corsOptions = {
     origin: '*', // 允许所有来源访问
@@ -382,7 +390,33 @@ export function startServer(port: number = 1519): void {
     res.send('Electron Express Server Running');
   });
 
-  // 新增健康检查接口
+  // Swagger API 文档路由
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: '衣设 Electron API 文档'
+  }));
+
+  /**
+   * @swagger
+   * /api/health:
+   *   get:
+   *     summary: 健康检查接口
+   *     description: 检查服务器运行状态和授权状态
+   *     tags: [系统监控]
+   *     responses:
+   *       200:
+   *         description: 服务器运行正常
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/HealthResponse'
+   *       500:
+   *         description: 服务器错误
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ErrorResponse'
+   */
   app.get('/api/health', (req, res) => {
     res.status(200).json({
       status: 'OK',
@@ -393,7 +427,27 @@ export function startServer(port: number = 1519): void {
     });
   });
 
-  // 新增puppeteer测试接口
+  /**
+   * @swagger
+   * /api/testPuppeteer:
+   *   get:
+   *     summary: Puppeteer 测试接口
+   *     description: 测试 Puppeteer 浏览器自动化功能，访问百度网站
+   *     tags: [浏览器自动化]
+   *     responses:
+   *       200:
+   *         description: Puppeteer 测试成功
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/PuppeteerTestResponse'
+   *       500:
+   *         description: Puppeteer 测试失败
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ErrorResponse'
+   */
   app.get('/api/testPuppeteer', async (req, res) => {
     try {
       console.log('收到puppeteer测试请求...');
@@ -431,7 +485,27 @@ export function startServer(port: number = 1519): void {
     }
   });
 
-  // 新增小红书测试接口
+  /**
+   * @swagger
+   * /api/testXiaohongshu:
+   *   get:
+   *     summary: 小红书测试接口
+   *     description: 测试访问小红书发布页面功能
+   *     tags: [社交媒体]
+   *     responses:
+   *       200:
+   *         description: 小红书测试成功
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/XiaohongshuTestResponse'
+   *       500:
+   *         description: 小红书测试失败
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ErrorResponse'
+   */
   app.get('/api/testXiaohongshu', async (req, res) => {
     try {
       console.log('收到小红书测试请求...');
@@ -469,7 +543,37 @@ export function startServer(port: number = 1519): void {
     }
   });
 
-  // 新增检查小红书登录状态接口
+  /**
+   * @swagger
+   * /api/checkXiaohongshuLogin:
+   *   get:
+   *     summary: 检查小红书登录状态
+   *     description: 检查用户是否已登录小红书平台
+   *     tags: [社交媒体]
+   *     responses:
+   *       200:
+   *         description: 登录状态检查完成
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: '登录状态检查完成'
+   *                 isLoggedIn:
+   *                   type: boolean
+   *                   example: true
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   *       500:
+   *         description: 检查失败
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ErrorResponse'
+   */
   app.get('/api/checkXiaohongshuLogin', async (req, res) => {
     let page = null;
     try {
@@ -531,7 +635,34 @@ export function startServer(port: number = 1519): void {
     }
   });
 
-  // 新增关闭浏览器接口
+  /**
+   * @swagger
+   * /api/closeBrowser:
+   *   get:
+   *     summary: 关闭浏览器
+   *     description: 关闭当前运行的浏览器实例
+   *     tags: [浏览器管理]
+   *     responses:
+   *       200:
+   *         description: 浏览器已关闭
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: '浏览器已关闭'
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   *       500:
+   *         description: 关闭失败
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ErrorResponse'
+   */
   app.get('/api/closeBrowser', async (req, res) => {
     try {
       await closeBrowser();
@@ -549,7 +680,37 @@ export function startServer(port: number = 1519): void {
     }
   });
 
-  // 新增清除用户数据接口
+  /**
+   * @swagger
+   * /api/clearUserData:
+   *   get:
+   *     summary: 清除用户数据
+   *     description: 清除浏览器用户数据目录，包括登录信息等
+   *     tags: [浏览器管理]
+   *     responses:
+   *       200:
+   *         description: 用户数据已清除
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: '用户数据已清除'
+   *                 userDataDir:
+   *                   type: string
+   *                   example: '/tmp/puppeteer-user-data'
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   *       500:
+   *         description: 清除失败
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ErrorResponse'
+   */
   app.get('/api/clearUserData', async (req, res) => {
     try {
       console.log('清除用户数据...');
@@ -587,7 +748,55 @@ export function startServer(port: number = 1519): void {
     }
   });
 
-  // 新增 page.evaluate 测试接口
+  /**
+   * @swagger
+   * /api/testPageEvaluate:
+   *   get:
+   *     summary: 测试 page.evaluate 功能
+   *     description: 测试 Puppeteer 的 page.evaluate 方法，包括简单测试、带参数测试和复杂参数测试
+   *     tags: [浏览器自动化]
+   *     responses:
+   *       200:
+   *         description: 测试成功
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: 'page.evaluate 测试成功'
+   *                 results:
+   *                   type: object
+   *                   properties:
+   *                     simple:
+   *                       type: string
+   *                       example: '百度一下，你就知道'
+   *                     param:
+   *                       type: string
+   *                       example: '页面标题: 百度一下，你就知道, 参数: test-param'
+   *                     complex:
+   *                       type: object
+   *                       properties:
+   *                         userElementsCount:
+   *                           type: number
+   *                           example: 2
+   *                         loginElementsCount:
+   *                           type: number
+   *                           example: 2
+   *                         pageTitle:
+   *                           type: string
+   *                           example: '百度一下，你就知道'
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   *       500:
+   *         description: 测试失败
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ErrorResponse'
+   */
   app.get('/api/testPageEvaluate', async (req, res) => {
     let page = null;
     try {
@@ -654,7 +863,47 @@ export function startServer(port: number = 1519): void {
     }
   });
 
-  // 新增浏览器状态查询接口
+  /**
+   * @swagger
+   * /api/browserStatus:
+   *   get:
+   *     summary: 查询浏览器状态
+   *     description: 查询当前浏览器实例的连接状态和页面数量
+   *     tags: [浏览器管理]
+   *     responses:
+   *       200:
+   *         description: 查询成功
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 connected:
+   *                   type: boolean
+   *                   example: true
+   *                 pageCount:
+   *                   type: number
+   *                   example: 3
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   *       500:
+   *         description: 查询失败
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 connected:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: '查询失败'
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   */
   app.get('/api/browserStatus', async (req, res) => {
     try {
       if (browserInstance) {
@@ -681,7 +930,55 @@ export function startServer(port: number = 1519): void {
     }
   });
 
-  // 新增通用社交媒体登录状态检查接口
+  /**
+   * @swagger
+   * /api/checkSocialMediaLogin:
+   *   post:
+   *     summary: 检查社交媒体登录状态
+   *     description: 检查所有支持的社交媒体平台的登录状态
+   *     tags: [社交媒体]
+   *     responses:
+   *       200:
+   *         description: 检查完成
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 code:
+   *                   type: number
+   *                   example: 0
+   *                 status:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   type: object
+   *                   description: 各平台登录状态
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   *       500:
+   *         description: 检查失败
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 code:
+   *                   type: number
+   *                   example: 1
+   *                 status:
+   *                   type: boolean
+   *                   example: false
+   *                 message:
+   *                   type: string
+   *                   example: '检查社交媒体登录状态失败'
+   *                 error:
+   *                   type: string
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   */
   app.post('/api/checkSocialMediaLogin', async (req, res) => {
     try {
       console.log('检查社交媒体登录状态...');
@@ -709,7 +1006,93 @@ export function startServer(port: number = 1519): void {
     }
   });
 
-  // 新增发布产品到社交媒体的接口
+  /**
+   * @swagger
+   * /api/publishProductToSocialMedia:
+   *   post:
+   *     summary: 发布产品到社交媒体
+   *     description: 将产品内容发布到指定的社交媒体平台
+   *     tags: [内容发布]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - platforms
+   *               - productId
+   *             properties:
+   *               platforms:
+   *                 type: array
+   *                 items:
+   *                   type: object
+   *                   properties:
+   *                     platform:
+   *                       type: string
+   *                       example: 'xiaohongshu'
+   *                     title:
+   *                       type: string
+   *                       example: '产品标题'
+   *                     content:
+   *                       type: string
+   *                       example: '产品描述内容'
+   *                     images:
+   *                       type: array
+   *                       items:
+   *                         type: string
+   *                       example: ['http://example.com/image1.jpg']
+   *                     tags:
+   *                       type: array
+   *                       items:
+   *                         type: string
+   *                       example: ['标签1', '标签2']
+   *               productId:
+   *                 type: string
+   *                 example: 'product-123'
+   *     responses:
+   *       200:
+   *         description: 发布成功
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 code:
+   *                   type: number
+   *                   example: 0
+   *                 status:
+   *                   type: boolean
+   *                   example: true
+   *                 message:
+   *                   type: string
+   *                   example: '发布请求已成功处理'
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     platforms:
+   *                       type: array
+   *                     results:
+   *                       type: array
+   *       500:
+   *         description: 发布失败
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 code:
+   *                   type: number
+   *                   example: 1
+   *                 status:
+   *                   type: boolean
+   *                   example: false
+   *                 msg:
+   *                   type: string
+   *                   example: '发布过程出错'
+   *                 error:
+   *                   type: string
+   */
   app.post('/api/publishProductToSocialMedia', async (req, res) => {
     try {
       var { platforms, productId } = req.body;
@@ -738,7 +1121,84 @@ export function startServer(port: number = 1519): void {
     }
   });
 
-  // 新增测试发布内容的GET接口
+  /**
+   * @swagger
+   * /api/testPublishContent:
+   *   get:
+   *     summary: 测试发布内容
+   *     description: 使用预设的测试内容进行多平台发布测试
+   *     tags: [内容发布]
+   *     responses:
+   *       200:
+   *         description: 测试发布完成
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 code:
+   *                   type: number
+   *                   example: 0
+   *                 status:
+   *                   type: boolean
+   *                   example: true
+   *                 message:
+   *                   type: string
+   *                   example: '测试发布完成，成功: 3/5'
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     summary:
+   *                       type: object
+   *                       properties:
+   *                         totalPlatforms:
+   *                           type: number
+   *                           example: 5
+   *                         successCount:
+   *                           type: number
+   *                           example: 3
+   *                         failedCount:
+   *                           type: number
+   *                           example: 2
+   *                         failedPlatforms:
+   *                           type: array
+   *                           items:
+   *                             type: string
+   *                           example: ['douyin', 'kuaishou']
+   *                         successRate:
+   *                           type: string
+   *                           example: '60.0%'
+   *                     testContent:
+   *                       type: array
+   *                       description: 测试内容列表
+   *                     results:
+   *                       type: array
+   *                       description: 发布结果列表
+   *                     timestamp:
+   *                       type: string
+   *                       format: date-time
+   *       500:
+   *         description: 测试失败
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 code:
+   *                   type: number
+   *                   example: 1
+   *                 status:
+   *                   type: boolean
+   *                   example: false
+   *                 message:
+   *                   type: string
+   *                   example: '测试发布内容失败'
+   *                 error:
+   *                   type: string
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   */
   app.get('/api/testPublishContent', async (req, res) => {
     try {
       console.log('收到测试发布内容请求...');
@@ -835,7 +1295,96 @@ export function startServer(port: number = 1519): void {
     }
   });
 
-  // 新增测试单个平台发布的GET接口
+  /**
+   * @swagger
+   * /api/testSinglePlatform/{platform}:
+   *   get:
+   *     summary: 测试单个平台发布
+   *     description: 测试指定平台的发布功能
+   *     tags: [内容发布]
+   *     parameters:
+   *       - in: path
+   *         name: platform
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: 平台名称
+   *         example: xiaohongshu
+   *     responses:
+   *       200:
+   *         description: 测试完成
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 code:
+   *                   type: number
+   *                   example: 0
+   *                 status:
+   *                   type: boolean
+   *                   example: true
+   *                 message:
+   *                   type: string
+   *                   example: 'xiaohongshu平台测试发布完成'
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     platform:
+   *                       type: string
+   *                       example: 'xiaohongshu'
+   *                     testContent:
+   *                       type: object
+   *                       description: 测试内容
+   *                     result:
+   *                       type: object
+   *                       description: 发布结果
+   *                     timestamp:
+   *                       type: string
+   *                       format: date-time
+   *       400:
+   *         description: 不支持的平台
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 code:
+   *                   type: number
+   *                   example: 1
+   *                 status:
+   *                   type: boolean
+   *                   example: false
+   *                 message:
+   *                   type: string
+   *                   example: '不支持的平台: invalid-platform'
+   *                 supportedPlatforms:
+   *                   type: array
+   *                   items:
+   *                     type: string
+   *                   example: ['xiaohongshu', 'douyin', 'kuaishou', 'weibo', 'bilibili']
+   *       500:
+   *         description: 测试失败
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 code:
+   *                   type: number
+   *                   example: 1
+   *                 status:
+   *                   type: boolean
+   *                   example: false
+   *                 message:
+   *                   type: string
+   *                   example: '测试xiaohongshu平台发布失败'
+   *                 error:
+   *                   type: string
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   */
   app.get('/api/testSinglePlatform/:platform', async (req, res) => {
     try {
       const { platform } = req.params;
@@ -891,7 +1440,54 @@ export function startServer(port: number = 1519): void {
     }
   });
 
-  // 新增：批量打开所有社交媒体页面接口
+  /**
+   * @swagger
+   * /api/openAllMediaPages:
+   *   post:
+   *     summary: 批量打开社交媒体页面
+   *     description: 批量打开所有支持的社交媒体平台的发布页面
+   *     tags: [社交媒体]
+   *     responses:
+   *       200:
+   *         description: 页面打开成功
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: '所有社交媒体页面已通过 puppeteer 打开'
+   *                 urls:
+   *                   type: array
+   *                   items:
+   *                     type: string
+   *                   example: [
+   *                     'https://creator.xiaohongshu.com/publish/publish?target=image',
+   *                     'https://creator.douyin.com/creator-micro/content/upload',
+   *                     'https://cp.kuaishou.com/article/publish/video',
+   *                     'https://weibo.com',
+   *                     'https://member.bilibili.com/platform/upload/text/edit'
+   *                   ]
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   *       500:
+   *         description: 打开失败
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: '批量打开社交媒体页面失败'
+   *                 error:
+   *                   type: string
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   */
   app.post('/api/openAllMediaPages', async (req, res) => {
     try {
       const browser = await getOrCreateBrowser();
@@ -933,7 +1529,51 @@ export function startServer(port: number = 1519): void {
     return !!token;
   });
 
-  // 新增保存 token 接口
+  /**
+   * @swagger
+   * /api/saveToken:
+   *   post:
+   *     summary: 保存 Token
+   *     description: 保存用户认证 Token
+   *     tags: [认证管理]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - token
+   *             properties:
+   *               token:
+   *                 type: string
+   *                 description: 用户认证 Token
+   *                 example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+   *     responses:
+   *       200:
+   *         description: Token 保存成功
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *       400:
+   *         description: Token 为空
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 message:
+   *                   type: string
+   *                   example: 'token 不能为空'
+   */
   app.post('/api/saveToken', (req, res) => {
     const { token: newToken } = req.body;
     if (!newToken) {
@@ -944,7 +1584,25 @@ export function startServer(port: number = 1519): void {
     res.json({ success: true });
   });
 
-  // 新增退出授权接口
+  /**
+   * @swagger
+   * /api/logoutToken:
+   *   post:
+   *     summary: 退出授权
+   *     description: 清除当前保存的 Token
+   *     tags: [认证管理]
+   *     responses:
+   *       200:
+   *         description: 退出成功
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   */
   app.post('/api/logoutToken', (req, res) => {
     token = null;
     res.json({ success: true });
@@ -953,9 +1611,35 @@ export function startServer(port: number = 1519): void {
 
   // 启动服务器
   app.listen(port, () => {
-    console.log(`Express server started on port ${port}`);
+    console.log('✅ Express 服务器启动成功！');
+    console.log('─'.repeat(50));
+    console.log('📋 可用接口:');
+    console.log('🔧 系统监控:');
+    console.log(`   GET  /api/health                    - 健康检查`);
+    console.log('🤖 浏览器自动化:');
+    console.log(`   GET  /api/testPuppeteer             - Puppeteer 测试`);
+    console.log(`   GET  /api/testPageEvaluate          - page.evaluate 测试`);
+    console.log('📱 社交媒体:');
+    console.log(`   GET  /api/testXiaohongshu           - 小红书测试`);
+    console.log(`   GET  /api/checkXiaohongshuLogin     - 检查小红书登录状态`);
+    console.log(`   POST /api/checkSocialMediaLogin      - 检查社交媒体登录状态`);
+    console.log(`   POST /api/openAllMediaPages         - 批量打开社交媒体页面`);
+    console.log('📤 内容发布:');
+    console.log(`   GET  /api/testPublishContent        - 测试发布内容`);
+    console.log(`   GET  /api/testSinglePlatform/{platform} - 测试单个平台发布`);
+    console.log(`   POST /api/publishProductToSocialMedia - 发布产品到社交媒体`);
+    console.log('🔧 浏览器管理:');
+    console.log(`   GET  /api/browserStatus             - 查询浏览器状态`);
+    console.log(`   GET  /api/closeBrowser              - 关闭浏览器`);
+    console.log(`   GET  /api/clearUserData             - 清除用户数据`);
+    console.log('🔐 认证管理:');
+    console.log(`   POST /api/saveToken                 - 保存 Token`);
+    console.log(`   POST /api/logoutToken               - 退出授权`);
+    console.log('📚 API 文档:');
+    console.log(`   GET  /api-docs                      - Swagger API 文档`);
+    console.log('─'.repeat(50));
   }).on('error', (err) => {
-    console.error('Express server failed to start:', err);
+    console.error('❌ Express 服务器启动失败:', err);
   });
 }
 

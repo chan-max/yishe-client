@@ -8,13 +8,15 @@ export default defineConfig({
     build: {
       minify: false,  // 禁用压缩混淆
       sourcemap: true,  // 生成sourcemap方便调试
-      rollupOptions: {
-        external: [
-          'puppeteer-extra',
-          'puppeteer-extra-plugin-stealth',
-          'electron-store'
-        ]
-      }
+              rollupOptions: {
+          external: [
+            'puppeteer-extra',
+            'puppeteer-extra-plugin-stealth',
+            'electron-store',
+            'swagger-jsdoc',
+            'swagger-ui-express'
+          ]
+        }
     }
   },
   preload: {
