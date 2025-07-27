@@ -2,7 +2,7 @@
  * @Author: chan-max jackieontheway666@gmail.com
  * @Date: 2025-06-09 18:31:32
  * @LastEditors: chan-max jackieontheway666@gmail.com
- * @LastEditTime: 2025-07-27 13:41:58
+ * @LastEditTime: 2025-07-28 06:42:02
  * @FilePath: /yishe-electron/src/main/server.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -43,6 +43,13 @@ export async function getOrCreateBrowser(): Promise<Browser> {
       console.log('浏览器连接已断开，重新启动...');
       browserInstance = null;
     }
+  }
+
+  // 如果连接管理器正在重连，等待一下
+  const status = connectionManager.getStatus();
+  if (status.isReconnecting) {
+    console.log('等待重连完成...');
+    await new Promise(resolve => setTimeout(resolve, 2000));
   }
 
   // 创建新的浏览器实例

@@ -13,6 +13,7 @@ import { join as pathJoin } from 'path'
 import { startServer, getOrCreateBrowser } from './server';
 import { PublishService } from './publishService';
 import { connectionManager } from './connectionManager';
+import { networkMonitor } from './networkMonitor';
 
 // 扩展app对象的类型
 declare global {
@@ -30,6 +31,10 @@ declare global {
 let tray: Tray | null = null
 let mainWindow: BrowserWindow | null = null
 
+// 防止重复显示协议错误弹窗的标记
+let protocolErrorDialogShown = false;
+let protocolErrorDialogTimeout: NodeJS.Timeout | null = null;
+
 // 设置连接管理器事件监听
 function setupConnectionManagerEvents(): void {
   // 连接成功事件
@@ -41,13 +46,20 @@ function setupConnectionManagerEvents(): void {
   });
 
   // 连接错误事件
-  connectionManager.on('error', (error) => {
+  connectionManager.on('error', async (error) => {
     console.error('❌ 浏览器连接错误:', error);
     if (mainWindow) {
       mainWindow.webContents.send('connection-status', { 
         isConnected: false, 
         error: error instanceof Error ? error.message : String(error) 
       });
+    }
+
+    // 检查是否是协议错误，如果是则显示用户弹窗
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('Protocol error') || errorMessage.includes('Connection closed')) {
+      console.log('🔄 检测到协议错误，显示用户提示弹窗...');
+      await showProtocolErrorDialog();
     }
   });
 
@@ -73,8 +85,15 @@ function setupConnectionManagerEvents(): void {
   });
 
   // 操作失败事件
-  connectionManager.on('operationFailed', (operationName, error) => {
+  connectionManager.on('operationFailed', async (operationName, error) => {
     console.error(`❌ 操作失败: ${operationName}`, error);
+    
+    // 检查是否是协议错误，如果是则显示用户弹窗
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('Protocol error') || errorMessage.includes('Connection closed')) {
+      console.log('🔄 操作失败检测到协议错误，显示用户提示弹窗...');
+      await showProtocolErrorDialog();
+    }
   });
 
   // 达到最大重试次数事件
@@ -87,6 +106,137 @@ function setupConnectionManagerEvents(): void {
       });
     }
   });
+
+  // 重连准备就绪事件
+  connectionManager.on('reconnectReady', async () => {
+    console.log('🔄 重连准备就绪，重新创建浏览器实例...');
+    try {
+      // 重新创建浏览器实例
+      const newBrowser = await getOrCreateBrowser();
+      connectionManager.setBrowser(newBrowser);
+      console.log('✅ 浏览器实例重新创建成功');
+    } catch (error) {
+      console.error('❌ 重新创建浏览器实例失败:', error);
+    }
+  });
+
+  // 达到最大重连次数事件
+  connectionManager.on('maxReconnectAttemptsReached', async () => {
+    console.warn('⚠️ 已达到最大重连次数');
+    if (mainWindow) {
+      mainWindow.webContents.send('connection-status', { 
+        isConnected: false, 
+        maxReconnectAttemptsReached: true 
+      });
+    }
+    
+    // 达到最大重连次数时也显示用户弹窗
+    await showProtocolErrorDialog();
+  });
+
+  // 网络监控事件
+  networkMonitor.on('networkLost', (status) => {
+    console.error('🌐 网络连接丢失');
+    if (mainWindow) {
+      mainWindow.webContents.send('network-status', { 
+        isOnline: false, 
+        status 
+      });
+    }
+  });
+
+  networkMonitor.on('networkRestored', (status) => {
+    console.log('🌐 网络连接已恢复');
+    if (mainWindow) {
+      mainWindow.webContents.send('network-status', { 
+        isOnline: true, 
+        status 
+      });
+    }
+  });
+
+  networkMonitor.on('statusChanged', (status) => {
+    if (mainWindow) {
+      mainWindow.webContents.send('network-status', status);
+    }
+  });
+}
+
+/**
+ * 显示协议错误提示弹窗
+ */
+async function showProtocolErrorDialog(): Promise<void> {
+  // 防止重复显示弹窗
+  if (protocolErrorDialogShown) {
+    console.log('协议错误弹窗已显示，跳过重复显示');
+    return;
+  }
+
+  if (!mainWindow) {
+    console.warn('主窗口不存在，无法显示弹窗');
+    return;
+  }
+
+  try {
+    // 设置弹窗显示标记
+    protocolErrorDialogShown = true;
+    
+    // 清除之前的超时
+    if (protocolErrorDialogTimeout) {
+      clearTimeout(protocolErrorDialogTimeout);
+    }
+    
+    // 设置5分钟后重置标记，允许再次显示弹窗
+    protocolErrorDialogTimeout = setTimeout(() => {
+      protocolErrorDialogShown = false;
+      protocolErrorDialogTimeout = null;
+    }, 5 * 60 * 1000); // 5分钟
+
+    const result = await dialog.showMessageBox(mainWindow, {
+      type: 'warning',
+      buttons: ['关闭客户端', '稍后重试', '取消'],
+      defaultId: 0,
+      cancelId: 2,
+      title: '连接错误',
+      message: '检测到浏览器连接协议错误',
+      detail: '建议关闭客户端后重新启动以恢复连接。\n\n错误类型：Protocol error: Connection closed\n\n如果问题持续存在，请检查网络连接或联系技术支持。',
+      icon: icon
+    });
+
+    switch (result.response) {
+      case 0: // 关闭客户端
+        console.log('用户选择关闭客户端');
+        (app as any).isQuiting = true;
+        app.quit();
+        break;
+      case 1: // 稍后重试
+        console.log('用户选择稍后重试');
+        // 重置弹窗标记，允许用户稍后再次看到弹窗
+        protocolErrorDialogShown = false;
+        if (protocolErrorDialogTimeout) {
+          clearTimeout(protocolErrorDialogTimeout);
+          protocolErrorDialogTimeout = null;
+        }
+        break;
+      case 2: // 取消
+        console.log('用户取消操作');
+        // 重置弹窗标记，允许用户稍后再次看到弹窗
+        protocolErrorDialogShown = false;
+        if (protocolErrorDialogTimeout) {
+          clearTimeout(protocolErrorDialogTimeout);
+          protocolErrorDialogTimeout = null;
+        }
+        break;
+    }
+  } catch (error) {
+    console.error('显示协议错误弹窗失败:', error);
+    // 出错时重置标记
+    protocolErrorDialogShown = false;
+    if (protocolErrorDialogTimeout) {
+      clearTimeout(protocolErrorDialogTimeout);
+      protocolErrorDialogTimeout = null;
+    }
+  }
 }
 
 function createWindow(): void {
@@ -106,6 +256,9 @@ function createWindow(): void {
 
   // 设置连接管理器事件监听
   setupConnectionManagerEvents();
+
+  // 启动网络监控
+  networkMonitor.start();
 
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
@@ -360,11 +513,29 @@ app.on('window-all-closed', () => {
   }
 })
 
-// 应用退出时清理托盘
-app.on('before-quit', () => {
+// 应用退出时清理资源
+app.on('before-quit', async () => {
+  console.log('🔄 应用即将退出，清理资源...');
+  
+  // 清理协议错误弹窗相关资源
+  if (protocolErrorDialogTimeout) {
+    clearTimeout(protocolErrorDialogTimeout);
+    protocolErrorDialogTimeout = null;
+  }
+  protocolErrorDialogShown = false;
+  
+  // 停止网络监控
+  await networkMonitor.cleanup();
+  
+  // 清理连接管理器
+  await connectionManager.cleanup();
+  
+  // 清理托盘
   if (tray) {
     tray.destroy()
   }
+  
+  console.log('✅ 资源清理完成');
 })
 
 // 添加 IPC 监听器
