@@ -45,13 +45,34 @@ const openAllMediaPages = async () => {
   await window.api.openAllMediaPages();
 };
 
-const checkAuthStatus = async () => {
-  try {
-    isAuthorized.value = await isClientAuthorized()
-  } catch {
-    isAuthorized.value = false
-  }
+// 节流相关状态
+let lastServerCheck = 0
+let lastRemoteServerCheck = 0
+let lastAuthCheck = 0
+const THROTTLE_DELAY = 5000 // 5秒节流
+
+// 节流函数
+const throttle = (lastCheck: number, delay: number) => {
+  const now = Date.now()
+  return now - lastCheck >= delay
 }
+
+// 带节流的授权状态检查
+const checkAuthStatus = async () => {
+  // 检查是否需要节流
+  if (!throttle(lastAuthCheck, THROTTLE_DELAY)) {
+    return
+  }
+  
+  lastAuthCheck = Date.now()
+  
+  try {
+    const token = await window.api.getToken();
+    authStatus.value = !!token;
+  } catch {
+    authStatus.value = false;
+  }
+};
 
 const handleLogout = async () => {
   await logoutToken()
@@ -91,6 +112,13 @@ const startRemoteServerPolling = () => {
 };
 
 const checkServerStatus = async () => {
+  // 检查是否需要节流
+  if (!throttle(lastServerCheck, THROTTLE_DELAY)) {
+    return
+  }
+  
+  lastServerCheck = Date.now()
+  
   try {
     const response = await fetch("http://localhost:1519/api/health");
     serverStatus.value = response.ok;
@@ -108,6 +136,13 @@ const checkServerStatus = async () => {
 };
 
 const checkRemoteServerStatus = async () => {
+  // 检查是否需要节流
+  if (!throttle(lastRemoteServerCheck, THROTTLE_DELAY)) {
+    return
+  }
+  
+  lastRemoteServerCheck = Date.now()
+  
   try {
     const response = await request.get({ url: '/test' });
     remoteServerStatus.value = true;
