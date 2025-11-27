@@ -1,0 +1,96 @@
+name: Deploy Page to Tencent Cloud
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  deploy-page:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update download links
+        run: npm run update-links
+
+      - name: Deploy Page to Tencent Cloud
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 22
+          source: "page/**"
+          target: "/www/wwwroot/49.232.186.238_1525"
+          rm: false
+          strip_components: 1
+          overwrite: true
+          command_timeout: "10m"
+          timeout: "10m"
+          debug: true
+
+      - name: Deploy Page to 1s.design/client
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 22
+          source: "page/**"
+          target: "/www/wwwroot/1s.design/client"
+          rm: false
+          strip_components: 1
+          overwrite: true
+          command_timeout: "10m"
+          timeout: "10m"
+          debug: true
+
+      - name: Send Feishu Notification
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const status = '${{ job.status }}';
+            const emoji = status === 'success' ? '🚀' : '❌';
+            const commitSha = '${{ github.sha }}'.substring(0, 7);
+            
+            // 读取package.json获取版本号
+            const fs = require('fs');
+            const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            const version = packageJson.version;
+            
+            const message = {
+              msg_type: "text",
+              content: {
+                text: `${emoji}  客户端下载页面部署${status === 'success' ? '成功' : '失败'}通知\n\n` +
+                      `版本: v1.2.0
+                      `版本: v1.0.6
+版本: v1.2.0
+项目: ${{ github.repository }}\n` +
+                      `分支: main\n` +
+                      `提交: ${commitSha}\n` +
+                      `提交者: ${{ github.actor }}\n` +
+                      `提交信息: ${{ github.event.head_commit.message }}\n` +
+                      `部署时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}\n` +
+                      `目标路径: /www/wwwroot/49.232.186.238_1525\n` +
+                      `状态: ${status === 'success' ? '✅ 成功' : '❌ 失败'}`
+              }
+            };
+            
+            await fetch('${{ secrets.FEISHU_WEBHOOK_URL }}', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(message)
+            }); 
