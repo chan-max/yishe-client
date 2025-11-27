@@ -241,15 +241,30 @@ async function showProtocolErrorDialog(): Promise<void> {
   }
 }
 
+const isMac = process.platform === 'darwin'
+
+function shouldForceTrayMode(): boolean {
+  return app.isPackaged
+}
+
 function createWindow(): void {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 1440,
+    height: 900,
     show: false,
+    fullscreen: false,
+    fullscreenable: !isMac,
+    simpleFullScreen: false,
     autoHideMenuBar: true,
-    title:'衣设程序',
-    ...(process.platform === 'linux' ? { icon } : {icon}),
+    title: '衣设程序',
+    ...(isMac
+      ? {
+          titleBarStyle: 'hiddenInset',
+          trafficLightPosition: { x: 16, y: 18 }
+        }
+      : {}),
+    ...(process.platform === 'linux' ? { icon } : { icon }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
@@ -264,6 +279,12 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
+    if (isMac) {
+      mainWindow?.setFullScreen(false)
+      mainWindow?.setSimpleFullScreen(false)
+      mainWindow?.setFullScreenable(false)
+    }
+    mainWindow?.maximize()
     // 在开发模式下启用开发者工具（已注释掉，默认不打开）
     // if (is.dev) {
     //   mainWindow?.webContents.openDevTools()
@@ -271,33 +292,39 @@ function createWindow(): void {
   })
 
   mainWindow.on('close', async (event) => {
-    if (!(app as any).isQuiting) {
+    if ((app as any).isQuiting) {
+      return
+    }
+
+    if (shouldForceTrayMode()) {
       event.preventDefault()
-      
-      // 显示退出确认对话框
-      const result = await dialog.showMessageBox(mainWindow!, {
-        type: 'question',
-        buttons: ['退到托盘', '直接退出', '取消'],
-        defaultId: 0,
-        cancelId: 2,
-        title: '退出确认',
-        message: '退出客户端后将无法提供服务',
-        detail: '您可以选择退到托盘继续运行，或者直接退出程序。',
-        icon: icon
-      })
-      
-      switch (result.response) {
-        case 0: // 退到托盘
-          mainWindow?.hide()
-          break
-        case 1: // 直接退出
-          (app as any).isQuiting = true
-          app.quit()
-          break
-        case 2: // 取消
-          // 不做任何操作，窗口保持打开
-          break
-      }
+      mainWindow?.hide()
+      return
+    }
+
+    event.preventDefault()
+
+    const result = await dialog.showMessageBox(mainWindow!, {
+      type: 'question',
+      buttons: ['退到托盘', '直接退出', '取消'],
+      defaultId: 0,
+      cancelId: 2,
+      title: '退出确认',
+      message: '退出客户端后将无法提供服务',
+      detail: '您可以选择退到托盘继续运行，或者直接退出程序。',
+      icon: icon
+    })
+    
+    switch (result.response) {
+      case 0: // 退到托盘
+        mainWindow?.hide()
+        break
+      case 1: // 直接退出
+        (app as any).isQuiting = true
+        app.quit()
+        break
+      case 2: // 取消
+        break
     }
   })
 

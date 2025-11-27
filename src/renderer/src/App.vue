@@ -7,869 +7,1112 @@
  * @Description: 衣设程序主界面 - 管理系统风格设计
 -->
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
-import request from './api/request'
+import { computed, onBeforeUnmount, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { websocketClient } from './services/websocketClient'
 
-// 状态管理
-const serverStatus = ref(false);
-const remoteServerStatus = ref(false);
-const appVersion = ref('');
-const sidebarCollapsed = ref(false);
-const activeMenu = ref('dashboard');
+const serverStatus = ref(false)
+const appVersion = ref('')
+const activeMenu = ref('dashboard')
 
-// 连接状态相关
-const connectionStatus = ref({
-  isConnected: false,
-  lastError: null as string | null,
-  retryCount: 0,
-  lastAttempt: null as Date | null,
-  reconnecting: false,
-  maxRetriesReached: false
-});
+const wsState = websocketClient.state
+const clientProfile = websocketClient.profile
+const deviceIdentity = websocketClient.identity
+const networkProfile = websocketClient.network
 
-// 菜单项配置
 const menuItems = [
-  { key: 'dashboard', label: '仪表盘', icon: '📊' },
-  { key: 'tasks', label: '任务管理', icon: '📋' },
-  { key: 'settings', label: '系统设置', icon: '⚙️' },
-  { key: 'logs', label: '日志查看', icon: '📝' },
-  { key: 'about', label: '关于', icon: 'ℹ️' },
-];
+  { key: 'dashboard', label: '仪表盘', icon: 'mdi-view-dashboard-outline' },
+  { key: 'tasks', label: '任务管理', icon: 'mdi-clipboard-check-outline' },
+  { key: 'settings', label: '系统设置', icon: 'mdi-cog-outline' },
+  { key: 'logs', label: '日志查看', icon: 'mdi-file-document-outline' },
+  { key: 'about', label: '关于', icon: 'mdi-information-outline' }
+]
 
-// 节流相关状态
-let lastServerCheck = 0
-let lastRemoteServerCheck = 0
-const THROTTLE_DELAY = 5000 // 5秒节流
+const quickLinks = [
+  { label: '商城', icon: 'mdi-storefront-outline', url: 'https://1s.design' },
+  { label: '管理系统', icon: 'mdi-cog-transfer-outline', url: 'http://49.232.186.238:1521' },
+  { label: '设计工具', icon: 'mdi-palette-outline', url: 'http://49.232.186.238:1522' }
+]
 
-// 节流函数
-const throttle = (lastCheck: number, delay: number) => {
-  const now = Date.now()
-  return now - lastCheck >= delay
+const statCards = [
+  {
+    key: 'total',
+    label: '总任务数',
+    icon: 'mdi-view-grid-outline',
+    color: 'primary',
+    value: 0,
+    trend: '+0%',
+    trendLabel: '较昨日',
+    trendPositive: true
+  },
+  {
+    key: 'done',
+    label: '已完成',
+    icon: 'mdi-check-all',
+    color: 'success',
+    value: 0,
+    trend: '+0%',
+    trendLabel: '完成率',
+    trendPositive: true
+  },
+  {
+    key: 'progress',
+    label: '进行中',
+    icon: 'mdi-progress-clock',
+    color: 'warning',
+    value: 0,
+    trend: '实时',
+    trendLabel: '活动任务',
+    trendPositive: true
+  },
+  {
+    key: 'failed',
+    label: '失败',
+    icon: 'mdi-alert-circle-outline',
+    color: 'error',
+    value: 0,
+    trend: '-',
+    trendLabel: '异常待查',
+    trendPositive: false
+  }
+]
+
+const pageDescriptions: Record<string, string> = {
+  dashboard: '系统运行概览与快速入口',
+  tasks: '集中管理批量任务与执行情况',
+  settings: '维护系统参数与设备配置',
+  logs: '追踪运行日志与异常信息',
+  about: '查看客户端版本信息'
 }
 
-const toggleSidebar = () => {
-  sidebarCollapsed.value = !sidebarCollapsed.value;
-};
+const appLogo = new URL('./assets/icon.png', import.meta.url).href
+
+const pageTitle = computed(() => menuItems.find((item) => item.key === activeMenu.value)?.label ?? '')
+const pageDescription = computed(() => pageDescriptions[activeMenu.value] ?? '')
+
+const statusChips = computed(() => {
+  const wsDescriptor = statusMap(wsState.status)
+  return [
+    {
+      key: 'local',
+      label: serverStatus.value ? '本地服务 · 运行中' : '本地服务 · 未连接',
+      state: serverStatus.value ? 'success' : 'error',
+      icon: serverStatus.value ? 'mdi-lan-connect' : 'mdi-lan-disconnect'
+    },
+    {
+      key: 'ws',
+      label: `实时通道 · ${wsDescriptor.text}`,
+      state: wsDescriptor.tone,
+      icon: wsDescriptor.icon
+    }
+  ]
+})
+
+const websocketBadge = computed(() => statusMap(wsState.status))
+
+function statusMap(status: string) {
+  switch (status) {
+    case 'connected':
+      return { tone: 'success', icon: 'mdi-radiobox-marked', text: '已连接' }
+    case 'connecting':
+      return { tone: 'warning', icon: 'mdi-dots-horizontal', text: '连接中' }
+    case 'reconnecting':
+      return { tone: 'warning', icon: 'mdi-refresh', text: '重连中' }
+    case 'error':
+      return { tone: 'error', icon: 'mdi-alert-circle-outline', text: '异常' }
+    default:
+      return { tone: 'muted', icon: 'mdi-lightning-bolt-outline', text: '未连接' }
+  }
+}
+
+function toWsStatusText(status: string) {
+  return statusMap(status).text
+}
+
+const reconnectWebsocket = () => {
+  websocketClient.reconnect()
+  showToast({
+    color: 'primary',
+    icon: 'mdi-rotate-right',
+    message: '正在重新连接实时通道...'
+  })
+}
+
+const showToast = (payload: { color: string; icon: string; message: string }) => {
+  toast.message = payload.message
+  toast.icon = payload.icon
+  toast.color = payload.color
+  toast.visible = true
+}
+
+const logHandler = (log: { level: string; message: string }) => {
+  console.log(log.message)
+}
+
+const copyToClipboard = async (value?: string, label?: string) => {
+  if (!value) {
+    showToast({
+      color: 'warning',
+      icon: 'mdi-alert-outline',
+      message: '没有可复制的内容'
+    })
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(value)
+    showToast({
+      color: 'success',
+      icon: 'mdi-content-copy',
+      message: label ? `${label} 已复制` : '复制成功'
+    })
+  } catch (error) {
+    console.error('复制失败', error)
+    showToast({
+      color: 'error',
+      icon: 'mdi-alert-circle-outline',
+      message: '复制失败，请稍后重试'
+    })
+  }
+}
+
+const refreshLocation = async () => {
+  showToast({
+    color: 'info',
+    icon: 'mdi-map-search',
+    message: '正在刷新位置信息...'
+  })
+  try {
+    await websocketClient.refreshLocation(true)
+    showToast({
+      color: 'success',
+      icon: 'mdi-map-marker',
+      message: '位置信息已更新'
+    })
+  } catch (error) {
+    console.error('刷新位置失败', error)
+    showToast({
+      color: 'error',
+      icon: 'mdi-alert-circle-outline',
+      message: '刷新位置失败，请稍后重试'
+    })
+  }
+}
+
+const toneClass = (tone: string) => {
+  switch (tone) {
+    case 'success':
+      return 'tone-success'
+    case 'warning':
+      return 'tone-warning'
+    case 'error':
+      return 'tone-error'
+    default:
+      return 'tone-muted'
+  }
+}
+
+const toast = reactive({
+  visible: false,
+  icon: 'mdi-information-outline',
+  color: 'primary',
+  message: ''
+})
+
+const heroHighlights = computed(() => [
+  {
+    key: 'latency',
+    label: '本地服务',
+    value: serverStatus.value ? '在线' : '离线',
+    icon: serverStatus.value ? 'mdi-lan-check' : 'mdi-lan-pending',
+    color: serverStatus.value ? 'success' : 'warning'
+  },
+  {
+    key: 'browser',
+    label: '浏览器通道',
+    value: toWsStatusText(wsState.status),
+    icon: statusMap(wsState.status).icon,
+    color: statusMap(wsState.status).tone === 'success' ? 'success' : statusMap(wsState.status).tone === 'warning' ? 'warning' : 'error'
+  }
+])
+
+let localTimer: ReturnType<typeof window.setInterval> | null = null
+let lastServerCheck = 0
+const THROTTLE_DELAY = 5000
+
+const throttle = (lastCheck: number, delay: number) => Date.now() - lastCheck >= delay
 
 const selectMenu = (key: string) => {
-  activeMenu.value = key;
-};
-
-onMounted(() => {
-  startServerPolling();
-  startRemoteServerPolling();
-  window.api.getAppVersion().then(v => appVersion.value = v);
-  
-  // 监听连接状态事件
-  window.api.onConnectionStatus((status: any) => {
-    connectionStatus.value = { ...connectionStatus.value, ...status };
-  });
-});
-
-onUnmounted(() => {
-  // 清理定时器
-});
+  activeMenu.value = key
+}
 
 const startServerPolling = () => {
-  checkServerStatus();
-  setInterval(checkServerStatus, 3000);
-};
-
-const startRemoteServerPolling = () => {
-  checkRemoteServerStatus();
-  setInterval(checkRemoteServerStatus, 5000);
-};
+  checkServerStatus()
+  if (localTimer) window.clearInterval(localTimer)
+  localTimer = window.setInterval(checkServerStatus, 4000)
+}
 
 const checkServerStatus = async () => {
-  if (!throttle(lastServerCheck, THROTTLE_DELAY)) {
-    return
-  }
+  if (!throttle(lastServerCheck, THROTTLE_DELAY)) return
   lastServerCheck = Date.now()
-  
   try {
-    const response = await fetch("http://localhost:1519/api/health");
-    serverStatus.value = response.ok;
+    const response = await fetch('http://localhost:1519/api/health')
+    serverStatus.value = response.ok
   } catch {
-    serverStatus.value = false;
+    serverStatus.value = false
   }
-};
+}
 
-const checkRemoteServerStatus = async () => {
-  if (!throttle(lastRemoteServerCheck, THROTTLE_DELAY)) {
-    return
-  }
-  lastRemoteServerCheck = Date.now()
-  
-  try {
-    await request.get({ url: '/test' });
-    remoteServerStatus.value = true;
-  } catch {
-    remoteServerStatus.value = false;
-  }
-};
+const hideToTray = async () => {
+  await window.api.hideMainWindow()
+}
 
-const hideToTray = async (): Promise<void> => {
-  await window.api.hideMainWindow();
-};
+onMounted(() => {
+  startServerPolling()
+  websocketClient.connect()
+  websocketClient.events.on('toast', showToast)
+  websocketClient.events.on('log', logHandler)
+  window.api.getAppVersion().then((v) => {
+    appVersion.value = v
+    websocketClient.updateClientInfo({ appVersion: v })
+  })
+})
+
+onBeforeUnmount(() => {
+  if (localTimer) window.clearInterval(localTimer)
+  websocketClient.disconnect()
+})
+
+onUnmounted(() => {
+  websocketClient.events.off('toast', showToast)
+  websocketClient.events.off('log', logHandler)
+})
 </script>
 
 <template>
-  <div class="app-container">
-    <!-- 侧边栏 -->
-    <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
-      <div class="sidebar-header">
-        <div class="logo-section">
-          <img alt="logo" class="logo" src="./assets/icon.png" />
-          <span v-if="!sidebarCollapsed" class="logo-text">衣设管理</span>
-        </div>
-        <button class="sidebar-toggle" @click="toggleSidebar">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path v-if="!sidebarCollapsed" d="M18 6L6 18M6 6l12 12"/>
-            <path v-else d="M3 12h18M3 6h18M3 18h18"/>
-          </svg>
-        </button>
+  <v-app>
+    <v-snackbar
+      v-model="toast.visible"
+      :timeout="3000"
+      :color="toast.color"
+      variant="tonal"
+      location="top right"
+      class="ws-snackbar"
+    >
+      <v-icon size="18" class="mr-2">{{ toast.icon }}</v-icon>
+      {{ toast.message }}
+    </v-snackbar>
+    <v-layout class="app-layout">
+      <v-navigation-drawer width="232" permanent class="app-drawer">
+        <v-divider class="mx-3 mb-2" />
+
+        <v-list density="compact" nav class="pa-0 mt-1" :lines="false">
+          <v-list-item
+            v-for="item in menuItems"
+            :key="item.key"
+            :value="item.key"
+            :active="activeMenu === item.key"
+            rounded="lg"
+            class="mx-2"
+            @click="selectMenu(item.key)"
+          >
+            <template #prepend>
+              <v-icon size="18" :icon="item.icon" />
+            </template>
+            <v-list-item-title>{{ item.label }}</v-list-item-title>
+          </v-list-item>
+        </v-list>
+
+        <template #append>
+          <v-divider class="mx-3 mb-2" />
+          <div class="version-pill">
+            <v-icon size="14" icon="mdi-alpha-v-box-outline" class="mr-1" />
+            客户端 v{{ appVersion || '--' }}
+          </div>
+        </template>
+      </v-navigation-drawer>
+
+      <div class="main-surface">
+        <v-app-bar flat height="64" class="app-bar" density="comfortable">
+          <div class="bar-title">
+            <span class="heading">{{ pageTitle }}</span>
+            <span class="caption text-medium-emphasis">{{ pageDescription }}</span>
+          </div>
+          <div class="status-chips">
+            <v-chip
+              v-for="chip in statusChips"
+              :key="chip.key"
+              class="status-chip"
+              :class="toneClass(chip.state)"
+              variant="flat"
+              rounded="pill"
+            >
+              <v-icon size="16" class="mr-2">{{ chip.icon }}</v-icon>
+              {{ chip.label }}
+            </v-chip>
+          </div>
+          <v-spacer />
+          <v-btn
+            color="primary"
+            variant="flat"
+            size="small"
+            prepend-icon="mdi-tray-arrow-down"
+            @click="hideToTray"
+          >
+            隐藏到托盘
+          </v-btn>
+        </v-app-bar>
+
+        <v-main class="main-scroll">
+          <v-container fluid class="py-6 px-6">
+            <template v-if="activeMenu === 'dashboard'">
+              <v-row class="hero-row mb-6" dense>
+                <v-col cols="12">
+                  <v-sheet class="hero-sheet" rounded="xl" elevation="0">
+                    <div class="hero-shell">
+                      <div class="hero-copy">
+                        <p class="hero-eyebrow">控制中心</p>
+                        <h2 class="hero-title">实时掌握衣设客户端运行状况</h2>
+                        <p class="hero-desc">
+                          关键节点、服务连接与任务进度在此一目了然，便于随时调整策略。
+                        </p>
+                        <div class="hero-actions">
+                          <v-btn color="primary" prepend-icon="mdi-refresh-auto">
+                            立即巡检
+                          </v-btn>
+                          <v-btn variant="text" color="primary" prepend-icon="mdi-file-chart-outline">
+                            导出报告
+                          </v-btn>
+                        </div>
+                      </div>
+                      <div class="hero-metrics">
+                        <div
+                          v-for="item in heroHighlights"
+                          :key="item.key"
+                          class="hero-metric"
+                        >
+                          <div class="hero-metric-icon" :class="`text-${item.color}`">
+                            <v-icon :icon="item.icon" />
+                          </div>
+                          <div class="hero-metric-label">{{ item.label }}</div>
+                          <div class="hero-metric-value">{{ item.value }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </v-sheet>
+                </v-col>
+              </v-row>
+
+              <v-row dense>
+                <v-col
+                  v-for="card in statCards"
+                  :key="card.key"
+                  cols="12"
+                  sm="6"
+                  md="3"
+                >
+                  <v-card
+                    class="stat-card"
+                    elevation="2"
+                    rounded="lg"
+                    variant="flat"
+                    :class="`stat-card--${card.color}`"
+                  >
+                    <v-card-text class="d-flex align-center ga-4 pa-4">
+                      <v-avatar :color="card.color" size="38" variant="tonal">
+                        <v-icon size="20">{{ card.icon }}</v-icon>
+                      </v-avatar>
+                      <div class="stat-meta">
+                        <div class="stat-value">{{ card.value }}</div>
+                        <div class="stat-label">{{ card.label }}</div>
+                        <div class="stat-trend" :class="card.trendPositive ? 'text-success' : 'text-error'">
+                          <v-icon
+                            class="mr-1"
+                            size="14"
+                            :icon="card.trendPositive ? 'mdi-arrow-up' : 'mdi-arrow-down'"
+                          />
+                          <span>{{ card.trend }}</span>
+                          <span class="stat-trend-label">{{ card.trendLabel }}</span>
+                        </div>
+                      </div>
+                    </v-card-text>
+                  </v-card>
+                </v-col>
+              </v-row>
+
+              <v-row dense class="mt-1">
+                <v-col cols="12" lg="6">
+                  <v-card elevation="2" rounded="xl" class="panel-card">
+                    <v-card-title class="panel-title d-flex align-center ga-2">
+                      <v-icon icon="mdi-heart-pulse" size="16" />
+                      系统状态
+                    </v-card-title>
+                    <v-divider />
+                    <v-card-text class="status-list">
+                      <div class="status-row">
+                        <span>本地服务</span>
+                        <v-chip
+                          class="status-pill"
+                          :class="toneClass(serverStatus ? 'success' : 'error')"
+                          variant="flat"
+                          rounded="pill"
+                        >
+                          <v-icon size="14" class="mr-1">
+                            {{ serverStatus ? 'mdi-check-circle-outline' : 'mdi-close-circle-outline' }}
+                          </v-icon>
+                          {{ serverStatus ? '运行中' : '未连接' }}
+                        </v-chip>
+                      </div>
+                      <div class="status-row">
+                        <span>实时通道</span>
+                        <v-chip
+                          class="status-pill"
+                          :class="toneClass(websocketBadge.tone)"
+                          rounded="pill"
+                          variant="flat"
+                        >
+                          <v-icon size="14" class="mr-1">{{ websocketBadge.icon }}</v-icon>
+                          {{ websocketBadge.text }}
+                        </v-chip>
+                      </div>
+                      <div class="ws-meta" v-if="wsState.lastLatencyMs || wsState.lastError">
+                        <span v-if="wsState.lastLatencyMs">延迟 {{ wsState.lastLatencyMs }} ms</span>
+                        <span v-if="wsState.lastError" class="ws-error"> {{ wsState.lastError }}</span>
+                      </div>
+                    </v-card-text>
+                    <v-divider />
+                    <v-card-actions class="pa-4">
+                      <v-btn
+                        size="small"
+                        variant="tonal"
+                        color="primary"
+                        prepend-icon="mdi-rotate-right"
+                        @click="reconnectWebsocket"
+                      >
+                        重连通道
+                      </v-btn>
+                      <div class="ws-endpoint">
+                        <span>端点</span>
+                        <code>{{ wsState.endpoint }}</code>
+                      </div>
+                    </v-card-actions>
+                  </v-card>
+                </v-col>
+
+                <v-col cols="12" lg="6">
+                  <v-card elevation="2" rounded="xl" class="panel-card">
+                    <v-card-title class="panel-title d-flex align-center ga-2">
+                      <v-icon icon="mdi-flash-outline" size="16" />
+                      快速操作
+                    </v-card-title>
+                    <v-divider />
+                    <v-card-text>
+                      <div class="quick-actions">
+                        <v-btn
+                          v-for="link in quickLinks"
+                          :key="link.url"
+                          variant="tonal"
+                          color="primary"
+                          :href="link.url"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="quick-btn"
+                          :prepend-icon="link.icon"
+                        >
+                          {{ link.label }}
+                        </v-btn>
+                      </div>
+                    </v-card-text>
+                  </v-card>
+                </v-col>
+
+                <v-col cols="12" lg="6">
+                  <v-card elevation="2" rounded="xl" class="panel-card">
+                    <v-card-title class="panel-title d-flex align-center ga-2">
+                      <v-icon icon="mdi-shield-account" size="16" />
+                      客户端身份
+                    </v-card-title>
+                    <v-divider />
+                    <v-card-text class="client-card">
+                      <div class="client-info-row">
+                        <div class="client-info-label">客户端 ID</div>
+                        <div class="client-info-value">
+                          <code>{{ clientProfile.clientId || '--' }}</code>
+                          <v-btn
+                            icon
+                            size="24"
+                            variant="text"
+                            @click="copyToClipboard(clientProfile.clientId, '客户端 ID')"
+                          >
+                            <v-icon size="16">mdi-content-copy</v-icon>
+                          </v-btn>
+                        </div>
+                      </div>
+                      <div class="client-info-row">
+                        <div class="client-info-label">机器码</div>
+                        <div class="client-info-value">
+                          <v-chip size="small" color="primary" variant="tonal" v-if="clientProfile.machine?.code">
+                            {{ clientProfile.machine.code }}
+                          </v-chip>
+                          <span v-else>--</span>
+                        </div>
+                      </div>
+                      <div class="client-info-row">
+                        <div class="client-info-label">系统</div>
+                        <div class="client-info-value">
+                          {{ clientProfile.platform || clientProfile.machine?.platform || '未知' }}
+                        </div>
+                      </div>
+                      <div class="client-info-row">
+                        <div class="client-info-label">硬件</div>
+                        <div class="client-info-value">
+                          <span>
+                            {{ clientProfile.device?.hardwareConcurrency || '未知' }} 核 /
+                            {{ clientProfile.device?.memory ? `${clientProfile.device.memory} GB` : '未知' }}
+                          </span>
+                        </div>
+                      </div>
+                      <div class="client-info-row">
+                        <div class="client-info-label">位置</div>
+                        <div class="client-info-value client-location">
+                          <div>
+                            <strong>{{ clientProfile.location?.ip || '--' }}</strong>
+                            <span v-if="clientProfile.location?.city">
+                              （{{ clientProfile.location.city }}
+                              <span v-if="clientProfile.location?.region">·{{ clientProfile.location.region }}</span>
+                              <span v-if="clientProfile.location?.country">·{{ clientProfile.location.country }}</span>）
+                            </span>
+                            <div class="client-location-org" v-if="clientProfile.location?.org">
+                              {{ clientProfile.location.org }}
+                            </div>
+                          </div>
+                          <v-btn
+                            size="small"
+                            variant="text"
+                            color="primary"
+                            prepend-icon="mdi-refresh"
+                            @click="refreshLocation"
+                          >
+                            更新
+                          </v-btn>
+                        </div>
+                      </div>
+                    </v-card-text>
+                  </v-card>
+                </v-col>
+              </v-row>
+            </template>
+
+            <template v-else-if="['tasks', 'settings', 'logs'].includes(activeMenu)">
+              <v-card elevation="2" rounded="xl" class="panel-card">
+                <v-card-title class="panel-title">
+                  {{ pageTitle }}
+                </v-card-title>
+                <v-divider />
+                <v-card-text class="text-center py-10 text-medium-emphasis">
+                  功能开发中，敬请期待…
+                </v-card-text>
+              </v-card>
+            </template>
+
+            <template v-else-if="activeMenu === 'about'">
+              <v-card border="sm" class="about-card mx-auto" max-width="480">
+                <v-card-text class="d-flex flex-column align-center py-8 ga-2">
+                  <v-avatar size="72" rounded="lg">
+                    <v-img :src="appLogo" cover alt="logo" />
+                  </v-avatar>
+                  <div class="about-title">衣设客户端</div>
+                  <div class="about-version">版本 v{{ appVersion || '--' }}</div>
+                  <div class="about-desc">最具创意的设计工具</div>
+                  <v-btn
+                    variant="text"
+                    color="primary"
+                    href="https://github.com/chan-max"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    prepend-icon="mdi-github"
+                  >
+                    Jackie Chan
+                  </v-btn>
+                </v-card-text>
+              </v-card>
+            </template>
+          </v-container>
+        </v-main>
       </div>
-      
-      <nav class="sidebar-nav">
-        <div 
-          v-for="item in menuItems" 
-          :key="item.key"
-          class="nav-item"
-          :class="{ active: activeMenu === item.key }"
-          @click="selectMenu(item.key)"
-        >
-          <span class="nav-icon">{{ item.icon }}</span>
-          <span v-if="!sidebarCollapsed" class="nav-label">{{ item.label }}</span>
-        </div>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="version-info" v-if="!sidebarCollapsed">
-          <span class="version-text">v{{ appVersion }}</span>
-        </div>
-      </div>
-    </aside>
-
-    <!-- 主内容区 -->
-    <div class="main-wrapper">
-      <!-- 顶部导航栏 -->
-      <header class="topbar">
-        <div class="topbar-left">
-          <h1 class="page-title">
-            <span v-if="activeMenu === 'dashboard'">仪表盘</span>
-            <span v-else-if="activeMenu === 'tasks'">任务管理</span>
-            <span v-else-if="activeMenu === 'settings'">系统设置</span>
-            <span v-else-if="activeMenu === 'logs'">日志查看</span>
-            <span v-else-if="activeMenu === 'about'">关于</span>
-          </h1>
-        </div>
-        
-        <div class="topbar-right">
-          <!-- 状态指示器 -->
-          <div class="status-group">
-            <div class="status-badge" :class="{ online: serverStatus, offline: !serverStatus }" title="本地服务">
-              <span class="status-dot"></span>
-              <span class="status-label">本地</span>
-            </div>
-            <div class="status-badge" :class="{ online: remoteServerStatus, offline: !remoteServerStatus }" title="远程服务">
-              <span class="status-dot"></span>
-              <span class="status-label">远程</span>
-            </div>
-            <div class="status-badge" :class="{ 
-              online: connectionStatus.isConnected, 
-              offline: !connectionStatus.isConnected && !connectionStatus.reconnecting,
-              connecting: connectionStatus.reconnecting 
-            }" title="浏览器连接">
-              <span class="status-dot"></span>
-              <span class="status-label">浏览器</span>
-            </div>
-          </div>
-
-          <!-- 操作按钮 -->
-          <div class="action-buttons">
-            <button @click="hideToTray" class="btn btn-secondary">隐藏到托盘</button>
-          </div>
-        </div>
-      </header>
-
-      <!-- 内容区域 -->
-      <main class="content-area">
-        <!-- 仪表盘 -->
-        <div v-if="activeMenu === 'dashboard'" class="dashboard">
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-icon">📊</div>
-              <div class="stat-content">
-                <div class="stat-value">0</div>
-                <div class="stat-label">总任务数</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">✅</div>
-              <div class="stat-content">
-                <div class="stat-value">0</div>
-                <div class="stat-label">已完成</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">⏳</div>
-              <div class="stat-content">
-                <div class="stat-value">0</div>
-                <div class="stat-label">进行中</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">❌</div>
-              <div class="stat-content">
-                <div class="stat-value">0</div>
-                <div class="stat-label">失败</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="dashboard-content">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">系统状态</h3>
-              </div>
-              <div class="card-body">
-                <div class="status-list">
-                  <div class="status-item">
-                    <span class="status-name">本地服务</span>
-                    <span class="status-value" :class="{ success: serverStatus, error: !serverStatus }">
-                      {{ serverStatus ? '运行中' : '未连接' }}
-                    </span>
-                  </div>
-                  <div class="status-item">
-                    <span class="status-name">远程服务</span>
-                    <span class="status-value" :class="{ success: remoteServerStatus, error: !remoteServerStatus }">
-                      {{ remoteServerStatus ? '已连接' : '未连接' }}
-                    </span>
-                  </div>
-                  <div class="status-item">
-                    <span class="status-name">浏览器连接</span>
-                    <span class="status-value" :class="{ 
-                      success: connectionStatus.isConnected, 
-                      error: !connectionStatus.isConnected && !connectionStatus.reconnecting,
-                      warning: connectionStatus.reconnecting 
-                    }">
-                      {{ connectionStatus.isConnected ? '已连接' : connectionStatus.reconnecting ? '重连中' : '未连接' }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">快速操作</h3>
-              </div>
-              <div class="card-body">
-                <div class="quick-actions">
-                  <a href="https://1s.design" target="_blank" class="quick-action-btn">
-                    <span class="action-icon">🛒</span>
-                    <span class="action-text">商城</span>
-                  </a>
-                  <a href="http://49.232.186.238:1521" target="_blank" class="quick-action-btn">
-                    <span class="action-icon">⚙️</span>
-                    <span class="action-text">管理系统</span>
-                  </a>
-                  <a href="http://49.232.186.238:1522" target="_blank" class="quick-action-btn">
-                    <span class="action-icon">🎨</span>
-                    <span class="action-text">设计工具</span>
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 其他菜单内容 -->
-        <div v-else-if="activeMenu === 'tasks'" class="page-content">
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">任务管理</h3>
-            </div>
-            <div class="card-body">
-              <p class="empty-state">任务管理功能开发中...</p>
-            </div>
-          </div>
-        </div>
-
-        <div v-else-if="activeMenu === 'settings'" class="page-content">
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">系统设置</h3>
-            </div>
-            <div class="card-body">
-              <p class="empty-state">系统设置功能开发中...</p>
-            </div>
-          </div>
-        </div>
-
-        <div v-else-if="activeMenu === 'logs'" class="page-content">
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">日志查看</h3>
-            </div>
-            <div class="card-body">
-              <p class="empty-state">日志查看功能开发中...</p>
-            </div>
-          </div>
-        </div>
-
-        <div v-else-if="activeMenu === 'about'" class="page-content">
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">关于</h3>
-            </div>
-            <div class="card-body">
-              <div class="about-content">
-                <img alt="logo" class="about-logo" src="./assets/icon.png" />
-                <h2 class="about-title">衣设客户端</h2>
-                <p class="about-version">版本: v{{ appVersion }}</p>
-                <p class="about-desc">最具创意的设计工具</p>
-                <p class="about-creator">
-                  Created by <a href="https://github.com/chan-max" target="_blank" class="creator-link">Jackie Chan</a>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  </div>
+    </v-layout>
+  </v-app>
 </template>
 
 <style scoped>
-/* 全局样式重置 */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+.app-layout {
+  min-height: 100vh;
+  background: #eef2f9;
+  color: #1f2937;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'PingFang SC',
+    'Microsoft YaHei',
+    sans-serif;
 }
 
-.app-container {
-  display: flex;
-  height: 100vh;
-  background: #0f0f0f;
-  color: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-  overflow: hidden;
+.ws-snackbar :deep(.v-snackbar__wrapper) {
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
 }
 
-/* 侧边栏样式 */
-.sidebar {
-  width: 240px;
-  background: #1a1a1a;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  flex-direction: column;
-  transition: width 0.3s ease;
-  flex-shrink: 0;
+.app-drawer {
+  border-right: 1px solid #e5e7eb;
+  background: #ffffff;
+  transition: width 0.25s ease;
+  /* 给 macOS 左上角原生窗口按钮留出更充足的空间，避免遮挡菜单 */
+  padding-top: 44px;
 }
 
-.sidebar.collapsed {
-  width: 64px;
-}
-
-.sidebar-header {
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.logo-section {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.logo {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-}
-
-.logo-text {
-  font-size: 16px;
-  font-weight: 600;
-  color: #ffffff;
-  white-space: nowrap;
-}
-
-.sidebar-toggle {
-  background: transparent;
-  border: none;
-  color: #ffffff;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
+.version-pill {
+  margin: 0 16px 16px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #4b5563;
+  background: #f3f4f6;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
 }
 
-.sidebar-toggle:hover {
-  background: rgba(255, 255, 255, 0.1);
+:deep(.v-navigation-drawer .v-list-item--active) {
+  background: rgba(37, 99, 235, 0.08);
 }
 
-.sidebar-nav {
-  flex: 1;
-  padding: 16px 0;
-  overflow-y: auto;
+:deep(.v-navigation-drawer .v-list-item--active .v-icon) {
+  color: #2563eb;
 }
 
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 20px;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: #b0b0b0;
-  position: relative;
+:deep(.v-list-item-title) {
+  font-size: 12.5px;
+  letter-spacing: 0.2px;
+  color: #111827;
 }
 
-.nav-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #ffffff;
-}
-
-.nav-item.active {
-  background: rgba(0, 255, 136, 0.1);
-  color: #00ff88;
-}
-
-.nav-item.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: #00ff88;
-}
-
-.nav-icon {
-  font-size: 20px;
-  width: 24px;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.nav-label {
-  font-size: 14px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.sidebar.collapsed .nav-label {
-  display: none;
-}
-
-.sidebar-footer {
-  padding: 16px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.version-info {
-  font-size: 12px;
-  color: #808080;
-  text-align: center;
-}
-
-.sidebar.collapsed .version-info {
-  display: none;
-}
-
-/* 主内容区 */
-.main-wrapper {
-  flex: 1;
+.main-surface {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  background: #f5f7fb;
 }
 
-/* 顶部导航栏 */
-.topbar {
-  height: 64px;
-  background: #1a1a1a;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+.app-bar {
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+  padding-inline: 20px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+}
+
+.bar-title {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  flex-shrink: 0;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.topbar-left {
-  display: flex;
-  align-items: center;
-}
-
-.page-title {
-  font-size: 20px;
+.heading {
+  font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
-  margin: 0;
+  letter-spacing: 0.2px;
+  color: #111827;
 }
 
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+.caption {
+  font-size: 11.5px;
+  letter-spacing: 0.2px;
+  color: #6b7280;
 }
 
-.status-group {
+.status-chips {
   display: flex;
-  gap: 8px;
-}
-
-.status-badge {
-  display: flex;
-  align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  background: rgba(30, 30, 30, 0.9);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  flex-wrap: wrap;
+  margin-left: 24px;
+}
+
+.status-chip {
   font-size: 12px;
+  letter-spacing: 0.1px;
+  padding-inline: 14px;
+  background: rgba(15, 23, 42, 0.04);
+  color: #111827;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
-.status-badge.online {
-  border-color: rgba(0, 255, 136, 0.3);
-  background: rgba(0, 255, 136, 0.1);
+.hero-sheet {
+  background: radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent),
+    linear-gradient(135deg, #ffffff 0%, #f6f9ff 65%);
+  border: 1px solid rgba(37, 99, 235, 0.08);
+  padding: 32px;
 }
 
-.status-badge.offline {
-  border-color: rgba(255, 68, 68, 0.3);
-  background: rgba(255, 68, 68, 0.1);
-}
-
-.status-badge.connecting {
-  border-color: rgba(255, 170, 0, 0.3);
-  background: rgba(255, 170, 0, 0.1);
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #666;
-}
-
-.status-badge.online .status-dot {
-  background: #00ff88;
-  box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.3);
-}
-
-.status-badge.offline .status-dot {
-  background: #ff4444;
-  box-shadow: 0 0 0 2px rgba(255, 68, 68, 0.3);
-}
-
-.status-badge.connecting .status-dot {
-  background: #ffaa00;
-  box-shadow: 0 0 0 2px rgba(255, 170, 0, 0.3);
-}
-
-.status-label {
-  color: #ffffff;
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.action-buttons {
+.hero-shell {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 32px;
 }
 
-.btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
+.hero-copy {
+  flex: 1.2;
 }
 
-.btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+.hero-eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #6366f1;
+  margin-bottom: 8px;
 }
 
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.15);
+.hero-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
 }
 
-.btn-danger {
-  background: #ff4444;
-  color: #ffffff;
+.hero-desc {
+  font-size: 14px;
+  color: #475569;
+  margin-bottom: 16px;
 }
 
-.btn-danger:hover {
-  background: #ff3333;
-}
-
-/* 内容区域 */
-.content-area {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px;
-  background: #0f0f0f;
-}
-
-/* 仪表盘 */
-.dashboard {
+.hero-actions {
   display: flex;
-  flex-direction: column;
-  gap: 24px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.stats-grid {
+.hero-metrics {
+  flex: 0.8;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 16px;
+}
+
+.hero-metric {
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.02);
+  min-width: 120px;
+  border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.hero-metric-icon {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  background: rgba(99, 102, 241, 0.12);
+}
+
+.hero-metric-icon.text-primary {
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.15);
+}
+
+.hero-metric-icon.text-success {
+  color: #16a34a;
+  background: rgba(22, 163, 74, 0.16);
+}
+
+.hero-metric-icon.text-warning {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.18);
+}
+
+.hero-metric-icon.text-error {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.18);
+}
+
+.hero-metric-label {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.hero-metric-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.main-scroll {
+  background: linear-gradient(180deg, #f6f8fc 0%, #eef2f9 100%);
 }
 
 .stat-card {
-  background: #1a1a1a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  transition: all 0.2s;
+  background: #ffffff;
+  border: 1px solid transparent;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
 }
 
 .stat-card:hover {
-  border-color: rgba(0, 255, 136, 0.3);
   transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
 }
 
-.stat-icon {
-  font-size: 32px;
-  width: 48px;
-  height: 48px;
+.stat-card--primary {
+  border-color: rgba(37, 99, 235, 0.15);
+}
+
+.stat-card--success {
+  border-color: rgba(22, 163, 74, 0.15);
+}
+
+.stat-card--warning {
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.stat-card--error {
+  border-color: rgba(220, 38, 38, 0.15);
+}
+
+.stat-meta {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 255, 136, 0.1);
-  border-radius: 8px;
-}
-
-.stat-content {
-  flex: 1;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .stat-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 4px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
 }
 
 .stat-label {
+  font-size: 11.5px;
+  color: #6b7280;
+}
+
+.stat-trend {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  margin-top: 6px;
+}
+
+.stat-trend.text-success {
+  color: #16a34a;
+}
+
+.stat-trend.text-error {
+  color: #dc2626;
+}
+
+.stat-trend-label {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-left: 4px;
+}
+
+.panel-card {
+  background: #ffffff;
+  border: 1px solid transparent;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.panel-title {
   font-size: 13px;
-  color: #b0b0b0;
-}
-
-.dashboard-content {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 24px;
-}
-
-.card {
-  background: #1a1a1a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.card-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.card-title {
-  font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
-  margin: 0;
-}
-
-.card-body {
-  padding: 20px;
+  letter-spacing: 0.2px;
+  color: #1f2937;
 }
 
 .status-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  font-size: 12px;
 }
 
-.status-item {
+.status-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 8px;
 }
 
-.status-name {
-  font-size: 14px;
-  color: #b0b0b0;
+.status-pill {
+  min-width: 120px;
+  justify-content: center;
+  font-size: 12px;
+  border: 1px solid transparent;
 }
 
-.status-value {
-  font-size: 13px;
-  font-weight: 500;
-  padding: 4px 12px;
-  border-radius: 12px;
+.tone-success {
+  background: linear-gradient(180deg, #f1fff4, #e4f8e8);
+  border-color: rgba(52, 199, 89, 0.4);
+  color: #15803d;
 }
 
-.status-value.success {
-  background: rgba(0, 255, 136, 0.1);
-  color: #00ff88;
+.tone-warning {
+  background: linear-gradient(180deg, #fff9eb, #fff4db);
+  border-color: rgba(255, 204, 0, 0.4);
+  color: #b45309;
 }
 
-.status-value.error {
-  background: rgba(255, 68, 68, 0.1);
-  color: #ff4444;
+.tone-error {
+  background: linear-gradient(180deg, #fff4f2, #ffe6e3);
+  border-color: rgba(255, 69, 58, 0.4);
+  color: #b91c1c;
 }
 
-.status-value.warning {
-  background: rgba(255, 170, 0, 0.1);
-  color: #ffaa00;
+.tone-muted {
+  background: linear-gradient(180deg, #f7f7f8, #f1f2f4);
+  border-color: rgba(148, 163, 184, 0.4);
+  color: #475569;
+}
+
+.ws-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.ws-meta .ws-error {
+  color: #dc2626;
+}
+
+.ws-endpoint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #64748b;
+  margin-left: auto;
+}
+
+.ws-endpoint code {
+  background: rgba(15, 23, 42, 0.04);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 11px;
+  color: #0f172a;
 }
 
 .quick-actions {
   display: flex;
-  gap: 12px;
   flex-wrap: wrap;
+  gap: 10px;
 }
 
-.quick-action-btn {
+.quick-btn {
+  min-width: 126px;
+}
+
+.client-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.client-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.client-info-label {
+  color: #6b7280;
+  min-width: 80px;
+}
+
+.client-info-value {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  text-decoration: none;
-  color: #ffffff;
-  transition: all 0.2s;
+  font-weight: 600;
+  color: #111827;
 }
 
-.quick-action-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(0, 255, 136, 0.3);
-  transform: translateY(-2px);
+.client-info-value code {
+  background: rgba(15, 23, 42, 0.04);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
 }
 
-.action-icon {
-  font-size: 18px;
+.client-location {
+  width: 100%;
+  justify-content: space-between;
+  flex-wrap: wrap;
 }
 
-.action-text {
-  font-size: 14px;
-  font-weight: 500;
+.client-location-org {
+  font-weight: 400;
+  font-size: 11px;
+  color: #94a3b8;
 }
 
-/* 其他页面 */
-.page-content {
-  max-width: 1200px;
-}
-
-.empty-state {
-  text-align: center;
-  color: #808080;
-  padding: 40px;
-  font-size: 14px;
-}
-
-/* 关于页面 */
-.about-content {
-  text-align: center;
-  padding: 40px 20px;
-}
-
-.about-logo {
-  width: 80px;
-  height: 80px;
-  margin-bottom: 20px;
-  border-radius: 12px;
+.about-card {
+  background: #ffffff;
+  border: 1px solid transparent;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 }
 
 .about-title {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 600;
-  color: #ffffff;
-  margin-bottom: 8px;
+  color: #111827;
 }
 
 .about-version {
-  font-size: 14px;
-  color: #b0b0b0;
-  margin-bottom: 8px;
+  font-size: 12px;
+  color: #6b7280;
 }
 
 .about-desc {
-  font-size: 16px;
-  color: #808080;
-  margin-bottom: 20px;
+  font-size: 13px;
+  color: #4b5563;
 }
 
-.about-creator {
-  font-size: 14px;
-  color: #808080;
+:deep(.v-chip) {
+  border-radius: 999px;
 }
 
-.creator-link {
-  color: #00ff88;
-  text-decoration: none;
+:deep(.v-card-text),
+:deep(.v-card-title) {
+  padding-inline: 16px;
 }
 
-.creator-link:hover {
-  text-decoration: underline;
-}
+@media (max-width: 960px) {
+  .status-chips {
+    margin-left: 12px;
+    max-width: 320px;
+  }
 
-/* 授权锁定遮罩 */
-/* 滚动条样式 */
-.content-area::-webkit-scrollbar,
-.sidebar-nav::-webkit-scrollbar {
-  width: 6px;
-}
+  .app-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+    height: auto;
+    padding-block: 8px;
+  }
 
-.content-area::-webkit-scrollbar-track,
-.sidebar-nav::-webkit-scrollbar-track {
-  background: transparent;
-}
+  .hero-shell {
+    flex-direction: column;
+  }
 
-.content-area::-webkit-scrollbar-thumb,
-.sidebar-nav::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-}
-
-.content-area::-webkit-scrollbar-thumb:hover,
-.sidebar-nav::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  .hero-metrics {
+    width: 100%;
+  }
 }
 </style>
