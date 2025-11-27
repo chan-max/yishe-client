@@ -9,13 +9,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
 import request from './api/request'
-import { isClientAuthorized, logoutToken } from './api/user'
 
 // 状态管理
 const serverStatus = ref(false);
 const remoteServerStatus = ref(false);
 const appVersion = ref('');
-const isAuthorized = ref(true);
 const sidebarCollapsed = ref(false);
 const activeMenu = ref('dashboard');
 
@@ -41,33 +39,12 @@ const menuItems = [
 // 节流相关状态
 let lastServerCheck = 0
 let lastRemoteServerCheck = 0
-let lastAuthCheck = 0
 const THROTTLE_DELAY = 5000 // 5秒节流
 
 // 节流函数
 const throttle = (lastCheck: number, delay: number) => {
   const now = Date.now()
   return now - lastCheck >= delay
-}
-
-// 带节流的授权状态检查
-const checkAuthStatus = async () => {
-  if (!throttle(lastAuthCheck, THROTTLE_DELAY)) {
-    return
-  }
-  lastAuthCheck = Date.now()
-  
-  try {
-    const token = await window.api.getToken();
-    isAuthorized.value = !!token;
-  } catch {
-    isAuthorized.value = false;
-  }
-};
-
-const handleLogout = async () => {
-  await logoutToken()
-  await checkAuthStatus()
 }
 
 const toggleSidebar = () => {
@@ -82,8 +59,6 @@ onMounted(() => {
   startServerPolling();
   startRemoteServerPolling();
   window.api.getAppVersion().then(v => appVersion.value = v);
-  checkAuthStatus()
-  setInterval(checkAuthStatus, 5000)
   
   // 监听连接状态事件
   window.api.onConnectionStatus((status: any) => {
@@ -126,7 +101,7 @@ const checkRemoteServerStatus = async () => {
   lastRemoteServerCheck = Date.now()
   
   try {
-    const response = await request.get({ url: '/test' });
+    await request.get({ url: '/test' });
     remoteServerStatus.value = true;
   } catch {
     remoteServerStatus.value = false;
@@ -140,23 +115,6 @@ const hideToTray = async (): Promise<void> => {
 
 <template>
   <div class="app-container">
-    <!-- 授权锁定遮罩 -->
-    <div v-if="!isAuthorized" class="auth-locked-overlay">
-      <div class="auth-locked-content">
-        <div class="lock-icon-ani">
-          <svg width="38" height="38" viewBox="0 0 38 38" fill="none">
-            <rect x="7" y="17" width="24" height="15" rx="5" fill="#191919" stroke="#ff4444" stroke-width="1.5"/>
-            <path d="M12 17v-4a7 7 0 1 1 14 0v4" stroke="#ff4444" stroke-width="1.5" fill="none"/>
-            <circle cx="19" cy="26" r="2" fill="#ff4444"/>
-            <rect x="18" y="26" width="2" height="4" rx="1" fill="#ff4444"/>
-          </svg>
-        </div>
-        <h2 class="locked-title small">客户端未授权</h2>
-        <p class="locked-desc small">请前往管理后台完成授权<br/>授权后即可正常使用</p>
-        <button class="auth-btn small" @click="checkAuthStatus">重新检测授权</button>
-      </div>
-    </div>
-
     <!-- 侧边栏 -->
     <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
       <div class="sidebar-header">
@@ -229,7 +187,6 @@ const hideToTray = async (): Promise<void> => {
 
           <!-- 操作按钮 -->
           <div class="action-buttons">
-            <button v-if="isAuthorized" @click="handleLogout" class="btn btn-danger">退出授权</button>
             <button @click="hideToTray" class="btn btn-secondary">隐藏到托盘</button>
           </div>
         </div>
@@ -894,103 +851,6 @@ const hideToTray = async (): Promise<void> => {
 }
 
 /* 授权锁定遮罩 */
-.auth-locked-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.92);
-  z-index: 99999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.auth-locked-content {
-  background: #181818;
-  border-radius: 16px;
-  padding: 48px 32px 32px 32px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  text-align: center;
-  min-width: 320px;
-  animation: fadeInUp 0.7s cubic-bezier(.23, 1.01, .32, 1) both;
-}
-
-.lock-icon-ani {
-  margin-bottom: 18px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  animation: lockBounce 1.2s cubic-bezier(.23, 1.01, .32, 1) infinite alternate;
-}
-
-.locked-title {
-  color: #ff4444;
-  font-size: 1.5rem;
-  margin-bottom: 10px;
-  letter-spacing: 0.02em;
-  font-weight: 700;
-  animation: fadeIn 1.2s cubic-bezier(.23, 1.01, .32, 1) both;
-}
-
-.locked-title.small {
-  font-size: 1.08rem;
-  margin-bottom: 7px;
-}
-
-.locked-desc {
-  color: #fff;
-  font-size: 1rem;
-  margin-bottom: 22px;
-  line-height: 1.7;
-  animation: fadeIn 1.5s cubic-bezier(.23, 1.01, .32, 1) both;
-}
-
-.locked-desc.small {
-  font-size: 0.92rem;
-  margin-bottom: 14px;
-}
-
-.auth-btn {
-  background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
-  color: #000;
-  border: none;
-  padding: 12px 32px;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(0, 255, 136, 0.12);
-  animation: fadeIn 1.8s cubic-bezier(.23, 1.01, .32, 1) both;
-}
-
-.auth-btn:hover {
-  background: #00cc6a;
-}
-
-.auth-btn.small {
-  font-size: 0.95rem;
-  padding: 8px 20px;
-}
-
-@keyframes lockBounce {
-  0% { transform: translateY(0) scale(1); }
-  60% { transform: translateY(-8px) scale(1.08); }
-  100% { transform: translateY(0) scale(1); }
-}
-
-@keyframes fadeInUp {
-  0% { opacity: 0; transform: translateY(30px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fadeIn {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
-}
-
 /* 滚动条样式 */
 .content-area::-webkit-scrollbar,
 .sidebar-nav::-webkit-scrollbar {
