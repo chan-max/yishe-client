@@ -13,7 +13,8 @@ import { specs } from './swagger';  // 新增cors导入
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { Browser } from 'puppeteer';
-import { PublishService } from './publishService';
+// 暂时注释掉发布服务相关引用，代码保留但不使用
+// import { PublishService } from './publishService';
 import { app, ipcMain } from 'electron';
 import { connectionManager } from './connectionManager';
 
@@ -1080,8 +1081,10 @@ export function startServer(port: number = 1519): void {
     try {
       console.log('检查社交媒体登录状态...');
       
+      // 暂时注释掉发布服务相关功能
       // 使用 PublishService 的 checkSocialMediaLoginStatus 方法
-      const loginStatus = await PublishService.checkSocialMediaLoginStatus();
+      // const loginStatus = await PublishService.checkSocialMediaLoginStatus();
+      const loginStatus = {}; // 临时返回空对象
 
       // 返回所有平台的登录状态
       res.status(200).json({
@@ -1196,7 +1199,9 @@ export function startServer(port: number = 1519): void {
         
       console.log('publishProductToSocialMedia', platforms);
 
-      const results = await PublishService.publishToMultiplePlatforms(platforms, productId);
+      // 暂时注释掉发布服务相关功能
+      // const results = await PublishService.publishToMultiplePlatforms(platforms, productId);
+      const results = []; // 临时返回空数组
 
       res.status(200).json({
         code: 0,
@@ -1355,7 +1360,9 @@ export function startServer(port: number = 1519): void {
       ];
 
       console.log('开始执行多平台测试发布...');
-      const results = await PublishService.publishToMultiplePlatforms(testPublishContent, 'test-product-id');
+      // 暂时注释掉发布服务相关功能
+      // const results = await PublishService.publishToMultiplePlatforms(testPublishContent, 'test-product-id');
+      const results = []; // 临时返回空数组
 
       // 统计发布结果
       const successCount = results.filter(r => r.success).length;
@@ -1511,7 +1518,9 @@ export function startServer(port: number = 1519): void {
       };
 
       console.log(`开始执行${platform}平台测试发布...`);
-      const results = await PublishService.publishToMultiplePlatforms([testContent], 'test-single-platform');
+      // 暂时注释掉发布服务相关功能
+      // const results = await PublishService.publishToMultiplePlatforms([testContent], 'test-single-platform');
+      const results = []; // 临时返回空数组
 
       res.status(200).json({
         code: 0,

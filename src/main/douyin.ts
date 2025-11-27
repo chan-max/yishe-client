@@ -28,10 +28,12 @@ export async function publishToDouyin(publishInfo: PublishInfo): Promise<{ succe
     await page.goto(SocialMediaUploadUrl.douyin_pic)
     console.log('已打开抖音发布页面')
 
+    // 暂时注释掉发布服务相关功能
     // 检查登录状态
-    console.log('检查抖音登录状态...')
-    const { PublishService } = await import('./publishService')
-    const loginResult = await PublishService.checkDouyinLoginStatus(page)
+    // console.log('检查抖音登录状态...')
+    // const { PublishService } = await import('./publishService')
+    // const loginResult = await PublishService.checkDouyinLoginStatus(page)
+    const loginResult = { isLoggedIn: false, details: null }; // 临时返回未登录状态
     
     if (!loginResult.isLoggedIn) {
       console.log('抖音未登录，无法发布')

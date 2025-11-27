@@ -4,14 +4,16 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/favicon.png?asset'
 import puppeteer from 'puppeteer'
-import { publishToXiaohongshu } from './xiaohongshu'
-import { publishToDouyin } from './douyin'
-import { publishToKuaishou } from './kuaishou'
+// 暂时注释掉发布服务相关引用，代码保留但不使用
+// import { publishToXiaohongshu } from './xiaohongshu'
+// import { publishToDouyin } from './douyin'
+// import { publishToKuaishou } from './kuaishou'
 import { spawn } from 'child_process'
 import { homedir } from 'os'
 import { join as pathJoin } from 'path'
 import { startServer, getOrCreateBrowser } from './server';
-import { PublishService } from './publishService';
+// 暂时注释掉发布服务相关引用，代码保留但不使用
+// import { PublishService } from './publishService';
 import { connectionManager } from './connectionManager';
 import { networkMonitor } from './networkMonitor';
 
@@ -599,34 +601,35 @@ ipcMain.on('toggle-devtools', (event) => {
 
 ipcMain.handle('get-app-version', () => app.getVersion())
 
+// 暂时注释掉发布服务相关功能
 // 在主进程暴露社交媒体登录状态检测方法
-ipcMain.handle('check-social-media-login', async (_, forceRefresh: boolean = false) => {
-  try {
-    // 如果强制刷新，先清除缓存
-    if (forceRefresh) {
-      console.log('[IPC] 强制刷新模式，清除缓存');
-      PublishService.clearLoginStatusCache();
-    }
-    
-    // 直接调用PublishService方法，传递forceRefresh参数
-    const result = await PublishService.checkSocialMediaLoginStatus(forceRefresh);
-    return {
-      code: 0,
-      status: true,
-      data: result,
-      timestamp: new Date().toISOString()
-    };
-  } catch (error) {
-    console.error('检查社交媒体登录状态失败:', error);
-    return {
-      code: 1,
-      status: false,
-      msg: '检查失败',
-      error: error instanceof Error ? error.message : '未知错误',
-      timestamp: new Date().toISOString()
-    };
-  }
-});
+// ipcMain.handle('check-social-media-login', async (_, forceRefresh: boolean = false) => {
+//   try {
+//     // 如果强制刷新，先清除缓存
+//     if (forceRefresh) {
+//       console.log('[IPC] 强制刷新模式，清除缓存');
+//       PublishService.clearLoginStatusCache();
+//     }
+//     
+//     // 直接调用PublishService方法，传递forceRefresh参数
+//     const result = await PublishService.checkSocialMediaLoginStatus(forceRefresh);
+//     return {
+//       code: 0,
+//       status: true,
+//       data: result,
+//       timestamp: new Date().toISOString()
+//     };
+//   } catch (error) {
+//     console.error('检查社交媒体登录状态失败:', error);
+//     return {
+//       code: 1,
+//       status: false,
+//       msg: '检查失败',
+//       error: error instanceof Error ? error.message : '未知错误',
+//       timestamp: new Date().toISOString()
+//     };
+//   }
+// });
 
 
 

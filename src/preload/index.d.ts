@@ -27,6 +27,11 @@ declare global {
       saveToken(token: string): Promise<boolean>
       getToken(): Promise<string | undefined>
       isTokenExist(): Promise<boolean>
+      onConnectionStatus(callback: (status: any) => void): void
+      getConnectionStatus(): Promise<any>
+      reconnect(): Promise<any>
+      openExternal(url: string): Promise<void>
+      openAllMediaPages(): Promise<any>
     }
   }
 }
