@@ -487,9 +487,10 @@ onUnmounted(() => {
         v-model="toast.visible"
         :timeout="3000"
         :color="toast.color"
-        variant="tonal"
+        variant="flat"
         location="top center"
         class="ws-snackbar"
+        :class="['ws-snackbar', 'ws-snackbar--' + toast.color]"
         :z-index="99999"
       >
         <v-icon size="18" class="mr-2">{{ toast.icon }}</v-icon>
@@ -1034,13 +1035,49 @@ onUnmounted(() => {
 }
 
 .ws-snackbar {
-  z-index: 99999 !important;
+  margin-top: 24px;
 }
 
 .ws-snackbar :deep(.v-snackbar__wrapper) {
-  border-radius: 999px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+  border-radius: 16px;
+  padding-inline: 16px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+  background-color: #0f172a;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   z-index: 99999 !important;
+}
+
+.ws-snackbar :deep(.v-snackbar__content) {
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.ws-snackbar--primary :deep(.v-snackbar__wrapper) {
+  background-color: #1d4ed8;
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.ws-snackbar--success :deep(.v-snackbar__wrapper) {
+  background-color: #166534;
+  border-color: rgba(74, 222, 128, 0.35);
+}
+
+.ws-snackbar--warning :deep(.v-snackbar__wrapper) {
+  background-color: #b45309;
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.ws-snackbar--error :deep(.v-snackbar__wrapper) {
+  background-color: #b91c1c;
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+.ws-snackbar--info :deep(.v-snackbar__wrapper) {
+  background-color: #0f172a;
+  border-color: rgba(148, 163, 184, 0.35);
 }
 
 .app-drawer {

@@ -37,82 +37,96 @@
       <section class="form-panel">
         <div class="form-card">
           <div class="welcome-block">
-            <h1>Welcome to Sneat! 👋</h1>
-            <p>Please sign-in to your account and start the adventure</p>
+            <h1>欢迎使用衣设客户端</h1>
+            <p>登录账号，即可开启智能设计与任务管理体验</p>
           </div>
 
-          <v-form ref="formRef" v-model="formValid" @submit.prevent="handleLogin" class="login-form">
-            <v-text-field
-              v-model="form.account"
-              label="Email"
-              variant="outlined"
-              density="comfortable"
-              hide-details="auto"
-              color="primary"
-              bg-color="white"
-              placeholder="admin@demo.com"
-              prepend-inner-icon="mdi-email-outline"
-              :rules="accountRules"
-              autocomplete="username"
-              class="login-input mb-3"
-            />
-
-            <v-text-field
-              v-model="form.password"
-              label="Password"
-              variant="outlined"
-              density="comfortable"
-              hide-details="auto"
-              color="primary"
-              bg-color="white"
-              placeholder="•••••••"
-              prepend-inner-icon="mdi-lock-outline"
-              :append-inner-icon="showPassword ? 'mdi-eye-outline' : 'mdi-eye-off-outline'"
-              :type="showPassword ? 'text' : 'password'"
-              :rules="passwordRules"
-              autocomplete="current-password"
-              class="login-input mb-1"
-              @click:append-inner="showPassword = !showPassword"
-            />
-
-            <div class="form-meta">
-              <v-checkbox
-                v-model="rememberMe"
-                label="Remember me"
-                hide-details
-                density="compact"
-                color="primary"
+          <form class="form" @submit.prevent="handleLogin">
+            <div class="flex-column">
+              <label>账号</label>
+            </div>
+            <div class="inputForm">
+              <svg
+                height="20"
+                viewBox="0 0 32 32"
+                width="20"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <g data-name="Layer 3">
+                  <path
+                    d="m30.853 13.87a15 15 0 0 0 -29.729 4.082 15.1 15.1 0 0 0 12.876 12.918 15.6 15.6 0 0 0 2.016.13 14.85 14.85 0 0 0 7.715-2.145 1 1 0 1 0 -1.031-1.711 13.007 13.007 0 1 1 5.458-6.529 2.149 2.149 0 0 1 -4.158-.759v-10.856a1 1 0 0 0 -2 0v1.726a8 8 0 1 0 .2 10.325 4.135 4.135 0 0 0 7.83.274 15.2 15.2 0 0 0 .823-7.455zm-14.853 8.13a6 6 0 1 1 6-6 6.006 6.006 0 0 1 -6 6z"
+                  />
+                </g>
+              </svg>
+              <input
+                v-model.trim="form.account"
+                autocomplete="username"
+                class="input"
+                placeholder="请输入账号"
+                type="text"
               />
-              <a class="link" href="javascript:void(0)">Forgot Password?</a>
             </div>
 
-            <v-alert
-              v-if="errorMessage"
-              type="error"
-              variant="tonal"
-              class="mb-4"
-              density="comfortable"
-              closable
-              @click:close="errorMessage = ''"
-            >
+            <div class="flex-column">
+              <label>密码</label>
+            </div>
+            <div class="inputForm">
+              <svg
+                height="20"
+                viewBox="-64 0 512 512"
+                width="20"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m336 512h-288c-26.453125 0-48-21.523438-48-48v-224c0-26.476562 21.546875-48 48-48h288c26.453125 0 48 21.523438 48 48v224c0 26.476562-21.546875 48-48 48zm-288-288c-8.8125 0-16 7.167969-16 16v224c0 8.832031 7.1875 16 16 16h288c8.8125 0 16-7.167969 16-16v-224c0-8.832031-7.1875-16-16-16zm0 0"
+                />
+                <path
+                  d="m304 224c-8.832031 0-16-7.167969-16-16v-80c0-52.929688-43.070312-96-96-96s-96 43.070312-96 96v80c0 8.832031-7.167969 16-16 16s-16-7.167969-16-16v-80c0-70.59375 57.40625-128 128-128s128 57.40625 128 128v80c0 8.832031-7.167969 16-16 16zm0 0"
+                />
+              </svg>
+              <input
+                v-model="form.password"
+                :type="showPassword ? 'text' : 'password'"
+                autocomplete="current-password"
+                class="input"
+                placeholder="请输入密码"
+              />
+              <button
+                type="button"
+                class="input-action"
+                @click="showPassword = !showPassword"
+                aria-label="Toggle password visibility"
+              >
+                <svg viewBox="0 0 576 512" height="18" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM144 256a144 144 0 1 1 288 0 144 144 0 1 1 -288 0zm144-64c0 35.3-28.7 64-64 64c-7.1 0-13.9-1.2-20.3-3.3c-5.5-1.8-11.9 1.6-11.7 7.4c.3 6.9 1.3 13.8 3.2 20.7c13.7 51.2 66.4 81.6 117.6 67.9s81.6-66.4 67.9-117.6c-11.1-41.5-47.8-69.4-88.6-71.1c-5.8-.2-9.2 6.1-7.4 11.7c2.1 6.4 3.3 13.2 3.3 20.3z"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div class="flex-row">
+              <label class="remember">
+                <input type="checkbox" v-model="rememberMe" />
+                记住我
+              </label>
+              <span class="span">忘记密码？</span>
+            </div>
+
+            <p v-if="errorMessage" class="form-error">
               {{ errorMessage }}
-            </v-alert>
+            </p>
 
-            <v-btn
-              type="submit"
-              color="primary"
-              size="large"
-              block
-              elevation="0"
-              class="login-btn"
-              :disabled="!formValid || loading"
-              :loading="loading"
-            >
-              Login
-            </v-btn>
-          </v-form>
+            <button class="button-submit" type="submit" :disabled="!formValid || loading">
+              <span v-if="!loading">立即登录</span>
+              <span v-else>正在登录...</span>
+            </button>
 
-          <div class="account-switch"></div>
+            <p class="p">
+              还没有账号？
+              <span class="span">联系管理员开通</span>
+            </p>
+          </form>
         </div>
       </section>
     </div>
@@ -120,15 +134,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { login } from '../api/auth'
 
 const emit = defineEmits<{
   (e: 'login-success'): void
 }>()
 
-const formRef = ref()
-const formValid = ref(false)
 const loading = ref(false)
 const rememberMe = ref(false)
 const showPassword = ref(false)
@@ -139,15 +151,7 @@ const form = reactive({
   password: ''
 })
 
-const accountRules = [
-  (v: string) => !!v || '请输入账号',
-  (v: string) => (v && v.length >= 3) || '账号长度至少3个字符'
-]
-
-const passwordRules = [
-  (v: string) => !!v || '请输入密码',
-  (v: string) => (v && v.length >= 6) || '密码长度至少6个字符'
-]
+const formValid = computed(() => form.account.trim().length >= 3 && form.password.length >= 6)
 
 const handleLogin = async () => {
   if (!formValid.value) return
@@ -397,81 +401,151 @@ const handleLogin = async () => {
 
 .form-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 480px;
   background: #fff;
-  border-radius: 24px;
-  padding: 40px;
-  box-shadow: 0 35px 80px rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  padding: 28px;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.05);
+  border: 1px solid rgba(148, 163, 184, 0.15);
 }
 
 .welcome-block h1 {
-  font-size: 26px;
-  margin-bottom: 8px;
+  font-size: 22px;
+  margin-bottom: 6px;
   color: #111827;
 }
 
 .welcome-block p {
   margin: 0;
   color: #6b7280;
+  font-size: 13px;
 }
 
-.login-form {
+.form {
   display: flex;
   flex-direction: column;
+  gap: 10px;
+  background-color: #ffffff;
+  padding: 24px 28px;
+  border-radius: 18px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
+    'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
-.form-meta {
+.flex-column > label {
+  color: #151717;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.inputForm {
+  border: 1.5px solid #ecedec;
+  border-radius: 10px;
+  height: 46px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-  gap: 12px;
+  padding-left: 8px;
+  transition: 0.2s ease-in-out;
+  background: #fff;
 }
 
-.link {
-  color: #5f5af2;
-  font-weight: 500;
-  text-decoration: none;
-  font-size: 14px;
+.inputForm:focus-within {
+  border-color: #2d79f3;
+  box-shadow: 0 0 0 2px rgba(45, 121, 243, 0.12);
 }
 
-.login-btn {
-  height: 48px;
-  border-radius: 12px;
-  font-size: 16px;
-  margin-bottom: 12px;
+.input {
+  margin-left: 8px;
+  border: none;
+  width: 100%;
+  height: 100%;
+  font-size: 13px;
+  font-family: inherit;
 }
 
-.account-switch {
-  text-align: center;
-  font-size: 14px;
-  color: #6b7280;
-  margin: 12px 0 16px;
+.input:focus {
+  outline: none;
 }
 
-.divider {
+.input-action {
+  border: none;
+  background: transparent;
+  margin-right: 8px;
+  cursor: pointer;
+  padding: 2px;
   display: flex;
   align-items: center;
-  text-transform: uppercase;
-  font-size: 12px;
-  color: #9ca3af;
-  gap: 12px;
-}
-
-.divider::before,
-.divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: #e5e7eb;
-}
-
-.social-row {
-  display: flex;
-  gap: 14px;
-  margin-top: 18px;
   justify-content: center;
+  color: #94a3b8;
 }
+
+.input-action:hover {
+  color: #2d79f3;
+}
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #151717;
+}
+
+.remember input {
+  accent-color: #2d79f3;
+}
+
+.span {
+  font-size: 13px;
+  color: #2d79f3;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.form-error {
+  margin: 4px 0 0;
+  color: #ef4444;
+  font-size: 12px;
+}
+
+.button-submit {
+  margin: 10px 0 2px;
+  background-color: #151717;
+  border: none;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 10px;
+  height: 48px;
+  width: 100%;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.button-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.button-submit:hover:not(:disabled) {
+  background-color: #252727;
+}
+
+.p {
+  text-align: center;
+  color: #151717;
+  font-size: 13px;
+  margin: 6px 0;
+}
+
 
 @keyframes orbitSpin {
   from {
@@ -525,41 +599,5 @@ const handleLogin = async () => {
   .form-card {
     padding: 32px 24px;
   }
-}
-
-::deep(.v-text-field .v-field) {
-  border-radius: 12px;
-}
-
-::deep(.v-text-field .v-field__outline) {
-  border-color: rgba(148, 163, 184, 0.6);
-}
-
-::deep(.v-text-field .v-field--focused .v-field__outline) {
-  border-color: #5f5af2;
-  border-width: 2px;
-}
-
-::deep(.login-input .v-field) {
-  min-height: 44px;
-  border-radius: 12px;
-}
-
-::deep(.login-input .v-field__input) {
-  padding-block: 6px;
-}
-
-::deep(.v-checkbox .v-selection-control__input) {
-  margin-inline-end: 8px;
-}
-
-::deep(.v-btn.login-btn) {
-  text-transform: none;
-  font-weight: 600;
-  border-radius: 12px;
-}
-
-::deep(.v-btn.v-btn--outlined) {
-  border-radius: 12px;
 }
 </style>

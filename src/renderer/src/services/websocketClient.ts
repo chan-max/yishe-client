@@ -1,14 +1,16 @@
 import { io, type Socket } from 'socket.io-client'
 import { reactive } from 'vue'
 import mitt from 'mitt'
-import { WS_ENDPOINT } from '../config/api'
 
 type WsStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'error'
 
 const CLIENT_SOURCE = '客户端'
 const HEARTBEAT_INTERVAL = 15_000
 const HEARTBEAT_TIMEOUT = 10_000
-const DEFAULT_WS_ENDPOINT = import.meta.env.VITE_WS_ENDPOINT ?? WS_ENDPOINT
+const PROD_WS_ENDPOINT = 'https://1s.design:1520/ws'
+const DEV_WS_ENDPOINT = 'http://localhost:1520/ws'
+const FALLBACK_ENDPOINT = import.meta.env.PROD ? PROD_WS_ENDPOINT : DEV_WS_ENDPOINT
+const DEFAULT_WS_ENDPOINT = import.meta.env.VITE_WS_ENDPOINT ?? FALLBACK_ENDPOINT
 const IDENTITY_STORAGE_KEY = 'yishe.ws.identity'
 const NETWORK_CACHE_TTL = 10 * 60 * 1000 // 10 minutes
 const LOCATION_ENDPOINT = 'https://ipapi.co/json/'
@@ -252,7 +254,7 @@ function scheduleHeartbeatTimeout() {
       lastError: 'Heartbeat timeout'
     })
     emitter.emit('log', { level: 'warn', message: '[ws] heartbeat timeout, reconnecting' })
-    emitter.emit('toast', { color: 'warning', icon: 'mdi-heart-broken', message: '远程服务心跳异常，正在重连...' })
+    emitter.emit('toast', { color: 'warning', icon: 'mdi-heart-broken', message: '实时通道心跳异常，正在重连...' })
     reconnect()
   }, HEARTBEAT_TIMEOUT)
 }
@@ -302,7 +304,7 @@ function buildQuery() {
 function bindSocketEvents(currentSocket: Socket) {
   currentSocket.on('connect', () => {
     emitter.emit('log', { level: 'info', message: '[ws] connected' })
-    emitter.emit('toast', { color: 'success', icon: 'mdi-radiobox-marked', message: '远程服务已连接' })
+    emitter.emit('toast', { color: 'success', icon: 'mdi-radiobox-marked', message: '实时通道已连接' })
     updateState({
       status: 'connected',
       connectedAt: new Date().toISOString(),
@@ -338,7 +340,7 @@ function bindSocketEvents(currentSocket: Socket) {
 
   currentSocket.on('connect_error', (error) => {
     emitter.emit('log', { level: 'error', message: `[ws] connect_error: ${serializeError(error)}` })
-    emitter.emit('toast', { color: 'error', icon: 'mdi-alert-circle-outline', message: '远程服务连接失败' })
+    emitter.emit('toast', { color: 'error', icon: 'mdi-alert-circle-outline', message: '实时通道连接失败' })
     updateState({
       status: 'error',
       lastError: serializeError(error)
@@ -363,7 +365,7 @@ function bindSocketEvents(currentSocket: Socket) {
 
   currentSocket.io.on('reconnect_failed', () => {
     emitter.emit('log', { level: 'error', message: '[ws] reconnect failed' })
-    emitter.emit('toast', { color: 'error', icon: 'mdi-alert-circle-outline', message: '远程服务重连失败' })
+    emitter.emit('toast', { color: 'error', icon: 'mdi-alert-circle-outline', message: '实时通道重连失败' })
     updateState({
       status: 'error',
       lastError: 'Reconnect failed'
