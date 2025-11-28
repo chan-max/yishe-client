@@ -17,13 +17,7 @@ const service = axios.create({
 
 service.interceptors.request.use(
   async config => {
-    // 登录接口不需要 token，跳过
-    if (config.url?.includes('/auth/login')) {
-      console.log('请求拦截器：跳过登录接口，不添加 token')
-      return config
-    }
-    
-    // 添加 token 到 header
+    // 添加 token 到 header（包括登录接口，这样后端可以检查是否有有效 token）
     try {
       const token = await getTokenFromClient()
       console.log('请求拦截器：获取 token 结果', {
@@ -31,7 +25,8 @@ service.interceptors.request.use(
         hasToken: !!token,
         tokenType: typeof token,
         tokenLength: token?.length,
-        tokenPreview: token ? `${token.substring(0, 30)}...` : 'null'
+        tokenPreview: token ? `${token.substring(0, 30)}...` : 'null',
+        isLoginEndpoint: config.url?.includes('/auth/login')
       })
       
       if (token) {
@@ -47,10 +42,15 @@ service.interceptors.request.use(
         }
         console.log('请求拦截器：已添加 token 到请求头', {
           url: config.url,
-          authorizationHeader: `Bearer ${token.substring(0, 30)}...`
+          authorizationHeader: `Bearer ${token.substring(0, 30)}...`,
+          isLoginEndpoint: config.url?.includes('/auth/login') ? '（登录接口，后端会检查 token 是否有效）' : ''
         })
       } else {
-        console.warn('请求拦截器：未找到 token，请求将不带 token', { url: config.url })
+        if (config.url?.includes('/auth/login')) {
+          console.log('请求拦截器：登录接口，无 token，将正常登录')
+        } else {
+          console.warn('请求拦截器：未找到 token，请求将不带 token', { url: config.url })
+        }
       }
     } catch (error) {
       console.error('请求拦截器：获取 token 失败', error)
