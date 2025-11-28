@@ -9,10 +9,17 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { websocketClient } from './services/websocketClient'
+import { getUserInfo, logout, type UserInfo } from './api/auth'
+import Login from './views/Login.vue'
+import { LOCAL_API_BASE } from './config/api'
+import { getTokenFromClient } from './api/user'
 
 const serverStatus = ref(false)
 const appVersion = ref('')
 const activeMenu = ref('dashboard')
+const isLoggedIn = ref(false)
+const userInfo = ref<UserInfo | null>(null)
+const loadingUserInfo = ref(false)
 
 interface AdminMessage {
   id: string
@@ -26,8 +33,6 @@ const unreadCount = computed(() => adminMessages.value.filter((m) => !m.read).le
 
 const wsState = websocketClient.state
 const clientProfile = websocketClient.profile
-const deviceIdentity = websocketClient.identity
-const networkProfile = websocketClient.network
 
 const menuItems = [
   { key: 'dashboard', label: '仪表盘', icon: 'mdi-view-dashboard-outline' },
@@ -302,7 +307,7 @@ const heroHighlights = computed(() => [
   }
 ])
 
-let localTimer: ReturnType<typeof window.setInterval> | null = null
+let localTimer: number | null = null
 let lastServerCheck = 0
 const THROTTLE_DELAY = 5000
 
@@ -322,10 +327,118 @@ const checkServerStatus = async () => {
   if (!throttle(lastServerCheck, THROTTLE_DELAY)) return
   lastServerCheck = Date.now()
   try {
-    const response = await fetch('http://localhost:1519/api/health')
+    const response = await fetch(`${LOCAL_API_BASE}/health`)
     serverStatus.value = response.ok
   } catch {
     serverStatus.value = false
+  }
+}
+
+// 检查登录状态并获取用户信息
+const checkAuthAndGetUserInfo = async () => {
+  try {
+    // 先检查是否有 token，如果没有 token 就不需要请求
+    const token = await getTokenFromClient()
+    if (!token) {
+      isLoggedIn.value = false
+      userInfo.value = null
+      loadingUserInfo.value = false
+      return
+    }
+
+    loadingUserInfo.value = true
+    const info = await getUserInfo()
+    userInfo.value = info
+    isLoggedIn.value = true
+    console.log('检查登录状态成功，用户信息:', info)
+  } catch (error: any) {
+    // 静默处理 401 错误，不打印到控制台（首次登录时正常情况）
+    if (error?.response?.status === 401) {
+      isLoggedIn.value = false
+      userInfo.value = null
+      // 清除可能存在的无效 token（静默清除，不触发退出登录提示）
+      try {
+        await fetch(`${LOCAL_API_BASE}/logoutToken`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }).catch(() => {})
+      } catch (e) {
+        // 静默处理
+      }
+    } else {
+      console.error('获取用户信息失败:', error)
+      isLoggedIn.value = false
+      userInfo.value = null
+    }
+  } finally {
+    loadingUserInfo.value = false
+  }
+}
+
+// 处理登录成功
+const handleLoginSuccess = async () => {
+  console.log('handleLoginSuccess: 开始处理登录成功')
+  try {
+    loadingUserInfo.value = true
+    // 登录成功后，直接获取用户信息
+    const info = await getUserInfo()
+    userInfo.value = info
+    isLoggedIn.value = true
+    console.log('登录成功，用户信息:', info)
+    showToast({
+      color: 'success',
+      icon: 'mdi-check-circle',
+      message: `欢迎回来, ${info.username || info.account}!`
+    })
+  } catch (error: any) {
+    console.error('获取用户信息失败:', error)
+    const errorMsg = error?.response?.data?.message || error?.message || '获取用户信息失败'
+    
+    // 如果获取用户信息失败，清除 token 并保持登录页面
+    isLoggedIn.value = false
+    userInfo.value = null
+    
+    // 显示错误提示
+    showToast({
+      color: 'error',
+      icon: 'mdi-alert-circle',
+      message: errorMsg
+    })
+    
+    // 清除可能无效的 token（但不显示退出登录的提示）
+    try {
+      await fetch(`${LOCAL_API_BASE}/logoutToken`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }).catch(() => {})
+    } catch (e) {
+      // 静默处理
+    }
+  } finally {
+    loadingUserInfo.value = false
+  }
+}
+
+// 退出登录
+const handleLogout = async () => {
+  try {
+    await logout()
+    isLoggedIn.value = false
+    userInfo.value = null
+    showToast({
+      color: 'success',
+      icon: 'mdi-logout',
+      message: '已退出登录'
+    })
+  } catch (error) {
+    console.error('退出登录失败:', error)
+    // 即使退出失败，也清除本地状态
+    isLoggedIn.value = false
+    userInfo.value = null
   }
 }
 
@@ -335,9 +448,18 @@ onMounted(() => {
   websocketClient.events.on('toast', showToast)
   websocketClient.events.on('log', logHandler)
   websocketClient.events.on('adminMessage', handleAdminMessage)
-  window.api.getAppVersion().then((v) => {
+  ;(window.api as any).getAppVersion().then((v: string) => {
     appVersion.value = v
     websocketClient.updateClientInfo({ appVersion: v })
+  })
+  
+  // 检查登录状态
+  checkAuthAndGetUserInfo()
+  
+  // 监听登出事件
+  window.addEventListener('auth:logout', () => {
+    isLoggedIn.value = false
+    userInfo.value = null
   })
 })
 
@@ -350,36 +472,43 @@ onUnmounted(() => {
   websocketClient.events.off('toast', showToast)
   websocketClient.events.off('log', logHandler)
   websocketClient.events.off('adminMessage', handleAdminMessage)
+  window.removeEventListener('auth:logout', () => {})
 })
 </script>
 
 <template>
   <v-app>
-    <v-snackbar
-      v-model="toast.visible"
-      :timeout="3000"
-      :color="toast.color"
-      variant="tonal"
-      location="top right"
-      class="ws-snackbar"
-    >
-      <v-icon size="18" class="mr-2">{{ toast.icon }}</v-icon>
-      {{ toast.message }}
-    </v-snackbar>
-    <v-layout class="app-layout">
+    <!-- 登录页面 -->
+    <Login v-if="!isLoggedIn" @login-success="handleLoginSuccess" />
+    
+    <!-- 主应用界面 -->
+    <template v-else>
+      <v-snackbar
+        v-model="toast.visible"
+        :timeout="3000"
+        :color="toast.color"
+        variant="tonal"
+        location="top right"
+        class="ws-snackbar"
+        :z-index="9999"
+      >
+        <v-icon size="18" class="mr-2">{{ toast.icon }}</v-icon>
+        {{ toast.message }}
+      </v-snackbar>
+      <v-layout class="app-layout">
       <v-navigation-drawer width="232" permanent class="app-drawer">
         <v-divider class="mx-3 mb-2" />
 
         <v-list density="compact" nav class="pa-0 mt-1" :lines="false">
           <v-list-item
-            v-for="item in menuItems"
-            :key="item.key"
+          v-for="item in menuItems" 
+          :key="item.key"
             :value="item.key"
             :active="activeMenu === item.key"
             rounded="lg"
             class="mx-2"
-            @click="selectMenu(item.key)"
-          >
+          @click="selectMenu(item.key)"
+        >
             <template #prepend>
               <v-icon size="18" :icon="item.icon" />
             </template>
@@ -392,7 +521,7 @@ onUnmounted(() => {
           <div class="version-pill">
             <v-icon size="14" icon="mdi-alpha-v-box-outline" class="mr-1" />
             客户端 v{{ appVersion || '--' }}
-          </div>
+        </div>
         </template>
       </v-navigation-drawer>
 
@@ -401,7 +530,7 @@ onUnmounted(() => {
           <div class="bar-title">
             <span class="heading">{{ pageTitle }}</span>
             <span class="caption text-medium-emphasis">{{ pageDescription }}</span>
-          </div>
+        </div>
           <div class="status-chips">
             <v-chip
               v-for="chip in statusChips"
@@ -414,8 +543,71 @@ onUnmounted(() => {
               <v-icon size="16" class="mr-2">{{ chip.icon }}</v-icon>
               {{ chip.label }}
             </v-chip>
-          </div>
+      </div>
           <v-spacer />
+          
+          <!-- 用户信息 -->
+          <div v-if="userInfo" class="user-info d-flex align-center ga-2 mr-4">
+            <v-menu location="bottom end">
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  variant="text"
+                  class="user-btn"
+                  size="large"
+                >
+                  <v-avatar size="36" class="mr-2">
+                    <v-icon icon="mdi-account-circle" size="32" />
+                  </v-avatar>
+                  <span class="user-name">{{ userInfo.username || userInfo.account }}</span>
+                  <v-chip
+                    v-if="userInfo.isAdmin"
+                    size="small"
+                    color="primary"
+                    variant="tonal"
+                    class="ml-2"
+                  >
+                    管理员
+                  </v-chip>
+                </v-btn>
+              </template>
+              <v-list>
+                <v-list-item>
+                  <v-list-item-title class="text-subtitle-2">账号信息</v-list-item-title>
+                </v-list-item>
+                <v-divider />
+                <v-list-item>
+                  <v-list-item-title>用户名: {{ userInfo.username || userInfo.account }}</v-list-item-title>
+                </v-list-item>
+                <v-list-item v-if="userInfo.company">
+                  <v-list-item-title>公司: {{ 
+                    typeof userInfo.company === 'object' && userInfo.company !== null 
+                      ? ((userInfo.company as any)?.name || '--') 
+                      : (userInfo.company || '--')
+                  }}</v-list-item-title>
+                </v-list-item>
+                <v-list-item>
+                  <v-list-item-title>账号: {{ userInfo.account }}</v-list-item-title>
+                </v-list-item>
+                <v-divider />
+                <v-list-item @click="handleLogout">
+                  <v-list-item-title class="text-error">
+                    <v-icon icon="mdi-logout" start />
+                    退出登录
+                  </v-list-item-title>
+                </v-list-item>
+              </v-list>
+            </v-menu>
+        </div>
+        
+          <v-btn
+            v-else-if="loadingUserInfo"
+            variant="text"
+            :loading="true"
+            class="mr-4"
+          >
+            加载中...
+          </v-btn>
         </v-app-bar>
 
         <v-main class="main-scroll">
@@ -438,8 +630,8 @@ onUnmounted(() => {
                           <v-btn variant="text" color="primary" prepend-icon="mdi-file-chart-outline">
                             导出报告
                           </v-btn>
-                        </div>
-                      </div>
+            </div>
+            </div>
                       <div class="hero-metrics">
                         <div
                           v-for="item in heroHighlights"
@@ -448,12 +640,12 @@ onUnmounted(() => {
                         >
                           <div class="hero-metric-icon" :class="`text-${item.color}`">
                             <v-icon :icon="item.icon" />
-                          </div>
+            </div>
                           <div class="hero-metric-label">{{ item.label }}</div>
                           <div class="hero-metric-value">{{ item.value }}</div>
-                        </div>
-                      </div>
-                    </div>
+          </div>
+          </div>
+        </div>
                   </v-sheet>
                 </v-col>
               </v-row>
@@ -488,8 +680,8 @@ onUnmounted(() => {
                           />
                           <span>{{ card.trend }}</span>
                           <span class="stat-trend-label">{{ card.trendLabel }}</span>
-                        </div>
-                      </div>
+              </div>
+            </div>
                     </v-card-text>
                   </v-card>
                 </v-col>
@@ -515,9 +707,9 @@ onUnmounted(() => {
                           <v-icon size="14" class="mr-1">
                             {{ serverStatus ? 'mdi-check-circle-outline' : 'mdi-close-circle-outline' }}
                           </v-icon>
-                          {{ serverStatus ? '运行中' : '未连接' }}
+                      {{ serverStatus ? '运行中' : '未连接' }}
                         </v-chip>
-                      </div>
+                  </div>
                       <div class="status-row">
                         <span>远程服务</span>
                         <v-chip
@@ -529,11 +721,11 @@ onUnmounted(() => {
                           <v-icon size="14" class="mr-1">{{ websocketBadge.icon }}</v-icon>
                           {{ websocketBadge.text }}
                         </v-chip>
-                      </div>
+                  </div>
                       <div class="ws-meta" v-if="wsState.lastLatencyMs || wsState.lastError">
                         <span v-if="wsState.lastLatencyMs">延迟 {{ wsState.lastLatencyMs }} ms</span>
                         <span v-if="wsState.lastError" class="ws-error"> {{ wsState.lastError }}</span>
-                      </div>
+                  </div>
                     </v-card-text>
                     <v-divider />
                     <v-card-actions class="pa-4">
@@ -549,7 +741,7 @@ onUnmounted(() => {
                       <div class="ws-endpoint">
                         <span>端点</span>
                         <code>{{ wsState.endpoint }}</code>
-                      </div>
+                </div>
                     </v-card-actions>
                   </v-card>
                 </v-col>
@@ -562,7 +754,7 @@ onUnmounted(() => {
                     </v-card-title>
                     <v-divider />
                     <v-card-text>
-                      <div class="quick-actions">
+                <div class="quick-actions">
                         <v-btn
                           v-for="link in quickLinks"
                           :key="link.url"
@@ -576,7 +768,7 @@ onUnmounted(() => {
                         >
                           {{ link.label }}
                         </v-btn>
-                      </div>
+                </div>
                     </v-card-text>
                   </v-card>
                 </v-col>
@@ -621,7 +813,7 @@ onUnmounted(() => {
                       <div v-if="adminMessages.length === 0" class="empty-messages">
                         <v-icon size="48" color="grey-lighten-1" class="mb-2">mdi-inbox-outline</v-icon>
                         <p class="text-grey">暂无消息</p>
-                      </div>
+              </div>
                       <div
                         v-for="msg in adminMessages"
                         :key="msg.id"
@@ -640,12 +832,12 @@ onUnmounted(() => {
                           >
                             新
                           </v-chip>
-                        </div>
+            </div>
                         <div class="message-content">
                           <pre v-if="typeof msg.data === 'object'">{{ JSON.stringify(msg.data, null, 2) }}</pre>
                           <span v-else>{{ msg.data }}</span>
-                        </div>
-                      </div>
+          </div>
+        </div>
                     </v-card-text>
                   </v-card>
                 </v-col>
@@ -670,8 +862,8 @@ onUnmounted(() => {
                           >
                             <v-icon size="16">mdi-content-copy</v-icon>
                           </v-btn>
-                        </div>
-                      </div>
+            </div>
+            </div>
                       <div class="client-info-row">
                         <div class="client-info-label">机器码</div>
                         <div class="client-info-value">
@@ -679,14 +871,14 @@ onUnmounted(() => {
                             {{ clientProfile.machine.code }}
                           </v-chip>
                           <span v-else>--</span>
-                        </div>
-                      </div>
+          </div>
+        </div>
                       <div class="client-info-row">
                         <div class="client-info-label">系统</div>
                         <div class="client-info-value">
                           {{ clientProfile.platform || clientProfile.machine?.platform || '未知' }}
-                        </div>
-                      </div>
+            </div>
+            </div>
                       <div class="client-info-row">
                         <div class="client-info-label">硬件</div>
                         <div class="client-info-value">
@@ -694,8 +886,8 @@ onUnmounted(() => {
                             {{ clientProfile.device?.hardwareConcurrency || '未知' }} 核 /
                             {{ clientProfile.device?.memory ? `${clientProfile.device.memory} GB` : '未知' }}
                           </span>
-                        </div>
-                      </div>
+          </div>
+        </div>
                       <div class="client-info-row">
                         <div class="client-info-label">位置</div>
                         <div class="client-info-value client-location">
@@ -708,8 +900,8 @@ onUnmounted(() => {
                             </span>
                             <div class="client-location-org" v-if="clientProfile.location?.org">
                               {{ clientProfile.location.org }}
-                            </div>
-                          </div>
+            </div>
+            </div>
                           <v-btn
                             size="small"
                             variant="text"
@@ -719,8 +911,8 @@ onUnmounted(() => {
                           >
                             更新
                           </v-btn>
-                        </div>
-                      </div>
+          </div>
+        </div>
                     </v-card-text>
                   </v-card>
                 </v-col>
@@ -763,8 +955,9 @@ onUnmounted(() => {
             </template>
           </v-container>
         </v-main>
-      </div>
-    </v-layout>
+            </div>
+      </v-layout>
+    </template>
   </v-app>
 </template>
 
@@ -775,9 +968,14 @@ onUnmounted(() => {
   color: rgba(0, 0, 0, 0.87);
 }
 
+.ws-snackbar {
+  z-index: 9999 !important;
+}
+
 .ws-snackbar :deep(.v-snackbar__wrapper) {
   border-radius: 999px;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+  z-index: 9999 !important;
 }
 
 .app-drawer {
@@ -1278,6 +1476,26 @@ onUnmounted(() => {
   transition: box-shadow 0.2s ease;
 }
 
+.user-info {
+  margin-right: 8px;
+}
+
+.user-btn {
+  text-transform: none;
+  font-weight: 500;
+  height: 48px !important;
+  padding: 0 12px !important;
+}
+
+.user-btn :deep(.v-avatar) {
+  margin-right: 8px;
+}
+
+.user-name {
+  margin-right: 4px;
+  font-size: 14px;
+}
+
 @media (max-width: 960px) {
   .status-chips {
     margin-left: 12px;
@@ -1297,6 +1515,10 @@ onUnmounted(() => {
 
   .hero-metrics {
     width: 100%;
+  }
+  
+  .user-info {
+    margin-right: 0;
   }
 }
 </style>
