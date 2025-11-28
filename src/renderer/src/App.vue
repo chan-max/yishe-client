@@ -343,8 +343,8 @@ const checkAuthAndGetUserInfo = async () => {
       isLoggedIn.value = false
       userInfo.value = null
       loadingUserInfo.value = false
-      return
-    }
+    return
+  }
 
     loadingUserInfo.value = true
     const info = await getUserInfo()
