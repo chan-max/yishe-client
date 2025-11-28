@@ -395,18 +395,18 @@ const handleLoginSuccess = async () => {
   } catch (error: any) {
     console.error('获取用户信息失败:', error)
     const errorMsg = error?.response?.data?.message || error?.message || '获取用户信息失败'
-    
+
     // 如果获取用户信息失败，清除 token 并保持登录页面
     isLoggedIn.value = false
     userInfo.value = null
-    
+
     // 显示错误提示
     showToast({
       color: 'error',
       icon: 'mdi-alert-circle',
       message: errorMsg
     })
-    
+
     // 清除可能无效的 token（但不显示退出登录的提示）
     try {
       await fetch(`${LOCAL_API_BASE}/logoutToken`, {
@@ -452,10 +452,10 @@ onMounted(() => {
     appVersion.value = v
     websocketClient.updateClientInfo({ appVersion: v })
   })
-  
+
   // 检查登录状态
   checkAuthAndGetUserInfo()
-  
+
   // 监听登出事件
   window.addEventListener('auth:logout', () => {
     isLoggedIn.value = false
@@ -480,7 +480,7 @@ onUnmounted(() => {
   <v-app>
     <!-- 登录页面 -->
     <Login v-if="!isLoggedIn" @login-success="handleLoginSuccess" />
-    
+
     <!-- 主应用界面 -->
     <template v-else>
       <v-snackbar
@@ -496,466 +496,531 @@ onUnmounted(() => {
         {{ toast.message }}
       </v-snackbar>
       <v-layout class="app-layout">
-      <v-navigation-drawer width="232" permanent class="app-drawer">
-        <v-divider class="mx-3 mb-2" />
-
-        <v-list density="compact" nav class="pa-0 mt-1" :lines="false">
-          <v-list-item
-          v-for="item in menuItems" 
-          :key="item.key"
-            :value="item.key"
-            :active="activeMenu === item.key"
-            rounded="lg"
-            class="mx-2"
-          @click="selectMenu(item.key)"
-        >
-            <template #prepend>
-              <v-icon size="18" :icon="item.icon" />
-            </template>
-            <v-list-item-title>{{ item.label }}</v-list-item-title>
-          </v-list-item>
-        </v-list>
-
-        <template #append>
+        <v-navigation-drawer width="232" permanent class="app-drawer">
           <v-divider class="mx-3 mb-2" />
-          <div class="version-pill">
-            <v-icon size="14" icon="mdi-alpha-v-box-outline" class="mr-1" />
-            客户端 v{{ appVersion || '--' }}
-        </div>
-        </template>
-      </v-navigation-drawer>
 
-      <div class="main-surface">
-        <v-app-bar flat height="64" class="app-bar" density="comfortable">
-          <div class="bar-title">
-            <span class="heading">{{ pageTitle }}</span>
-            <span class="caption text-medium-emphasis">{{ pageDescription }}</span>
-        </div>
-          <div class="status-chips">
-            <v-chip
-              v-for="chip in statusChips"
-              :key="chip.key"
-              class="status-chip"
-              :class="toneClass(chip.state)"
-              variant="flat"
-              rounded="pill"
+          <v-list density="compact" nav class="pa-0 mt-1" :lines="false">
+            <v-list-item
+              v-for="item in menuItems"
+              :key="item.key"
+              :value="item.key"
+              :active="activeMenu === item.key"
+              rounded="lg"
+              class="mx-2"
+              @click="selectMenu(item.key)"
             >
-              <v-icon size="16" class="mr-2">{{ chip.icon }}</v-icon>
-              {{ chip.label }}
-            </v-chip>
-      </div>
-          <v-spacer />
-          
-          <!-- 用户信息 -->
-          <div v-if="userInfo" class="user-info d-flex align-center ga-2 mr-4">
-            <v-menu location="bottom end">
-              <template #activator="{ props }">
-                <v-btn
-                  v-bind="props"
-                  variant="text"
-                  class="user-btn"
-                  size="large"
-                >
-                  <v-avatar size="36" class="mr-2">
-                    <v-icon icon="mdi-account-circle" size="32" />
-                  </v-avatar>
-                  <span class="user-name">{{ userInfo.username || userInfo.account }}</span>
-                  <v-chip
-                    v-if="userInfo.isAdmin"
-                    size="small"
-                    color="primary"
-                    variant="tonal"
-                    class="ml-2"
-                  >
-                    管理员
-                  </v-chip>
-                </v-btn>
-              </template>
-              <v-list>
-                <v-list-item>
-                  <v-list-item-title class="text-subtitle-2">账号信息</v-list-item-title>
-                </v-list-item>
-                <v-divider />
-                <v-list-item>
-                  <v-list-item-title>用户名: {{ userInfo.username || userInfo.account }}</v-list-item-title>
-                </v-list-item>
-                <v-list-item v-if="userInfo.company">
-                  <v-list-item-title>公司: {{ 
+              <v-list-item-title class="text-sm">
+               <div class="flex items-center gap-2">
+                <v-icon size="16" :icon="item.icon" />
+                <div>{{ item.label }}</div>
+               </div>
+                
+                </v-list-item-title
+              >
+            </v-list-item>
+          </v-list>
+
+          <template #append>
+            <v-divider class="mx-3 mb-2" />
+            <div class="version-pill">
+              <v-icon size="14" icon="mdi-alpha-v-box-outline" class="mr-1" />
+              客户端 v{{ appVersion || "--" }}
+            </div>
+          </template>
+        </v-navigation-drawer>
+
+        <div class="main-surface">
+          <v-app-bar flat height="64" class="app-bar" density="comfortable">
+            <div class="bar-title">
+              <span class="heading">{{ pageTitle }}</span>
+              <span class="caption text-medium-emphasis">{{ pageDescription }}</span>
+            </div>
+            <div class="status-chips">
+              <v-chip
+                v-for="chip in statusChips"
+                :key="chip.key"
+                class="status-chip"
+                :class="toneClass(chip.state)"
+                variant="flat"
+                rounded="pill"
+              >
+                <v-icon size="16" class="mr-2">{{ chip.icon }}</v-icon>
+                {{ chip.label }}
+              </v-chip>
+            </div>
+            <v-spacer />
+
+            <!-- 用户信息 -->
+            <div v-if="userInfo" class="user-info d-flex align-center ga-2 mr-4">
+              <v-menu location="bottom end">
+                <template #activator="{ props }">
+                  <v-btn v-bind="props" variant="text" class="user-btn" size="large">
+                    <v-avatar size="36" class="mr-2">
+                      <v-icon icon="mdi-account-circle" size="32" />
+                    </v-avatar>
+                    <span class="user-name">{{
+                      userInfo.username || userInfo.account
+                    }}</span>
+                    <v-chip
+                      v-if="userInfo.isAdmin"
+                      size="small"
+                      color="primary"
+                      variant="tonal"
+                      class="ml-2"
+                    >
+                      管理员
+                    </v-chip>
+                  </v-btn>
+                </template>
+                <v-list>
+                  <v-list-item>
+                    <v-list-item-title class="text-subtitle-2"
+                      >账号信息</v-list-item-title
+                    >
+                  </v-list-item>
+                  <v-divider />
+                  <v-list-item>
+                    <v-list-item-title
+                      >用户名:
+                      {{ userInfo.username || userInfo.account }}</v-list-item-title
+                    >
+                  </v-list-item>
+                  <v-list-item v-if="userInfo.company">
+                    <v-list-item-title
+                      >公司:
+                      {{ 
                     typeof userInfo.company === 'object' && userInfo.company !== null 
                       ? ((userInfo.company as any)?.name || '--') 
                       : (userInfo.company || '--')
-                  }}</v-list-item-title>
-                </v-list-item>
-                <v-list-item>
-                  <v-list-item-title>账号: {{ userInfo.account }}</v-list-item-title>
-                </v-list-item>
-                <v-divider />
-                <v-list-item @click="handleLogout">
-                  <v-list-item-title class="text-error">
-                    <v-icon icon="mdi-logout" start />
-                    退出登录
-                  </v-list-item-title>
-                </v-list-item>
-              </v-list>
-            </v-menu>
-        </div>
-        
-          <v-btn
-            v-else-if="loadingUserInfo"
-            variant="text"
-            :loading="true"
-            class="mr-4"
-          >
-            加载中...
-          </v-btn>
-        </v-app-bar>
+                      }}</v-list-item-title
+                    >
+                  </v-list-item>
+                  <v-list-item>
+                    <v-list-item-title>账号: {{ userInfo.account }}</v-list-item-title>
+                  </v-list-item>
+                  <v-divider />
+                  <v-list-item @click="handleLogout">
+                    <v-list-item-title class="text-error">
+                      <v-icon icon="mdi-logout" start />
+                      退出登录
+                    </v-list-item-title>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
+            </div>
 
-        <v-main class="main-scroll">
-          <v-container fluid class="py-6 px-6">
-            <template v-if="activeMenu === 'dashboard'">
-              <v-row class="hero-row mb-6" dense>
-                <v-col cols="12">
-                  <v-sheet class="hero-sheet" rounded="xl" elevation="0">
-                    <div class="hero-shell">
-                      <div class="hero-copy">
-                        <p class="hero-eyebrow">控制中心</p>
-                        <h2 class="hero-title">实时掌握衣设客户端运行状况</h2>
-                        <p class="hero-desc">
-                          关键节点、服务连接与任务进度在此一目了然，便于随时调整策略。
-                        </p>
-                        <div class="hero-actions">
-                          <v-btn color="primary" prepend-icon="mdi-refresh-auto">
-                            立即巡检
-                          </v-btn>
-                          <v-btn variant="text" color="primary" prepend-icon="mdi-file-chart-outline">
-                            导出报告
-                          </v-btn>
-            </div>
-            </div>
-                      <div class="hero-metrics">
-                        <div
-                          v-for="item in heroHighlights"
-                          :key="item.key"
-                          class="hero-metric"
-                        >
-                          <div class="hero-metric-icon" :class="`text-${item.color}`">
-                            <v-icon :icon="item.icon" />
-            </div>
-                          <div class="hero-metric-label">{{ item.label }}</div>
-                          <div class="hero-metric-value">{{ item.value }}</div>
-          </div>
-          </div>
-        </div>
-                  </v-sheet>
-                </v-col>
-              </v-row>
+            <v-btn
+              v-else-if="loadingUserInfo"
+              variant="text"
+              :loading="true"
+              class="mr-4"
+            >
+              加载中...
+            </v-btn>
+          </v-app-bar>
 
-              <v-row dense>
-                <v-col
-                  v-for="card in statCards"
-                  :key="card.key"
-                  cols="12"
-                  sm="6"
-                  md="3"
-                >
-                  <v-card
-                    class="stat-card"
-                    elevation="2"
-                    rounded="lg"
-                    variant="flat"
-                    :class="`stat-card--${card.color}`"
+          <v-main class="main-scroll">
+            <v-container fluid class="py-6 px-6">
+              <template v-if="activeMenu === 'dashboard'">
+                <v-row class="hero-row mb-6" dense>
+                  <v-col cols="12">
+                    <v-sheet class="hero-sheet" rounded="xl" elevation="0">
+                      <div class="hero-shell">
+                        <div class="hero-copy">
+                          <p class="hero-eyebrow">控制中心</p>
+                          <h2 class="hero-title">实时掌握衣设客户端运行状况</h2>
+                          <p class="hero-desc">
+                            关键节点、服务连接与任务进度在此一目了然，便于随时调整策略。
+                          </p>
+                          <div class="hero-actions">
+                            <v-btn color="primary" prepend-icon="mdi-refresh-auto">
+                              立即巡检
+                            </v-btn>
+                            <v-btn
+                              variant="text"
+                              color="primary"
+                              prepend-icon="mdi-file-chart-outline"
+                            >
+                              导出报告
+                            </v-btn>
+                          </div>
+                        </div>
+                        <div class="hero-metrics">
+                          <div
+                            v-for="item in heroHighlights"
+                            :key="item.key"
+                            class="hero-metric"
+                          >
+                            <div class="hero-metric-icon" :class="`text-${item.color}`">
+                              <v-icon :icon="item.icon" />
+                            </div>
+                            <div class="hero-metric-label">{{ item.label }}</div>
+                            <div class="hero-metric-value">{{ item.value }}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </v-sheet>
+                  </v-col>
+                </v-row>
+
+                <v-row dense>
+                  <v-col
+                    v-for="card in statCards"
+                    :key="card.key"
+                    cols="12"
+                    sm="6"
+                    md="3"
                   >
-                    <v-card-text class="d-flex align-center ga-4 pa-4">
-                      <v-avatar :color="card.color" size="38" variant="tonal">
-                        <v-icon size="20">{{ card.icon }}</v-icon>
-                      </v-avatar>
-                      <div class="stat-meta">
-                        <div class="stat-value">{{ card.value }}</div>
-                        <div class="stat-label">{{ card.label }}</div>
-                        <div class="stat-trend" :class="card.trendPositive ? 'text-success' : 'text-error'">
-                          <v-icon
-                            class="mr-1"
-                            size="14"
-                            :icon="card.trendPositive ? 'mdi-arrow-up' : 'mdi-arrow-down'"
-                          />
-                          <span>{{ card.trend }}</span>
-                          <span class="stat-trend-label">{{ card.trendLabel }}</span>
-              </div>
-            </div>
-                    </v-card-text>
-                  </v-card>
-                </v-col>
-              </v-row>
+                    <v-card
+                      class="stat-card"
+                      elevation="2"
+                      rounded="lg"
+                      variant="flat"
+                      :class="`stat-card--${card.color}`"
+                    >
+                      <v-card-text class="d-flex align-center ga-4 pa-4">
+                        <v-avatar :color="card.color" size="38" variant="tonal">
+                          <v-icon size="20">{{ card.icon }}</v-icon>
+                        </v-avatar>
+                        <div class="stat-meta">
+                          <div class="stat-value">{{ card.value }}</div>
+                          <div class="stat-label">{{ card.label }}</div>
+                          <div
+                            class="stat-trend"
+                            :class="card.trendPositive ? 'text-success' : 'text-error'"
+                          >
+                            <v-icon
+                              class="mr-1"
+                              size="14"
+                              :icon="
+                                card.trendPositive ? 'mdi-arrow-up' : 'mdi-arrow-down'
+                              "
+                            />
+                            <span>{{ card.trend }}</span>
+                            <span class="stat-trend-label">{{ card.trendLabel }}</span>
+                          </div>
+                        </div>
+                      </v-card-text>
+                    </v-card>
+                  </v-col>
+                </v-row>
 
-              <v-row dense class="mt-1">
-                <v-col cols="12" lg="6">
-                  <v-card elevation="2" rounded="xl" class="panel-card">
-                    <v-card-title class="panel-title d-flex align-center ga-2">
-                      <v-icon icon="mdi-heart-pulse" size="16" />
-                      系统状态
-                    </v-card-title>
-                    <v-divider />
-                    <v-card-text class="status-list">
-                      <div class="status-row">
-                        <span>本地服务</span>
-                        <v-chip
-                          class="status-pill"
-                          :class="toneClass(serverStatus ? 'success' : 'error')"
-                          variant="flat"
-                          rounded="pill"
+                <v-row dense class="mt-1">
+                  <v-col cols="12" lg="6">
+                    <v-card elevation="2" rounded="xl" class="panel-card">
+                      <v-card-title class="panel-title d-flex align-center ga-2">
+                        <v-icon icon="mdi-heart-pulse" size="16" />
+                        系统状态
+                      </v-card-title>
+                      <v-divider />
+                      <v-card-text class="status-list">
+                        <div class="status-row">
+                          <span>本地服务</span>
+                          <v-chip
+                            class="status-pill"
+                            :class="toneClass(serverStatus ? 'success' : 'error')"
+                            variant="flat"
+                            rounded="pill"
+                          >
+                            <v-icon size="14" class="mr-1">
+                              {{
+                                serverStatus
+                                  ? "mdi-check-circle-outline"
+                                  : "mdi-close-circle-outline"
+                              }}
+                            </v-icon>
+                            {{ serverStatus ? "运行中" : "未连接" }}
+                          </v-chip>
+                        </div>
+                        <div class="status-row">
+                          <span>远程服务</span>
+                          <v-chip
+                            class="status-pill"
+                            :class="toneClass(websocketBadge.tone)"
+                            rounded="pill"
+                            variant="flat"
+                          >
+                            <v-icon size="14" class="mr-1">{{
+                              websocketBadge.icon
+                            }}</v-icon>
+                            {{ websocketBadge.text }}
+                          </v-chip>
+                        </div>
+                        <div
+                          class="ws-meta"
+                          v-if="wsState.lastLatencyMs || wsState.lastError"
                         >
-                          <v-icon size="14" class="mr-1">
-                            {{ serverStatus ? 'mdi-check-circle-outline' : 'mdi-close-circle-outline' }}
-                          </v-icon>
-                      {{ serverStatus ? '运行中' : '未连接' }}
-                        </v-chip>
-                  </div>
-                      <div class="status-row">
-                        <span>远程服务</span>
-                        <v-chip
-                          class="status-pill"
-                          :class="toneClass(websocketBadge.tone)"
-                          rounded="pill"
-                          variant="flat"
-                        >
-                          <v-icon size="14" class="mr-1">{{ websocketBadge.icon }}</v-icon>
-                          {{ websocketBadge.text }}
-                        </v-chip>
-                  </div>
-                      <div class="ws-meta" v-if="wsState.lastLatencyMs || wsState.lastError">
-                        <span v-if="wsState.lastLatencyMs">延迟 {{ wsState.lastLatencyMs }} ms</span>
-                        <span v-if="wsState.lastError" class="ws-error"> {{ wsState.lastError }}</span>
-                  </div>
-                    </v-card-text>
-                    <v-divider />
-                    <v-card-actions class="pa-4">
-                      <v-btn
-                        size="small"
-                        variant="tonal"
-                        color="primary"
-                        prepend-icon="mdi-rotate-right"
-                        @click="reconnectWebsocket"
-                      >
-                        重连通道
-                      </v-btn>
-                      <div class="ws-endpoint">
-                        <span>端点</span>
-                        <code>{{ wsState.endpoint }}</code>
-                </div>
-                    </v-card-actions>
-                  </v-card>
-                </v-col>
-
-                <v-col cols="12" lg="6">
-                  <v-card elevation="2" rounded="xl" class="panel-card">
-                    <v-card-title class="panel-title d-flex align-center ga-2">
-                      <v-icon icon="mdi-flash-outline" size="16" />
-                      快速操作
-                    </v-card-title>
-                    <v-divider />
-                    <v-card-text>
-                <div class="quick-actions">
+                          <span v-if="wsState.lastLatencyMs"
+                            >延迟 {{ wsState.lastLatencyMs }} ms</span
+                          >
+                          <span v-if="wsState.lastError" class="ws-error">
+                            {{ wsState.lastError }}</span
+                          >
+                        </div>
+                      </v-card-text>
+                      <v-divider />
+                      <v-card-actions class="pa-4">
                         <v-btn
-                          v-for="link in quickLinks"
-                          :key="link.url"
+                          size="small"
                           variant="tonal"
                           color="primary"
-                          :href="link.url"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="quick-btn"
-                          :prepend-icon="link.icon"
+                          prepend-icon="mdi-rotate-right"
+                          @click="reconnectWebsocket"
                         >
-                          {{ link.label }}
+                          重连通道
                         </v-btn>
-                </div>
-                    </v-card-text>
-                  </v-card>
-                </v-col>
+                        <div class="ws-endpoint">
+                          <span>端点</span>
+                          <code>{{ wsState.endpoint }}</code>
+                        </div>
+                      </v-card-actions>
+                    </v-card>
+                  </v-col>
 
-                <v-col cols="12" lg="6">
-                  <v-card elevation="2" rounded="xl" class="panel-card">
-                    <v-card-title class="panel-title d-flex align-center ga-2">
-                      <v-icon icon="mdi-message-text-outline" size="16" />
-                      管理消息
-                      <v-chip
-                        v-if="unreadCount > 0"
-                        size="small"
-                        color="error"
-                        class="ml-2"
-                      >
-                        {{ unreadCount }}
-                      </v-chip>
-                      <v-spacer />
-                      <v-btn
-                        v-if="adminMessages.length > 0"
-                        icon
-                        size="20"
-                        variant="text"
-                        @click="markAllAsRead"
-                        title="全部已读"
-                      >
-                        <v-icon size="16">mdi-check-all</v-icon>
-                      </v-btn>
-                      <v-btn
-                        v-if="adminMessages.length > 0"
-                        icon
-                        size="20"
-                        variant="text"
-                        @click="clearMessages"
-                        title="清空消息"
-                      >
-                        <v-icon size="16">mdi-delete-outline</v-icon>
-                      </v-btn>
-                    </v-card-title>
-                    <v-divider />
-                    <v-card-text class="message-list" style="max-height: 400px; overflow-y: auto">
-                      <div v-if="adminMessages.length === 0" class="empty-messages">
-                        <v-icon size="48" color="grey-lighten-1" class="mb-2">mdi-inbox-outline</v-icon>
-                        <p class="text-grey">暂无消息</p>
-              </div>
-                      <div
-                        v-for="msg in adminMessages"
-                        :key="msg.id"
-                        class="message-item"
-                        :class="{ 'message-unread': !msg.read }"
-                        @click="markMessageAsRead(msg.id)"
-                      >
-                        <div class="message-header">
-                          <v-icon size="16" color="primary" class="mr-2">mdi-message-text</v-icon>
-                          <span class="message-time">{{ formatMessageTime(msg.timestamp) }}</span>
-                          <v-chip
-                            v-if="!msg.read"
-                            size="x-small"
-                            color="error"
-                            class="ml-2"
-                          >
-                            新
-                          </v-chip>
-            </div>
-                        <div class="message-content">
-                          <pre v-if="typeof msg.data === 'object'">{{ JSON.stringify(msg.data, null, 2) }}</pre>
-                          <span v-else>{{ msg.data }}</span>
-          </div>
-        </div>
-                    </v-card-text>
-                  </v-card>
-                </v-col>
-
-                <v-col cols="12" lg="6">
-                  <v-card elevation="2" rounded="xl" class="panel-card">
-                    <v-card-title class="panel-title d-flex align-center ga-2">
-                      <v-icon icon="mdi-shield-account" size="16" />
-                      客户端身份
-                    </v-card-title>
-                    <v-divider />
-                    <v-card-text class="client-card">
-                      <div class="client-info-row">
-                        <div class="client-info-label">客户端 ID</div>
-                        <div class="client-info-value">
-                          <code>{{ clientProfile.clientId || '--' }}</code>
+                  <v-col cols="12" lg="6">
+                    <v-card elevation="2" rounded="xl" class="panel-card">
+                      <v-card-title class="panel-title d-flex align-center ga-2">
+                        <v-icon icon="mdi-flash-outline" size="16" />
+                        快速操作
+                      </v-card-title>
+                      <v-divider />
+                      <v-card-text>
+                        <div class="quick-actions">
                           <v-btn
-                            icon
-                            size="24"
-                            variant="text"
-                            @click="copyToClipboard(clientProfile.clientId, '客户端 ID')"
-                          >
-                            <v-icon size="16">mdi-content-copy</v-icon>
-                          </v-btn>
-            </div>
-            </div>
-                      <div class="client-info-row">
-                        <div class="client-info-label">机器码</div>
-                        <div class="client-info-value">
-                          <v-chip size="small" color="primary" variant="tonal" v-if="clientProfile.machine?.code">
-                            {{ clientProfile.machine.code }}
-                          </v-chip>
-                          <span v-else>--</span>
-          </div>
-        </div>
-                      <div class="client-info-row">
-                        <div class="client-info-label">系统</div>
-                        <div class="client-info-value">
-                          {{ clientProfile.platform || clientProfile.machine?.platform || '未知' }}
-            </div>
-            </div>
-                      <div class="client-info-row">
-                        <div class="client-info-label">硬件</div>
-                        <div class="client-info-value">
-                          <span>
-                            {{ clientProfile.device?.hardwareConcurrency || '未知' }} 核 /
-                            {{ clientProfile.device?.memory ? `${clientProfile.device.memory} GB` : '未知' }}
-                          </span>
-          </div>
-        </div>
-                      <div class="client-info-row">
-                        <div class="client-info-label">位置</div>
-                        <div class="client-info-value client-location">
-                          <div>
-                            <strong>{{ clientProfile.location?.ip || '--' }}</strong>
-                            <span v-if="clientProfile.location?.city">
-                              （{{ clientProfile.location.city }}
-                              <span v-if="clientProfile.location?.region">·{{ clientProfile.location.region }}</span>
-                              <span v-if="clientProfile.location?.country">·{{ clientProfile.location.country }}</span>）
-                            </span>
-                            <div class="client-location-org" v-if="clientProfile.location?.org">
-                              {{ clientProfile.location.org }}
-            </div>
-            </div>
-                          <v-btn
-                            size="small"
-                            variant="text"
+                            v-for="link in quickLinks"
+                            :key="link.url"
+                            variant="tonal"
                             color="primary"
-                            prepend-icon="mdi-refresh"
-                            @click="refreshLocation"
+                            :href="link.url"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="quick-btn"
+                            :prepend-icon="link.icon"
                           >
-                            更新
+                            {{ link.label }}
                           </v-btn>
-          </div>
+                        </div>
+                      </v-card-text>
+                    </v-card>
+                  </v-col>
+
+                  <v-col cols="12" lg="6">
+                    <v-card elevation="2" rounded="xl" class="panel-card">
+                      <v-card-title class="panel-title d-flex align-center ga-2">
+                        <v-icon icon="mdi-message-text-outline" size="16" />
+                        管理消息
+                        <v-chip
+                          v-if="unreadCount > 0"
+                          size="small"
+                          color="error"
+                          class="ml-2"
+                        >
+                          {{ unreadCount }}
+                        </v-chip>
+                        <v-spacer />
+                        <v-btn
+                          v-if="adminMessages.length > 0"
+                          icon
+                          size="20"
+                          variant="text"
+                          @click="markAllAsRead"
+                          title="全部已读"
+                        >
+                          <v-icon size="16">mdi-check-all</v-icon>
+                        </v-btn>
+                        <v-btn
+                          v-if="adminMessages.length > 0"
+                          icon
+                          size="20"
+                          variant="text"
+                          @click="clearMessages"
+                          title="清空消息"
+                        >
+                          <v-icon size="16">mdi-delete-outline</v-icon>
+                        </v-btn>
+                      </v-card-title>
+                      <v-divider />
+                      <v-card-text
+                        class="message-list"
+                        style="max-height: 400px; overflow-y: auto"
+                      >
+                        <div v-if="adminMessages.length === 0" class="empty-messages">
+                          <v-icon size="48" color="grey-lighten-1" class="mb-2"
+                            >mdi-inbox-outline</v-icon
+                          >
+                          <p class="text-grey">暂无消息</p>
+                        </div>
+                        <div
+                          v-for="msg in adminMessages"
+                          :key="msg.id"
+                          class="message-item"
+                          :class="{ 'message-unread': !msg.read }"
+                          @click="markMessageAsRead(msg.id)"
+                        >
+                          <div class="message-header">
+                            <v-icon size="16" color="primary" class="mr-2"
+                              >mdi-message-text</v-icon
+                            >
+                            <span class="message-time">{{
+                              formatMessageTime(msg.timestamp)
+                            }}</span>
+                            <v-chip
+                              v-if="!msg.read"
+                              size="x-small"
+                              color="error"
+                              class="ml-2"
+                            >
+                              新
+                            </v-chip>
+                          </div>
+                          <div class="message-content">
+                            <pre v-if="typeof msg.data === 'object'">{{
+                              JSON.stringify(msg.data, null, 2)
+                            }}</pre>
+                            <span v-else>{{ msg.data }}</span>
+                          </div>
+                        </div>
+                      </v-card-text>
+                    </v-card>
+                  </v-col>
+
+                  <v-col cols="12" lg="6">
+                    <v-card elevation="2" rounded="xl" class="panel-card">
+                      <v-card-title class="panel-title d-flex align-center ga-2">
+                        <v-icon icon="mdi-shield-account" size="16" />
+                        客户端身份
+                      </v-card-title>
+                      <v-divider />
+                      <v-card-text class="client-card">
+                        <div class="client-info-row">
+                          <div class="client-info-label">客户端 ID</div>
+                          <div class="client-info-value">
+                            <code>{{ clientProfile.clientId || "--" }}</code>
+                            <v-btn
+                              icon
+                              size="24"
+                              variant="text"
+                              @click="
+                                copyToClipboard(clientProfile.clientId, '客户端 ID')
+                              "
+                            >
+                              <v-icon size="16">mdi-content-copy</v-icon>
+                            </v-btn>
+                          </div>
+                        </div>
+                        <div class="client-info-row">
+                          <div class="client-info-label">机器码</div>
+                          <div class="client-info-value">
+                            <v-chip
+                              size="small"
+                              color="primary"
+                              variant="tonal"
+                              v-if="clientProfile.machine?.code"
+                            >
+                              {{ clientProfile.machine.code }}
+                            </v-chip>
+                            <span v-else>--</span>
+                          </div>
+                        </div>
+                        <div class="client-info-row">
+                          <div class="client-info-label">系统</div>
+                          <div class="client-info-value">
+                            {{
+                              clientProfile.platform ||
+                              clientProfile.machine?.platform ||
+                              "未知"
+                            }}
+                          </div>
+                        </div>
+                        <div class="client-info-row">
+                          <div class="client-info-label">硬件</div>
+                          <div class="client-info-value">
+                            <span>
+                              {{ clientProfile.device?.hardwareConcurrency || "未知" }} 核
+                              /
+                              {{
+                                clientProfile.device?.memory
+                                  ? `${clientProfile.device.memory} GB`
+                                  : "未知"
+                              }}
+                            </span>
+                          </div>
+                        </div>
+                        <div class="client-info-row">
+                          <div class="client-info-label">位置</div>
+                          <div class="client-info-value client-location">
+                            <div>
+                              <strong>{{ clientProfile.location?.ip || "--" }}</strong>
+                              <span v-if="clientProfile.location?.city">
+                                （{{ clientProfile.location.city }}
+                                <span v-if="clientProfile.location?.region"
+                                  >·{{ clientProfile.location.region }}</span
+                                >
+                                <span v-if="clientProfile.location?.country"
+                                  >·{{ clientProfile.location.country }}</span
+                                >）
+                              </span>
+                              <div
+                                class="client-location-org"
+                                v-if="clientProfile.location?.org"
+                              >
+                                {{ clientProfile.location.org }}
+                              </div>
+                            </div>
+                            <v-btn
+                              size="small"
+                              variant="text"
+                              color="primary"
+                              prepend-icon="mdi-refresh"
+                              @click="refreshLocation"
+                            >
+                              更新
+                            </v-btn>
+                          </div>
+                        </div>
+                      </v-card-text>
+                    </v-card>
+                  </v-col>
+                </v-row>
+              </template>
+
+              <template v-else-if="['tasks', 'settings', 'logs'].includes(activeMenu)">
+                <v-card elevation="2" rounded="xl" class="panel-card">
+                  <v-card-title class="panel-title">
+                    {{ pageTitle }}
+                  </v-card-title>
+                  <v-divider />
+                  <v-card-text class="text-center py-10 text-medium-emphasis">
+                    功能开发中，敬请期待…
+                  </v-card-text>
+                </v-card>
+              </template>
+
+              <template v-else-if="activeMenu === 'about'">
+                <v-card border="sm" class="about-card mx-auto" max-width="480">
+                  <v-card-text class="d-flex flex-column align-center py-8 ga-2">
+                    <v-avatar size="72" rounded="lg">
+                      <v-img :src="appLogo" cover alt="logo" />
+                    </v-avatar>
+                    <div class="about-title">衣设客户端</div>
+                    <div class="about-version">版本 v{{ appVersion || "--" }}</div>
+                    <div class="about-desc">最具创意的设计工具</div>
+                    <v-btn
+                      variant="text"
+                      color="primary"
+                      href="https://github.com/chan-max"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      prepend-icon="mdi-github"
+                    >
+                      Jackie Chan
+                    </v-btn>
+                  </v-card-text>
+                </v-card>
+              </template>
+            </v-container>
+          </v-main>
         </div>
-                    </v-card-text>
-                  </v-card>
-                </v-col>
-              </v-row>
-            </template>
-
-            <template v-else-if="['tasks', 'settings', 'logs'].includes(activeMenu)">
-              <v-card elevation="2" rounded="xl" class="panel-card">
-                <v-card-title class="panel-title">
-                  {{ pageTitle }}
-                </v-card-title>
-                <v-divider />
-                <v-card-text class="text-center py-10 text-medium-emphasis">
-                  功能开发中，敬请期待…
-                </v-card-text>
-              </v-card>
-            </template>
-
-            <template v-else-if="activeMenu === 'about'">
-              <v-card border="sm" class="about-card mx-auto" max-width="480">
-                <v-card-text class="d-flex flex-column align-center py-8 ga-2">
-                  <v-avatar size="72" rounded="lg">
-                    <v-img :src="appLogo" cover alt="logo" />
-                  </v-avatar>
-                  <div class="about-title">衣设客户端</div>
-                  <div class="about-version">版本 v{{ appVersion || '--' }}</div>
-                  <div class="about-desc">最具创意的设计工具</div>
-                  <v-btn
-                    variant="text"
-                    color="primary"
-                    href="https://github.com/chan-max"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    prepend-icon="mdi-github"
-                  >
-                    Jackie Chan
-                  </v-btn>
-                </v-card-text>
-              </v-card>
-            </template>
-          </v-container>
-        </v-main>
-            </div>
       </v-layout>
     </template>
   </v-app>
@@ -1021,13 +1086,18 @@ onUnmounted(() => {
 }
 
 :deep(.v-list-item-title) {
-  font-size: 14px;
+  font-size: 11px;
   letter-spacing: 0.009375em;
   color: rgba(0, 0, 0, 0.87);
 }
 
 :deep(.v-navigation-drawer .v-list-item__prepend) {
-  margin-inline-end: 12px;
+  margin-inline-end: 4px;
+}
+
+:deep(.v-navigation-drawer .v-list-item__spacer) {
+  width: 2px;
+  min-width: 2px;
 }
 
 .main-surface {
@@ -1516,7 +1586,7 @@ onUnmounted(() => {
   .hero-metrics {
     width: 100%;
   }
-  
+
   .user-info {
     margin-right: 0;
   }
