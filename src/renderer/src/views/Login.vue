@@ -11,12 +11,7 @@
     <div class="login-shell">
       <!-- Illustration block -->
       <section class="hero-panel">
-        <header class="hero-header">
-          <div class="brand-mark">
-            <span class="brand-dot"></span>
-            <span class="brand-name">sneat</span>
-          </div>
-        </header>
+        <header class="hero-header"></header>
         <div class="hero-figure">
           <div class="hero-illustration">
             <div class="orbit orbit-sm"></div>
@@ -46,28 +41,20 @@
             <p>Please sign-in to your account and start the adventure</p>
           </div>
 
-          <div class="credential-hint">
-            <div>
-              <strong>Admin Email:</strong> admin@demo.com / Pass: <span>admin</span>
-            </div>
-            <div>
-              <strong>Client Email:</strong> client@demo.com / Pass: <span>client</span>
-            </div>
-          </div>
-
           <v-form ref="formRef" v-model="formValid" @submit.prevent="handleLogin" class="login-form">
             <v-text-field
               v-model="form.account"
               label="Email"
               variant="outlined"
               density="comfortable"
+              hide-details="auto"
               color="primary"
               bg-color="white"
               placeholder="admin@demo.com"
               prepend-inner-icon="mdi-email-outline"
               :rules="accountRules"
               autocomplete="username"
-              class="mb-3"
+              class="login-input mb-3"
             />
 
             <v-text-field
@@ -75,6 +62,7 @@
               label="Password"
               variant="outlined"
               density="comfortable"
+              hide-details="auto"
               color="primary"
               bg-color="white"
               placeholder="•••••••"
@@ -83,7 +71,7 @@
               :type="showPassword ? 'text' : 'password'"
               :rules="passwordRules"
               autocomplete="current-password"
-              class="mb-1"
+              class="login-input mb-1"
               @click:append-inner="showPassword = !showPassword"
             />
 
@@ -124,21 +112,7 @@
             </v-btn>
           </v-form>
 
-          <div class="account-switch">
-            New on our platform?
-            <a class="link" href="javascript:void(0)">Create an account</a>
-          </div>
-
-          <div class="divider">
-            <span>or</span>
-          </div>
-
-          <div class="social-row">
-            <v-btn icon="mdi-facebook" variant="outlined" size="large" color="#3b5998" />
-            <v-btn icon="mdi-twitter" variant="outlined" size="large" color="#1da1f2" />
-            <v-btn icon="mdi-github" variant="outlined" size="large" color="#0f172a" />
-            <v-btn icon="mdi-google" variant="outlined" size="large" color="#ea4335" />
-          </div>
+          <div class="account-switch"></div>
         </div>
       </section>
     </div>
@@ -431,7 +405,7 @@ const handleLogin = async () => {
 }
 
 .welcome-block h1 {
-  font-size: 28px;
+  font-size: 26px;
   margin-bottom: 8px;
   color: #111827;
 }
@@ -439,17 +413,6 @@ const handleLogin = async () => {
 .welcome-block p {
   margin: 0;
   color: #6b7280;
-}
-
-.credential-hint {
-  background: #f3f4ff;
-  border-radius: 16px;
-  padding: 14px 18px;
-  margin: 24px 0 32px;
-  font-size: 13px;
-  color: #4f46e5;
-  line-height: 1.6;
-  border: 1px solid rgba(79, 70, 229, 0.15);
 }
 
 .login-form {
@@ -461,7 +424,7 @@ const handleLogin = async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   gap: 12px;
 }
 
@@ -575,6 +538,15 @@ const handleLogin = async () => {
 ::deep(.v-text-field .v-field--focused .v-field__outline) {
   border-color: #5f5af2;
   border-width: 2px;
+}
+
+::deep(.login-input .v-field) {
+  min-height: 44px;
+  border-radius: 12px;
+}
+
+::deep(.login-input .v-field__input) {
+  padding-block: 6px;
 }
 
 ::deep(.v-checkbox .v-selection-control__input) {
