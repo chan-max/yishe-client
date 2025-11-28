@@ -488,9 +488,9 @@ onUnmounted(() => {
         :timeout="3000"
         :color="toast.color"
         variant="tonal"
-        location="top right"
+        location="top center"
         class="ws-snackbar"
-        :z-index="9999"
+        :z-index="99999"
       >
         <v-icon size="18" class="mr-2">{{ toast.icon }}</v-icon>
         {{ toast.message }}
@@ -969,13 +969,13 @@ onUnmounted(() => {
 }
 
 .ws-snackbar {
-  z-index: 9999 !important;
+  z-index: 99999 !important;
 }
 
 .ws-snackbar :deep(.v-snackbar__wrapper) {
   border-radius: 999px;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
-  z-index: 9999 !important;
+  z-index: 99999 !important;
 }
 
 .app-drawer {
