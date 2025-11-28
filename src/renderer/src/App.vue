@@ -14,6 +14,16 @@ const serverStatus = ref(false)
 const appVersion = ref('')
 const activeMenu = ref('dashboard')
 
+interface AdminMessage {
+  id: string
+  data: any
+  timestamp: string
+  read: boolean
+}
+
+const adminMessages = ref<AdminMessage[]>([])
+const unreadCount = computed(() => adminMessages.value.filter((m) => !m.read).length)
+
 const wsState = websocketClient.state
 const clientProfile = websocketClient.profile
 const deviceIdentity = websocketClient.identity
@@ -148,6 +158,64 @@ const logHandler = (log: { level: string; message: string }) => {
   console.log(log.message)
 }
 
+const handleAdminMessage = (payload: { data: any; timestamp: string }) => {
+  const message: AdminMessage = {
+    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    data: payload.data,
+    timestamp: payload.timestamp,
+    read: false
+  }
+  adminMessages.value.unshift(message)
+  // 只保留最近 50 条消息
+  if (adminMessages.value.length > 50) {
+    adminMessages.value = adminMessages.value.slice(0, 50)
+  }
+}
+
+const markMessageAsRead = (messageId: string) => {
+  const message = adminMessages.value.find((m) => m.id === messageId)
+  if (message) {
+    message.read = true
+  }
+}
+
+const markAllAsRead = () => {
+  adminMessages.value.forEach((m) => {
+    m.read = true
+  })
+}
+
+const clearMessages = () => {
+  adminMessages.value = []
+}
+
+const formatMessageTime = (timestamp: string) => {
+  const date = new Date(timestamp)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  const seconds = Math.floor(diff / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
+
+  if (seconds < 60) {
+    return '刚刚'
+  } else if (minutes < 60) {
+    return `${minutes} 分钟前`
+  } else if (hours < 24) {
+    return `${hours} 小时前`
+  } else if (days < 7) {
+    return `${days} 天前`
+  } else {
+    return date.toLocaleString('zh-CN', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+}
+
 const copyToClipboard = async (value?: string, label?: string) => {
   if (!value) {
     showToast({
@@ -270,6 +338,7 @@ onMounted(() => {
   websocketClient.connect()
   websocketClient.events.on('toast', showToast)
   websocketClient.events.on('log', logHandler)
+  websocketClient.events.on('adminMessage', handleAdminMessage)
   window.api.getAppVersion().then((v) => {
     appVersion.value = v
     websocketClient.updateClientInfo({ appVersion: v })
@@ -284,6 +353,7 @@ onBeforeUnmount(() => {
 onUnmounted(() => {
   websocketClient.events.off('toast', showToast)
   websocketClient.events.off('log', logHandler)
+  websocketClient.events.off('adminMessage', handleAdminMessage)
 })
 </script>
 
@@ -527,6 +597,75 @@ onUnmounted(() => {
                 <v-col cols="12" lg="6">
                   <v-card elevation="2" rounded="xl" class="panel-card">
                     <v-card-title class="panel-title d-flex align-center ga-2">
+                      <v-icon icon="mdi-message-text-outline" size="16" />
+                      管理消息
+                      <v-chip
+                        v-if="unreadCount > 0"
+                        size="small"
+                        color="error"
+                        class="ml-2"
+                      >
+                        {{ unreadCount }}
+                      </v-chip>
+                      <v-spacer />
+                      <v-btn
+                        v-if="adminMessages.length > 0"
+                        icon
+                        size="20"
+                        variant="text"
+                        @click="markAllAsRead"
+                        title="全部已读"
+                      >
+                        <v-icon size="16">mdi-check-all</v-icon>
+                      </v-btn>
+                      <v-btn
+                        v-if="adminMessages.length > 0"
+                        icon
+                        size="20"
+                        variant="text"
+                        @click="clearMessages"
+                        title="清空消息"
+                      >
+                        <v-icon size="16">mdi-delete-outline</v-icon>
+                      </v-btn>
+                    </v-card-title>
+                    <v-divider />
+                    <v-card-text class="message-list" style="max-height: 400px; overflow-y: auto">
+                      <div v-if="adminMessages.length === 0" class="empty-messages">
+                        <v-icon size="48" color="grey-lighten-1" class="mb-2">mdi-inbox-outline</v-icon>
+                        <p class="text-grey">暂无消息</p>
+                      </div>
+                      <div
+                        v-for="msg in adminMessages"
+                        :key="msg.id"
+                        class="message-item"
+                        :class="{ 'message-unread': !msg.read }"
+                        @click="markMessageAsRead(msg.id)"
+                      >
+                        <div class="message-header">
+                          <v-icon size="16" color="primary" class="mr-2">mdi-message-text</v-icon>
+                          <span class="message-time">{{ formatMessageTime(msg.timestamp) }}</span>
+                          <v-chip
+                            v-if="!msg.read"
+                            size="x-small"
+                            color="error"
+                            class="ml-2"
+                          >
+                            新
+                          </v-chip>
+                        </div>
+                        <div class="message-content">
+                          <pre v-if="typeof msg.data === 'object'">{{ JSON.stringify(msg.data, null, 2) }}</pre>
+                          <span v-else>{{ msg.data }}</span>
+                        </div>
+                      </div>
+                    </v-card-text>
+                  </v-card>
+                </v-col>
+
+                <v-col cols="12" lg="6">
+                  <v-card elevation="2" rounded="xl" class="panel-card">
+                    <v-card-title class="panel-title d-flex align-center ga-2">
                       <v-icon icon="mdi-shield-account" size="16" />
                       客户端身份
                     </v-card-title>
@@ -645,16 +784,8 @@ onUnmounted(() => {
 <style scoped>
 .app-layout {
   min-height: 100vh;
-  background: #eef2f9;
-  color: #1f2937;
-  font-family:
-    'Inter',
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    'PingFang SC',
-    'Microsoft YaHei',
-    sans-serif;
+  background: #fafafa;
+  color: rgba(0, 0, 0, 0.87);
 }
 
 .ws-snackbar :deep(.v-snackbar__wrapper) {
@@ -663,12 +794,10 @@ onUnmounted(() => {
 }
 
 .app-drawer {
-  border-right: 1px solid #e5e7eb;
   background: #ffffff;
   transition: width 0.25s ease;
   /* 给 macOS 左上角原生窗口按钮留出更充足的空间，避免遮挡菜单 */
   padding-top: 44px;
-  box-shadow: 2px 0 8px rgba(15, 23, 42, 0.04);
 }
 
 .version-pill {
@@ -685,34 +814,31 @@ onUnmounted(() => {
 
 :deep(.v-navigation-drawer .v-list-item) {
   margin: 0 8px 4px;
-  border-radius: 10px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
 }
 
 :deep(.v-navigation-drawer .v-list-item:hover) {
-  background: rgba(37, 99, 235, 0.06);
+  background: rgba(0, 0, 0, 0.04);
 }
 
 :deep(.v-navigation-drawer .v-list-item--active) {
-  background: rgba(37, 99, 235, 0.12);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+  background: rgba(25, 118, 210, 0.12);
 }
 
 :deep(.v-navigation-drawer .v-list-item--active .v-icon) {
-  color: #2563eb;
-  transform: scale(1.05);
+  color: #1976d2;
 }
 
 :deep(.v-navigation-drawer .v-list-item--active .v-list-item-title) {
-  color: #2563eb;
-  font-weight: 600;
+  color: #1976d2;
+  font-weight: 500;
 }
 
 :deep(.v-list-item-title) {
-  font-size: 13px;
-  letter-spacing: 0.15px;
-  color: #374151;
-  transition: color 0.2s ease;
+  font-size: 14px;
+  letter-spacing: 0.009375em;
+  color: rgba(0, 0, 0, 0.87);
 }
 
 :deep(.v-navigation-drawer .v-list-item__prepend) {
@@ -724,14 +850,12 @@ onUnmounted(() => {
   flex-direction: column;
   flex: 1;
   min-width: 0;
-  background: #f5f7fb;
+  background: #fafafa;
 }
 
 .app-bar {
-  border-bottom: 1px solid #e5e7eb;
   background: #ffffff;
-  padding-inline: 20px;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+  padding-inline: 24px;
 }
 
 .bar-title {
@@ -741,16 +865,16 @@ onUnmounted(() => {
 }
 
 .heading {
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
-  color: #111827;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0.0071428571em;
+  color: rgba(0, 0, 0, 0.87);
 }
 
 .caption {
-  font-size: 11.5px;
-  letter-spacing: 0.2px;
-  color: #6b7280;
+  font-size: 14px;
+  letter-spacing: 0.0178571429em;
+  color: rgba(0, 0, 0, 0.6);
 }
 
 .status-chips {
@@ -762,20 +886,13 @@ onUnmounted(() => {
 
 .status-chip {
   font-size: 12px;
-  letter-spacing: 0.1px;
-  padding-inline: 14px;
-  background: rgba(15, 23, 42, 0.04);
-  color: #111827;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.0166666667em;
+  height: 24px;
 }
 
 .hero-sheet {
-  background: radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent),
-    linear-gradient(135deg, #ffffff 0%, #f6f9ff 65%);
-  border: 1px solid rgba(37, 99, 235, 0.08);
-  padding: 32px;
+  background: #ffffff;
+  padding: 24px;
 }
 
 .hero-shell {
@@ -873,35 +990,16 @@ onUnmounted(() => {
 }
 
 .main-scroll {
-  background: linear-gradient(180deg, #f6f8fc 0%, #eef2f9 100%);
+  background: #fafafa;
 }
 
 .stat-card {
   background: #ffffff;
-  border: 1px solid transparent;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+  transition: box-shadow 0.2s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
-}
-
-.stat-card--primary {
-  border-color: rgba(37, 99, 235, 0.15);
-}
-
-.stat-card--success {
-  border-color: rgba(22, 163, 74, 0.15);
-}
-
-.stat-card--warning {
-  border-color: rgba(245, 158, 11, 0.2);
-}
-
-.stat-card--error {
-  border-color: rgba(220, 38, 38, 0.15);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .stat-meta {
@@ -945,33 +1043,32 @@ onUnmounted(() => {
 
 .panel-card {
   background: #ffffff;
-  border: 1px solid transparent;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
   transition: box-shadow 0.2s ease;
 }
 
 .panel-card:hover {
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .panel-title {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
-  color: #1f2937;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.009375em;
+  color: rgba(0, 0, 0, 0.87);
 }
 
 .status-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  font-size: 12px;
+  gap: 16px;
+  font-size: 14px;
 }
 
 .status-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  color: rgba(0, 0, 0, 0.87);
 }
 
 .status-pill {
@@ -1091,6 +1188,69 @@ onUnmounted(() => {
   color: #94a3b8;
 }
 
+.empty-messages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.message-list {
+  padding: 0 !important;
+}
+
+.message-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.message-item:hover {
+  background-color: #f9fafb;
+}
+
+.message-item.message-unread {
+  background-color: rgba(37, 99, 235, 0.04);
+  border-left: 3px solid #2563eb;
+}
+
+.message-item:last-child {
+  border-bottom: none;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.message-time {
+  margin-left: auto;
+}
+
+.message-content {
+  font-size: 12px;
+  color: #111827;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.message-content pre {
+  margin: 0;
+  padding: 8px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  font-size: 11px;
+  overflow-x: auto;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
 .about-card {
   background: #ffffff;
   border: 1px solid transparent;
@@ -1122,28 +1282,13 @@ onUnmounted(() => {
   padding-inline: 16px;
 }
 
-/* 优化按钮的过渡效果 */
+/* 使用 Vuetify 标准过渡效果 */
 :deep(.v-btn) {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: none;
 }
 
-:deep(.v-btn:hover) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-}
-
-:deep(.v-btn:active) {
-  transform: translateY(0);
-}
-
-/* 优化卡片的过渡效果 */
 :deep(.v-card) {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* 优化输入框的焦点效果 */
-:deep(.v-field--focused) {
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  transition: box-shadow 0.2s ease;
 }
 
 @media (max-width: 960px) {

@@ -165,6 +165,7 @@ const clientInfo = reactive<ClientInfoPayload>({
 export type WebsocketEvents = {
   log: { level: 'info' | 'warn' | 'error'; message: string }
   toast: { color: string; icon: string; message: string }
+  adminMessage: { data: any; timestamp: string }
 }
 
 const emitter = mitt<WebsocketEvents>()
@@ -376,6 +377,22 @@ function bindSocketEvents(currentSocket: Socket) {
     updateState({
       status: 'error',
       lastError: serializeError(error)
+    })
+  })
+
+  // 监听来自管理后台的消息
+  currentSocket.on('admin-message', (data: any) => {
+    emitter.emit('log', { level: 'info', message: `[ws] received admin-message: ${JSON.stringify(data)}` })
+    emitter.emit('adminMessage', {
+      data,
+      timestamp: new Date().toISOString()
+    })
+    // 同时显示 toast 通知
+    const messageText = typeof data === 'string' ? data : data?.message || data?.text || '收到管理消息'
+    emitter.emit('toast', {
+      color: 'info',
+      icon: 'mdi-message-text-outline',
+      message: messageText
     })
   })
 }

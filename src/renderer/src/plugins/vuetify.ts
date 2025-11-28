@@ -6,13 +6,15 @@ import { createVuetify, type ThemeDefinition } from 'vuetify'
 const yisheLight: ThemeDefinition = {
   dark: false,
   colors: {
-    background: '#f5f7fb',
+    background: '#fafafa',
     surface: '#ffffff',
-    primary: '#2563eb',
-    secondary: '#0ea5e9',
-    success: '#16a34a',
-    warning: '#f59e0b',
-    error: '#dc2626'
+    primary: '#1976d2',
+    secondary: '#424242',
+    accent: '#82b1ff',
+    error: '#ff5252',
+    info: '#2196f3',
+    success: '#4caf50',
+    warning: '#fb8c00'
   }
 }
 
