@@ -20,7 +20,7 @@ export const vuetify = createVuetify({
   defaults: {
     global: {
       density: 'compact',
-      ripple: false,
+      ripple: true,
       style: 'font-size: 12px; letter-spacing: 0.1px;'
     },
     VBtn: {
@@ -30,8 +30,9 @@ export const vuetify = createVuetify({
       style: 'font-size: 12px; letter-spacing: 0.2px;'
     },
     VListItem: {
-      minHeight: 34,
-      style: 'font-size: 12px;'
+      minHeight: 40,
+      ripple: true,
+      style: 'font-size: 12.5px;'
     },
     VChip: {
       density: 'comfortable',

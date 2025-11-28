@@ -668,6 +668,7 @@ onUnmounted(() => {
   transition: width 0.25s ease;
   /* 给 macOS 左上角原生窗口按钮留出更充足的空间，避免遮挡菜单 */
   padding-top: 44px;
+  box-shadow: 2px 0 8px rgba(15, 23, 42, 0.04);
 }
 
 .version-pill {
@@ -682,18 +683,40 @@ onUnmounted(() => {
   justify-content: center;
 }
 
+:deep(.v-navigation-drawer .v-list-item) {
+  margin: 0 8px 4px;
+  border-radius: 10px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:deep(.v-navigation-drawer .v-list-item:hover) {
+  background: rgba(37, 99, 235, 0.06);
+}
+
 :deep(.v-navigation-drawer .v-list-item--active) {
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(37, 99, 235, 0.12);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
 }
 
 :deep(.v-navigation-drawer .v-list-item--active .v-icon) {
   color: #2563eb;
+  transform: scale(1.05);
+}
+
+:deep(.v-navigation-drawer .v-list-item--active .v-list-item-title) {
+  color: #2563eb;
+  font-weight: 600;
 }
 
 :deep(.v-list-item-title) {
-  font-size: 12.5px;
-  letter-spacing: 0.2px;
-  color: #111827;
+  font-size: 13px;
+  letter-spacing: 0.15px;
+  color: #374151;
+  transition: color 0.2s ease;
+}
+
+:deep(.v-navigation-drawer .v-list-item__prepend) {
+  margin-inline-end: 12px;
 }
 
 .main-surface {
@@ -923,7 +946,12 @@ onUnmounted(() => {
 .panel-card {
   background: #ffffff;
   border: 1px solid transparent;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  transition: box-shadow 0.2s ease;
+}
+
+.panel-card:hover {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
 }
 
 .panel-title {
@@ -1092,6 +1120,30 @@ onUnmounted(() => {
 :deep(.v-card-text),
 :deep(.v-card-title) {
   padding-inline: 16px;
+}
+
+/* 优化按钮的过渡效果 */
+:deep(.v-btn) {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:deep(.v-btn:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+:deep(.v-btn:active) {
+  transform: translateY(0);
+}
+
+/* 优化卡片的过渡效果 */
+:deep(.v-card) {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 优化输入框的焦点效果 */
+:deep(.v-field--focused) {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 @media (max-width: 960px) {
