@@ -110,7 +110,7 @@ const statusChips = computed(() => {
     },
     {
       key: 'ws',
-      label: `实时通道 · ${wsDescriptor.text}`,
+      label: `远程服务 · ${wsDescriptor.text}`,
       state: wsDescriptor.tone,
       icon: wsDescriptor.icon
     }
@@ -143,7 +143,7 @@ const reconnectWebsocket = () => {
   showToast({
     color: 'primary',
     icon: 'mdi-rotate-right',
-    message: '正在重新连接实时通道...'
+    message: '正在重新连接远程服务...'
   })
 }
 
@@ -329,10 +329,6 @@ const checkServerStatus = async () => {
   }
 }
 
-const hideToTray = async () => {
-  await window.api.hideMainWindow()
-}
-
 onMounted(() => {
   startServerPolling()
   websocketClient.connect()
@@ -420,15 +416,6 @@ onUnmounted(() => {
             </v-chip>
           </div>
           <v-spacer />
-          <v-btn
-            color="primary"
-            variant="flat"
-            size="small"
-            prepend-icon="mdi-tray-arrow-down"
-            @click="hideToTray"
-          >
-            隐藏到托盘
-          </v-btn>
         </v-app-bar>
 
         <v-main class="main-scroll">
@@ -532,7 +519,7 @@ onUnmounted(() => {
                         </v-chip>
                       </div>
                       <div class="status-row">
-                        <span>实时通道</span>
+                        <span>远程服务</span>
                         <v-chip
                           class="status-pill"
                           :class="toneClass(websocketBadge.tone)"
