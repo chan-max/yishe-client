@@ -404,7 +404,7 @@ const handleLogin = async () => {
   max-width: 480px;
   background: #fff;
   border-radius: 18px;
-  padding: 28px;
+  padding: 20px 24px;
   box-shadow: 0 12px 40px rgba(15, 23, 42, 0.05);
   border: 1px solid rgba(148, 163, 184, 0.15);
 }
@@ -426,7 +426,7 @@ const handleLogin = async () => {
   flex-direction: column;
   gap: 10px;
   background-color: #ffffff;
-  padding: 24px 28px;
+  padding: 20px 24px;
   border-radius: 18px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
     'Open Sans', 'Helvetica Neue', sans-serif;
