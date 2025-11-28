@@ -8,113 +8,140 @@
 -->
 <template>
   <v-app>
-    <v-main class="login-main">
-      <v-container fluid class="pa-0 fill-height">
-        <v-row no-gutters class="fill-height">
-          <!-- 左侧插画区域 -->
-          <v-col cols="12" md="6" class="login-left d-none d-md-flex">
-            <div class="login-illustration">
-              <!-- 背景装饰 -->
-              <div class="illustration-bg">
-                <div class="bg-pattern"></div>
-              </div>
-              
-              <!-- 插画内容 -->
-              <div class="illustration-content">
-                <!-- 可以在这里添加 SVG 插画或使用 CSS 绘制简单图形 -->
-                <div class="illustration-figure">
-                  <div class="figure-desk">
-                    <div class="desk-monitor"></div>
-                    <div class="desk-chair"></div>
-                  </div>
-                </div>
-              </div>
+    <div class="login-shell">
+      <!-- Illustration block -->
+      <section class="hero-panel">
+        <header class="hero-header">
+          <div class="brand-mark">
+            <span class="brand-dot"></span>
+            <span class="brand-name">sneat</span>
+          </div>
+        </header>
+        <div class="hero-figure">
+          <div class="hero-illustration">
+            <div class="orbit orbit-sm"></div>
+            <div class="orbit orbit-md"></div>
+            <div class="orbit orbit-lg"></div>
+            <div class="astronaut">
+              <div class="astronaut-head"></div>
+              <div class="astronaut-body"></div>
+              <div class="astronaut-arm left"></div>
+              <div class="astronaut-arm right"></div>
+              <div class="astronaut-leg left"></div>
+              <div class="astronaut-leg right"></div>
             </div>
-          </v-col>
+            <div class="floating-card card-one"></div>
+            <div class="floating-card card-two"></div>
+            <div class="floating-card card-three"></div>
+            <div class="floating-rocket"></div>
+          </div>
+        </div>
+      </section>
 
-          <!-- 右侧登录表单区域 -->
-          <v-col cols="12" md="6" class="login-right">
-            <div class="login-form-wrapper">
-              <v-card class="login-card" elevation="0" rounded="lg">
-                <v-card-text class="pa-8">
-                  <!-- 标题 -->
-                  <div class="text-center mb-8">
-                    <h1 class="text-h3 font-weight-bold mb-2">Hello!</h1>
-                    <p class="text-body-1 text-medium-emphasis">Sign In to Get Started</p>
-                  </div>
+      <!-- Form block -->
+      <section class="form-panel">
+        <div class="form-card">
+          <div class="welcome-block">
+            <h1>Welcome to Sneat! 👋</h1>
+            <p>Please sign-in to your account and start the adventure</p>
+          </div>
 
-                  <!-- 登录表单 -->
-                  <v-form ref="formRef" v-model="formValid" @submit.prevent="handleLogin">
-                    <v-text-field
-                      v-model="form.account"
-                      label="账号"
-                      prepend-inner-icon="mdi-email-outline"
-                      variant="outlined"
-                      :rules="accountRules"
-                      required
-                      class="mb-4"
-                      autocomplete="username"
-                      density="comfortable"
-                      color="primary"
-                      bg-color="white"
-                    />
-
-                    <v-text-field
-                      v-model="form.password"
-                      label="密码"
-                      prepend-inner-icon="mdi-lock-outline"
-                      variant="outlined"
-                      :type="showPassword ? 'text' : 'password'"
-                      :append-inner-icon="showPassword ? 'mdi-eye-outline' : 'mdi-eye-off-outline'"
-                      :rules="passwordRules"
-                      required
-                      class="mb-2"
-                      autocomplete="current-password"
-                      density="comfortable"
-                      color="primary"
-                      bg-color="white"
-                      @click:append-inner="showPassword = !showPassword"
-                      @keyup.enter="handleLogin"
-                    />
-
-                    <div class="text-right mb-6">
-                      <a href="#" class="text-caption text-primary text-decoration-none">
-                        忘记密码？
-                      </a>
-                    </div>
-
-                    <v-alert
-                      v-if="errorMessage"
-                      type="error"
-                      variant="tonal"
-                      class="mb-4"
-                      closable
-                      density="compact"
-                      @click:close="errorMessage = ''"
-                    >
-                      {{ errorMessage }}
-                    </v-alert>
-
-                    <v-btn
-                      type="submit"
-                      color="primary"
-                      size="large"
-                      block
-                      :loading="loading"
-                      :disabled="!formValid || loading"
-                      class="mb-4"
-                      elevation="0"
-                    >
-                      登录
-                    </v-btn>
-                  </v-form>
-                </v-card-text>
-              </v-card>
+          <div class="credential-hint">
+            <div>
+              <strong>Admin Email:</strong> admin@demo.com / Pass: <span>admin</span>
             </div>
-          </v-col>
-        </v-row>
-      </v-container>
-    </v-main>
+            <div>
+              <strong>Client Email:</strong> client@demo.com / Pass: <span>client</span>
+            </div>
+          </div>
+
+          <v-form ref="formRef" v-model="formValid" @submit.prevent="handleLogin" class="login-form">
+            <v-text-field
+              v-model="form.account"
+              label="Email"
+              variant="outlined"
+              density="comfortable"
+              color="primary"
+              bg-color="white"
+              placeholder="admin@demo.com"
+              prepend-inner-icon="mdi-email-outline"
+              :rules="accountRules"
+              autocomplete="username"
+              class="mb-3"
+            />
+
+            <v-text-field
+              v-model="form.password"
+              label="Password"
+              variant="outlined"
+              density="comfortable"
+              color="primary"
+              bg-color="white"
+              placeholder="•••••••"
+              prepend-inner-icon="mdi-lock-outline"
+              :append-inner-icon="showPassword ? 'mdi-eye-outline' : 'mdi-eye-off-outline'"
+              :type="showPassword ? 'text' : 'password'"
+              :rules="passwordRules"
+              autocomplete="current-password"
+              class="mb-1"
+              @click:append-inner="showPassword = !showPassword"
+            />
+
+            <div class="form-meta">
+              <v-checkbox
+                v-model="rememberMe"
+                label="Remember me"
+                hide-details
+                density="compact"
+                color="primary"
+              />
+              <a class="link" href="javascript:void(0)">Forgot Password?</a>
+            </div>
+
+            <v-alert
+              v-if="errorMessage"
+              type="error"
+              variant="tonal"
+              class="mb-4"
+              density="comfortable"
+              closable
+              @click:close="errorMessage = ''"
+            >
+              {{ errorMessage }}
+            </v-alert>
+
+            <v-btn
+              type="submit"
+              color="primary"
+              size="large"
+              block
+              elevation="0"
+              class="login-btn"
+              :disabled="!formValid || loading"
+              :loading="loading"
+            >
+              Login
+            </v-btn>
+          </v-form>
+
+          <div class="account-switch">
+            New on our platform?
+            <a class="link" href="javascript:void(0)">Create an account</a>
+          </div>
+
+          <div class="divider">
+            <span>or</span>
+          </div>
+
+          <div class="social-row">
+            <v-btn icon="mdi-facebook" variant="outlined" size="large" color="#3b5998" />
+            <v-btn icon="mdi-twitter" variant="outlined" size="large" color="#1da1f2" />
+            <v-btn icon="mdi-github" variant="outlined" size="large" color="#0f172a" />
+            <v-btn icon="mdi-google" variant="outlined" size="large" color="#ea4335" />
+          </div>
+        </div>
+      </section>
+    </div>
   </v-app>
 </template>
 
@@ -129,6 +156,7 @@ const emit = defineEmits<{
 const formRef = ref()
 const formValid = ref(false)
 const loading = ref(false)
+const rememberMe = ref(false)
 const showPassword = ref(false)
 const errorMessage = ref('')
 
@@ -170,202 +198,396 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
-.login-main {
-  background-color: #ffffff;
-}
-
-.fill-height {
+.login-shell {
+  display: flex;
   min-height: 100vh;
+  background: linear-gradient(120deg, #f5f4ff 0%, #fef9ff 40%, #ffffff 100%);
 }
 
-/* 左侧插画区域 */
-.login-left {
-  position: relative;
-  background-color: #ffffff;
-  overflow: hidden;
-}
-
-.login-illustration {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 48px;
-}
-
-.illustration-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-}
-
-.bg-pattern {
-  width: 100%;
-  height: 100%;
-  background: 
-    radial-gradient(circle at 20% 30%, rgba(25, 118, 210, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 70%, rgba(25, 118, 210, 0.08) 0%, transparent 50%),
-    linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, transparent 100%);
-  background-size: 200% 200%;
-  animation: patternMove 20s ease infinite;
-}
-
-@keyframes patternMove {
-  0%, 100% {
-    background-position: 0% 0%;
-  }
-  50% {
-    background-position: 100% 100%;
-  }
-}
-
-.illustration-content {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 500px;
-  height: 400px;
-}
-
-.illustration-figure {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.figure-desk {
-  position: relative;
-  width: 300px;
-  height: 300px;
-}
-
-.desk-monitor {
-  width: 180px;
-  height: 120px;
-  background: #e0e0e0;
-  border-radius: 8px;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.desk-monitor::before {
-  content: '';
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  right: 8px;
-  bottom: 8px;
-  background: #1976d2;
-  border-radius: 4px;
-  opacity: 0.3;
-}
-
-.desk-chair {
-  width: 60px;
-  height: 80px;
-  background: #424242;
-  border-radius: 4px;
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  transform: translateX(-50%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* 右侧登录表单区域 */
-.login-right {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
-  padding: 24px;
+.hero-panel {
+  flex: 1.1;
+  padding: 48px 64px;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.login-right::before {
-  content: '';
-  position: absolute;
-  bottom: -100px;
-  right: -100px;
-  width: 300px;
-  height: 300px;
+.hero-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 48px;
+}
+
+.brand-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 20px;
+  color: #5f5af2;
+}
+
+.brand-dot {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, #6d5efc, #9c6ffb);
+  box-shadow: 0 6px 18px rgba(109, 94, 252, 0.35);
 }
 
-.login-form-wrapper {
+.hero-figure {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-illustration {
+  width: 520px;
+  height: 520px;
+  position: relative;
+}
+
+.orbit {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px dashed rgba(99, 102, 241, 0.3);
+  animation: orbitSpin 18s linear infinite;
+}
+
+.orbit-sm {
+  width: 220px;
+  height: 220px;
+  top: 150px;
+  left: 150px;
+}
+
+.orbit-md {
+  width: 320px;
+  height: 320px;
+  top: 100px;
+  left: 100px;
+  animation-duration: 24s;
+}
+
+.orbit-lg {
+  width: 420px;
+  height: 420px;
+  top: 50px;
+  left: 50px;
+  animation-duration: 30s;
+}
+
+.astronaut {
+  position: absolute;
+  top: 170px;
+  left: 200px;
+  width: 140px;
+  height: 200px;
+}
+
+.astronaut-head {
+  width: 70px;
+  height: 70px;
+  background: #fff;
+  border-radius: 50%;
+  margin: 0 auto;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  position: relative;
+}
+
+.astronaut-head::after {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.7), #5c6bc0);
+  border-radius: 50%;
+}
+
+.astronaut-body {
+  width: 90px;
+  height: 120px;
+  background: linear-gradient(135deg, #ffb74d, #ff7043);
+  border-radius: 40px;
+  margin: -10px auto 0;
+  box-shadow: 0 10px 30px rgba(255, 112, 67, 0.25);
+}
+
+.astronaut-arm,
+.astronaut-leg {
+  position: absolute;
+  background: linear-gradient(135deg, #ec4899, #f472b6);
+  border-radius: 20px;
+}
+
+.astronaut-arm {
+  width: 70px;
+  height: 16px;
+  top: 120px;
+}
+
+.astronaut-arm.left {
+  left: 0;
+  transform-origin: left center;
+  animation: wave 3s ease-in-out infinite;
+}
+
+.astronaut-arm.right {
+  right: 0;
+}
+
+.astronaut-leg {
+  width: 18px;
+  height: 70px;
+  bottom: 0;
+  background: #5c6bc0;
+}
+
+.astronaut-leg.left {
+  left: 34px;
+}
+
+.astronaut-leg.right {
+  right: 34px;
+}
+
+.floating-card {
+  position: absolute;
+  width: 120px;
+  height: 80px;
+  border-radius: 16px;
+  background: rgba(96, 165, 250, 0.15);
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
+  animation: float 6s ease-in-out infinite;
+}
+
+.floating-card.card-one {
+  top: 40px;
+  left: 260px;
+}
+
+.floating-card.card-two {
+  bottom: 80px;
+  left: 120px;
+  animation-delay: 1s;
+}
+
+.floating-card.card-three {
+  bottom: 60px;
+  right: 100px;
+  animation-delay: 2s;
+}
+
+.floating-rocket {
+  position: absolute;
+  width: 60px;
+  height: 130px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-radius: 30px 30px 0 0;
+  right: 130px;
+  top: 60px;
+  transform-origin: center;
+  animation: rocket 6s ease-in-out infinite;
+}
+
+.floating-rocket::before,
+.floating-rocket::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  width: 18px;
+  height: 18px;
+  background: #ec4899;
+  clip-path: polygon(50% 0, 0 100%, 100% 100%);
+}
+
+.floating-rocket::before {
+  left: -10px;
+}
+
+.floating-rocket::after {
+  right: -10px;
+}
+
+.form-panel {
+  flex: 0.9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
+  background: #fff;
+}
+
+.form-card {
   width: 100%;
   max-width: 420px;
-  position: relative;
-  z-index: 1;
+  background: #fff;
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 35px 80px rgba(15, 23, 42, 0.08);
 }
 
-.login-card {
-  background-color: #ffffff !important;
-  border-radius: 16px !important;
+.welcome-block h1 {
+  font-size: 28px;
+  margin-bottom: 8px;
+  color: #111827;
 }
 
-/* 响应式调整 */
+.welcome-block p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.credential-hint {
+  background: #f3f4ff;
+  border-radius: 16px;
+  padding: 14px 18px;
+  margin: 24px 0 32px;
+  font-size: 13px;
+  color: #4f46e5;
+  line-height: 1.6;
+  border: 1px solid rgba(79, 70, 229, 0.15);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 12px;
+}
+
+.link {
+  color: #5f5af2;
+  font-weight: 500;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.login-btn {
+  height: 48px;
+  border-radius: 12px;
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+.account-switch {
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+  margin: 12px 0 16px;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: #9ca3af;
+  gap: 12px;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.social-row {
+  display: flex;
+  gap: 14px;
+  margin-top: 18px;
+  justify-content: center;
+}
+
+@keyframes orbitSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+@keyframes wave {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(12deg);
+  }
+}
+
+@keyframes rocket {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-10deg);
+  }
+  50% {
+    transform: translate(-10px, -20px) rotate(-5deg);
+  }
+}
+
 @media (max-width: 960px) {
-  .login-right {
+  .login-shell {
+    flex-direction: column;
+  }
+  .hero-panel {
     padding: 32px 24px;
   }
-  
-  .login-form-wrapper {
-    max-width: 100%;
+  .form-panel {
+    padding: 32px 16px 48px;
   }
-  
-  .login-card {
-    border-radius: 12px !important;
+  .form-card {
+    padding: 32px 24px;
   }
 }
 
-/* Vuetify 组件样式优化 */
-:deep(.v-text-field .v-field) {
-  border-radius: 8px;
-  background-color: #ffffff;
+::deep(.v-text-field .v-field) {
+  border-radius: 12px;
 }
 
-:deep(.v-text-field .v-field__outline) {
-  border-color: rgba(0, 0, 0, 0.12);
+::deep(.v-text-field .v-field__outline) {
+  border-color: rgba(148, 163, 184, 0.6);
 }
 
-:deep(.v-text-field .v-field--focused .v-field__outline) {
-  border-color: #1976d2;
+::deep(.v-text-field .v-field--focused .v-field__outline) {
+  border-color: #5f5af2;
   border-width: 2px;
 }
 
-:deep(.v-btn) {
+::deep(.v-checkbox .v-selection-control__input) {
+  margin-inline-end: 8px;
+}
+
+::deep(.v-btn.login-btn) {
   text-transform: none;
-  letter-spacing: 0.5px;
-  font-weight: 500;
-  border-radius: 8px;
+  font-weight: 600;
+  border-radius: 12px;
 }
 
-:deep(.v-alert) {
-  border-radius: 8px;
-}
-
-:deep(.v-card-text) {
-  padding: 32px !important;
-}
-
-@media (max-width: 600px) {
-  :deep(.v-card-text) {
-    padding: 24px !important;
-  }
+::deep(.v-btn.v-btn--outlined) {
+  border-radius: 12px;
 }
 </style>
