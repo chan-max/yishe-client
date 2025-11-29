@@ -1,6 +1,7 @@
+﻿@import '@mdi/font/css/materialdesignicons.css';
 @import './base.css';
 
-/* 全局主题色变量 */
+/* 鍏ㄥ眬涓婚鑹插彉閲?*/
 :root {
   --theme-primary: #6900ff;
   --theme-primary-rgb: 105, 0, 255;
@@ -8,7 +9,7 @@
   --theme-primary-dark: rgba(105, 0, 255, 0.15);
 }
 
-/* 管理系统风格全局样式 */
+/* 绠＄悊绯荤粺椋庢牸鍏ㄥ眬鏍峰紡 */
 body {
   margin: 0;
   padding: 0;
@@ -38,7 +39,7 @@ body {
   background: #f5f7fb;
 }
 
-/* 代码样式 */
+/* 浠ｇ爜鏍峰紡 */
 code {
   font-weight: 600;
   padding: 3px 5px;
@@ -55,7 +56,7 @@ code {
   font-size: 85%;
 }
 
-/* 滚动条样式 */
+/* 婊氬姩鏉℃牱寮?*/
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -73,3 +74,4 @@ code {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
