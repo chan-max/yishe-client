@@ -291,6 +291,17 @@ function createWindow(): void {
     // }
   })
 
+  // Windows: 处理最小化到托盘
+  if (process.platform === 'win32') {
+    mainWindow.on('minimize', (event) => {
+      // 如果启用了托盘模式，最小化时隐藏窗口而不是最小化到任务栏
+      if (shouldForceTrayMode()) {
+        event.preventDefault()
+        mainWindow?.hide()
+      }
+    })
+  }
+
   mainWindow.on('close', async (event) => {
     if ((app as any).isQuiting) {
       return
@@ -346,19 +357,139 @@ function createWindow(): void {
 function createTray(): void {
   const { nativeImage } = require('electron')
   const path = require('path')
+  const fs = require('fs')
+  
+  // 获取资源文件路径的辅助函数
+  function getResourcePath(relativePath: string): string {
+    if (is.dev) {
+      // 开发环境：从 src/main 目录向上两级到项目根目录
+      return path.join(__dirname, '../../', relativePath)
+    } else {
+      // 生产环境：尝试多个可能的路径
+      const appPath = app.getAppPath()
+      const resourcesPath = process.resourcesPath
+      const dirname = __dirname
+      const fileName = path.basename(relativePath)
+      
+      console.log('🔍 调试托盘图标路径:')
+      console.log('  - app.getAppPath():', appPath)
+      console.log('  - process.resourcesPath:', resourcesPath)
+      console.log('  - __dirname:', dirname)
+      console.log('  - 查找文件:', fileName)
+      
+      const possiblePaths = [
+        // 方案1: asar.unpacked 目录（如果配置了 asarUnpack）
+        path.join(appPath.replace(/app\.asar$/, 'app.asar.unpacked'), relativePath),
+        // 方案2: 从 process.resourcesPath 查找（electron-builder 打包后的 resources 目录）
+        path.join(resourcesPath, 'resources', fileName),
+        // 方案3: 从 __dirname (out/main) 向上查找 resources
+        path.join(dirname, '../resources', fileName),
+        // 方案4: 从 __dirname 向上两级查找
+        path.join(dirname, '../../resources', fileName),
+        // 方案5: 直接使用 process.resourcesPath
+        path.join(resourcesPath, fileName),
+        // 方案6: 从 appPath 的父目录查找
+        path.join(path.dirname(appPath.replace(/app\.asar$/, '')), 'resources', fileName),
+        // 方案7: 更多可能的路径
+        path.join(dirname, '../../../resources', fileName),
+      ]
+      
+      // 返回第一个存在的路径
+      for (const testPath of possiblePaths) {
+        try {
+          if (fs.existsSync(testPath)) {
+            console.log(`✅ 找到托盘图标: ${testPath}`)
+            return testPath
+          }
+        } catch (e) {
+          // 忽略路径错误
+        }
+      }
+      
+      // 如果都不存在，返回第一个路径（用于错误提示）
+      console.error(`❌ 托盘图标文件未找到，尝试过的路径:`)
+      possiblePaths.forEach(p => {
+        try {
+          const exists = fs.existsSync(p)
+          console.error(`   ${exists ? '✅' : '❌'} ${p}`)
+        } catch {
+          console.error(`   ❌ ${p}`)
+        }
+      })
+      return possiblePaths[0]
+    }
+  }
+  
   let trayIconPath: string
   if (process.platform === 'win32') {
-    trayIconPath = path.join(__dirname, '../../resources/tray-icon.ico')
+    // Windows: 优先使用 .ico 文件，如果不存在则使用 .png
+    trayIconPath = getResourcePath('resources/tray-icon.ico')
+    if (!fs.existsSync(trayIconPath)) {
+      trayIconPath = getResourcePath('resources/tray-icon.png')
+    }
   } else {
-    trayIconPath = path.join(__dirname, '../../resources/tray-icon.png')
+    // macOS/Linux
+    trayIconPath = getResourcePath('resources/tray-icon.png')
   }
+  
+  // 检查文件是否存在，如果不存在则使用默认图标
+  if (!fs.existsSync(trayIconPath)) {
+    console.warn(`⚠️ 托盘图标文件不存在: ${trayIconPath}，尝试备用方案`)
+    
+    // 尝试多个备用路径
+    const fallbackPaths = [
+      // 尝试使用应用主图标
+      icon && typeof icon === 'string' ? icon : null,
+      // 尝试从 resources 目录找其他图标
+      getResourcePath('resources/icon.png'),
+      getResourcePath('resources/favicon.png'),
+      // 尝试从 renderer assets
+      path.join(__dirname, '../renderer/assets/icon.png'),
+      // 在打包后可能的位置
+      !is.dev ? path.join(process.resourcesPath, 'icon.png') : null,
+      !is.dev ? path.join(app.getAppPath().replace(/app\.asar$/, 'app.asar.unpacked'), 'resources/icon.png') : null,
+    ].filter(Boolean) as string[]
+    
+    let found = false
+    for (const fallbackPath of fallbackPaths) {
+      if (fallbackPath && fs.existsSync(fallbackPath)) {
+        console.log(`✅ 使用备用图标: ${fallbackPath}`)
+        trayIconPath = fallbackPath
+        found = true
+        break
+      }
+    }
+    
+    if (!found) {
+      console.error('❌ 无法找到任何可用的托盘图标文件，托盘可能无法正常显示')
+      // 不返回，继续创建托盘，但可能会使用空图标或默认图标
+    }
+  }
+  
   let trayIcon = nativeImage.createFromPath(trayIconPath)
-  // 只在 macOS 下 resize
-  if (process.platform === 'darwin') {
+  
+  // Windows 和 macOS 都需要调整图标尺寸以确保显示正常
+  if (process.platform === 'win32') {
+    // Windows 托盘图标推荐尺寸：16x16 或 32x32
+    // 如果图标过大或过小，调整到合适的尺寸
+    const size = trayIcon.getSize()
+    if (size.width > 32 || size.height > 32) {
+      trayIcon = trayIcon.resize({ width: 32, height: 32 })
+    } else if (size.width < 16 || size.height < 16) {
+      trayIcon = trayIcon.resize({ width: 16, height: 16 })
+    }
+  } else if (process.platform === 'darwin') {
+    // macOS 托盘图标尺寸
     trayIcon = trayIcon.resize({ width: 20, height: 20 })
   }
+  
   tray = new Tray(trayIcon)
   tray.setToolTip('衣设程序')
+  
+  // Windows 特定配置：防止双击时触发两次点击事件
+  if (process.platform === 'win32') {
+    tray.setIgnoreDoubleClickEvents(true)
+  }
   
   // 创建托盘菜单
   const contextMenu = Menu.buildFromTemplate([
