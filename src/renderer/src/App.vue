@@ -1083,8 +1083,6 @@ onUnmounted(() => {
 .app-drawer {
   background: #ffffff;
   transition: width 0.25s ease;
-  /* 给 macOS 左上角原生窗口按钮留出更充足的空间，避免遮挡菜单 */
-  padding-top: 44px;
 }
 
 .version-pill {

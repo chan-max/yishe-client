@@ -256,14 +256,8 @@ function createWindow(): void {
     fullscreen: false,
     fullscreenable: !isMac,
     simpleFullScreen: false,
-    autoHideMenuBar: true,
+    autoHideMenuBar: !isMac,
     title: '衣设程序',
-    ...(isMac
-      ? {
-          titleBarStyle: 'hiddenInset',
-          trafficLightPosition: { x: 16, y: 18 }
-        }
-      : {}),
     ...(process.platform === 'linux' ? { icon } : { icon }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
