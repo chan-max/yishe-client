@@ -1251,8 +1251,8 @@ onUnmounted(() => {
 }
 
 .hero-metric-icon.text-primary {
-  color: #2563eb;
-  background: rgba(37, 99, 235, 0.15);
+  color: var(--theme-primary);
+  background: var(--theme-primary-dark);
 }
 
 .hero-metric-icon.text-success {
@@ -1505,8 +1505,8 @@ onUnmounted(() => {
 }
 
 .message-item.message-unread {
-  background-color: rgba(37, 99, 235, 0.04);
-  border-left: 3px solid #2563eb;
+  background-color: var(--theme-primary-light);
+  border-left: 3px solid var(--theme-primary);
 }
 
 .message-item:last-child {

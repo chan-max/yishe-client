@@ -165,12 +165,13 @@ const handleLogin = async () => {
       password: form.password
     })
     
+    // 登录成功，保持loading状态直到页面跳转
     emit('login-success')
+    // 不在这里关闭loading，让loading状态保持到组件被销毁（页面跳转）
   } catch (error: any) {
     console.error('登录失败:', error)
     errorMessage.value = error?.response?.data?.message || error?.message || '登录失败，请检查账号密码'
-  } finally {
-    loading.value = false
+    loading.value = false // 只在失败时关闭loading
   }
 }
 </script>
@@ -204,15 +205,15 @@ const handleLogin = async () => {
   gap: 10px;
   font-weight: 700;
   font-size: 20px;
-  color: #5f5af2;
+  color: var(--theme-primary);
 }
 
 .brand-dot {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6d5efc, #9c6ffb);
-  box-shadow: 0 6px 18px rgba(109, 94, 252, 0.35);
+  background: linear-gradient(135deg, var(--theme-primary), rgba(var(--theme-primary-rgb), 0.7));
+  box-shadow: 0 6px 18px rgba(var(--theme-primary-rgb), 0.35);
 }
 
 .hero-figure {
@@ -450,8 +451,8 @@ const handleLogin = async () => {
 }
 
 .inputForm:focus-within {
-  border-color: #2d79f3;
-  box-shadow: 0 0 0 2px rgba(45, 121, 243, 0.12);
+  border-color: var(--theme-primary);
+  box-shadow: 0 0 0 2px var(--theme-primary-light);
 }
 
 .input {
@@ -480,7 +481,7 @@ const handleLogin = async () => {
 }
 
 .input-action:hover {
-  color: #2d79f3;
+  color: var(--theme-primary);
 }
 
 .flex-row {
@@ -500,12 +501,12 @@ const handleLogin = async () => {
 }
 
 .remember input {
-  accent-color: #2d79f3;
+  accent-color: var(--theme-primary);
 }
 
 .span {
   font-size: 13px;
-  color: #2d79f3;
+  color: var(--theme-primary);
   font-weight: 500;
   cursor: pointer;
 }

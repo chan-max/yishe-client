@@ -8,7 +8,7 @@ const yisheLight: ThemeDefinition = {
   colors: {
     background: '#fafafa',
     surface: '#ffffff',
-    primary: '#1976d2',
+    primary: '#6900ff',
     secondary: '#424242',
     accent: '#82b1ff',
     error: '#ff5252',

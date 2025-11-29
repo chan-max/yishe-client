@@ -1,5 +1,13 @@
 @import './base.css';
 
+/* 全局主题色变量 */
+:root {
+  --theme-primary: #6900ff;
+  --theme-primary-rgb: 105, 0, 255;
+  --theme-primary-light: rgba(105, 0, 255, 0.12);
+  --theme-primary-dark: rgba(105, 0, 255, 0.15);
+}
+
 /* 管理系统风格全局样式 */
 body {
   margin: 0;
