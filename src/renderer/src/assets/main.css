@@ -1,12 +1,13 @@
 ﻿@import '@mdi/font/css/materialdesignicons.css';
 @import './base.css';
+@import './vuetify-flat.css';
 
 /* 鍏ㄥ眬涓婚鑹插彉閲?*/
 :root {
-  --theme-primary: #6900ff;
-  --theme-primary-rgb: 105, 0, 255;
-  --theme-primary-light: rgba(105, 0, 255, 0.12);
-  --theme-primary-dark: rgba(105, 0, 255, 0.15);
+  --theme-primary: #000000;
+  --theme-primary-rgb: 0, 0, 0;
+  --theme-primary-light: rgba(0, 0, 0, 0.12);
+  --theme-primary-dark: rgba(0, 0, 0, 0.15);
 }
 
 /* 绠＄悊绯荤粺椋庢牸鍏ㄥ眬鏍峰紡 */
@@ -74,4 +75,5 @@ code {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
 

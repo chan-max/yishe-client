@@ -1,0 +1,370 @@
+/* ============================================
+   Vuetify 扁平化风格覆盖样式
+   通用样式，适用于所有页面
+   ============================================ */
+
+/* 基础圆角设置 */
+:root {
+  --vuetify-border-radius-sm: 4px;
+  --vuetify-border-radius-md: 8px;
+  --vuetify-border-radius-lg: 12px;
+  --vuetify-border-radius-xl: 16px;
+}
+
+/* ============================================
+   移除所有阴影，使用边框代替
+   ============================================ */
+
+/* 卡片组件 - 强制扁平化风格 */
+:deep(.v-card),
+:deep(.v-sheet),
+:deep(.v-card[class*="elevation"]),
+:deep(.v-sheet[class*="elevation"]) {
+  box-shadow: none !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: var(--vuetify-border-radius-md) !important;
+  transition: border-color 0.2s ease, background-color 0.2s ease !important;
+}
+
+/* 无论 elevation 属性如何设置，都移除阴影 */
+:deep(.v-card[elevation]),
+:deep(.v-card[elevation="0"]),
+:deep(.v-card[elevation="1"]),
+:deep(.v-card[elevation="2"]),
+:deep(.v-card[elevation="3"]),
+:deep(.v-card[elevation="4"]),
+:deep(.v-card[elevation="5"]),
+:deep(.v-card[elevation="6"]),
+:deep(.v-card[elevation="7"]),
+:deep(.v-card[elevation="8"]),
+:deep(.v-card[elevation="9"]),
+:deep(.v-card[elevation="10"]),
+:deep(.v-card[elevation="11"]),
+:deep(.v-card[elevation="12"]),
+:deep(.v-card[elevation="13"]),
+:deep(.v-card[elevation="14"]),
+:deep(.v-card[elevation="15"]),
+:deep(.v-card[elevation="16"]),
+:deep(.v-card[elevation="17"]),
+:deep(.v-card[elevation="18"]),
+:deep(.v-card[elevation="19"]),
+:deep(.v-card[elevation="20"]),
+:deep(.v-card[elevation="21"]),
+:deep(.v-card[elevation="22"]),
+:deep(.v-card[elevation="23"]),
+:deep(.v-card[elevation="24"]) {
+  box-shadow: none !important;
+}
+
+:deep(.v-card:hover),
+:deep(.v-sheet:hover) {
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+/* 按钮组件 */
+:deep(.v-btn) {
+  box-shadow: none !important;
+  border-radius: var(--vuetify-border-radius-sm) !important;
+  border: 1px solid transparent !important;
+  transition: border-color 0.2s ease, background-color 0.2s ease !important;
+}
+
+:deep(.v-btn--variant-elevated),
+:deep(.v-btn--variant-flat) {
+  border: 1px solid transparent !important;
+}
+
+:deep(.v-btn--variant-elevated:hover),
+:deep(.v-btn--variant-flat:hover) {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+:deep(.v-btn--variant-outlined) {
+  border-width: 1px !important;
+}
+
+/* Chip 组件 */
+:deep(.v-chip) {
+  box-shadow: none !important;
+  border-radius: var(--vuetify-border-radius-sm) !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+/* 输入框组件 */
+:deep(.v-text-field .v-field),
+:deep(.v-textarea .v-field),
+:deep(.v-select .v-field) {
+  box-shadow: none !important;
+  border: 1px solid rgba(0, 0, 0, 0.2) !important;
+  border-radius: var(--vuetify-border-radius-sm) !important;
+  transition: border-color 0.2s ease, border-width 0.2s ease !important;
+}
+
+:deep(.v-text-field .v-field--focused),
+:deep(.v-textarea .v-field--focused),
+:deep(.v-select .v-field--focused) {
+  border-color: var(--theme-primary, #000000) !important;
+  border-width: 2px !important;
+}
+
+:deep(.v-text-field .v-field--error),
+:deep(.v-textarea .v-field--error),
+:deep(.v-select .v-field--error) {
+  border-color: rgb(var(--v-theme-error)) !important;
+}
+
+/* 菜单和对话框 */
+:deep(.v-menu .v-overlay__content),
+:deep(.v-dialog .v-card) {
+  box-shadow: none !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: var(--vuetify-border-radius-md) !important;
+}
+
+/* 导航抽屉 - 扁平化设计 */
+:deep(.v-navigation-drawer) {
+  box-shadow: none !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
+  background: #ffffff !important;
+}
+
+/* App Bar */
+:deep(.v-app-bar) {
+  box-shadow: none !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+/* 列表项 - 扁平化设计，黑色主题 */
+:deep(.v-list-item) {
+  border-radius: var(--vuetify-border-radius-md) !important;
+  transition: all 0.2s ease !important;
+  border: 1px solid transparent !important;
+}
+
+:deep(.v-list-item--active) {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+  border-left: 3px solid var(--theme-primary, #000000) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+:deep(.v-list-item:hover) {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* 导航栏中的列表项 - 黑色主题 */
+:deep(.v-navigation-drawer .v-list-item) {
+  margin: 0 8px 4px !important;
+}
+
+:deep(.v-navigation-drawer .v-list-item--active .v-icon) {
+  color: var(--theme-primary, #000000) !important;
+}
+
+:deep(.v-navigation-drawer .v-list-item--active .v-list-item-title) {
+  color: var(--theme-primary, #000000) !important;
+  font-weight: 600 !important;
+}
+
+:deep(.v-navigation-drawer .v-list-item .v-icon) {
+  color: #6b7280 !important;
+  transition: color 0.2s ease !important;
+}
+
+:deep(.v-navigation-drawer .v-list-item:hover .v-icon) {
+  color: #374151 !important;
+}
+
+:deep(.v-navigation-drawer .v-list-item-title) {
+  color: #374151 !important;
+  transition: color 0.2s ease !important;
+}
+
+:deep(.v-navigation-drawer .v-list-item:hover .v-list-item-title) {
+  color: #111827 !important;
+}
+
+/* Avatar 组件 - 保留轻微圆角 */
+:deep(.v-avatar) {
+  border-radius: var(--vuetify-border-radius-sm) !important;
+}
+
+/* 移除所有 ripple 效果 */
+:deep(.v-ripple__container) {
+  display: none !important;
+}
+
+/* 移除按钮的 elevation 动画 */
+:deep(.v-btn::before) {
+  display: none !important;
+}
+
+/* 移除按钮的 elevation 伪元素 */
+:deep(.v-btn--elevated::before) {
+  display: none !important;
+}
+
+/* ============================================
+   特殊圆角设置（需要更圆角的组件）
+   ============================================ */
+
+/* Pill 形状的 Chip（如果需要） */
+:deep(.v-chip--pill) {
+  border-radius: 999px !important;
+}
+
+/* 圆形按钮（如果需要） */
+:deep(.v-btn--icon) {
+  border-radius: var(--vuetify-border-radius-sm) !important;
+}
+
+/* 大圆角卡片（用于特殊场景） */
+:deep(.v-card--rounded-xl),
+:deep(.v-sheet--rounded-xl) {
+  border-radius: var(--vuetify-border-radius-xl) !important;
+}
+
+:deep(.v-card--rounded-lg),
+:deep(.v-sheet--rounded-lg) {
+  border-radius: var(--vuetify-border-radius-lg) !important;
+}
+
+/* ============================================
+   表单组件特殊处理
+   ============================================ */
+
+/* 开关组件 */
+:deep(.v-switch .v-switch__track) {
+  border-radius: 999px !important;
+}
+
+:deep(.v-switch .v-switch__thumb) {
+  border-radius: 50% !important;
+}
+
+/* 滑块组件 */
+:deep(.v-slider .v-slider__track) {
+  border-radius: 999px !important;
+}
+
+:deep(.v-slider .v-slider__thumb) {
+  border-radius: 50% !important;
+}
+
+/* 进度条 */
+:deep(.v-progress-linear .v-progress-linear__determinate) {
+  border-radius: 999px !important;
+}
+
+/* ============================================
+   表格组件
+   ============================================ */
+
+:deep(.v-data-table) {
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: var(--vuetify-border-radius-md) !important;
+  overflow: hidden;
+}
+
+:deep(.v-data-table__thead th) {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+:deep(.v-data-table__tbody tr) {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04) !important;
+}
+
+:deep(.v-data-table__tbody tr:hover) {
+  background-color: rgba(0, 0, 0, 0.02) !important;
+}
+
+/* ============================================
+   对话框和抽屉
+   ============================================ */
+
+:deep(.v-dialog > .v-overlay__content) {
+  border-radius: var(--vuetify-border-radius-lg) !important;
+}
+
+:deep(.v-bottom-sheet) {
+  border-radius: var(--vuetify-border-radius-lg) var(--vuetify-border-radius-lg) 0 0 !important;
+}
+
+/* ============================================
+   工具提示
+   ============================================ */
+
+:deep(.v-tooltip .v-overlay__content) {
+  border-radius: var(--vuetify-border-radius-sm) !important;
+  box-shadow: none !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+/* ============================================
+   确保所有 elevation 都被移除
+   ============================================ */
+
+/* 移除所有 elevation 类的阴影 */
+:deep([class*="elevation-"]),
+:deep([class*="elevation"]),
+:deep(.elevation-0),
+:deep(.elevation-1),
+:deep(.elevation-2),
+:deep(.elevation-3),
+:deep(.elevation-4),
+:deep(.elevation-5),
+:deep(.elevation-6),
+:deep(.elevation-7),
+:deep(.elevation-8),
+:deep(.elevation-9),
+:deep(.elevation-10),
+:deep(.elevation-11),
+:deep(.elevation-12),
+:deep(.elevation-13),
+:deep(.elevation-14),
+:deep(.elevation-15),
+:deep(.elevation-16),
+:deep(.elevation-17),
+:deep(.elevation-18),
+:deep(.elevation-19),
+:deep(.elevation-20),
+:deep(.elevation-21),
+:deep(.elevation-22),
+:deep(.elevation-23),
+:deep(.elevation-24) {
+  box-shadow: none !important;
+}
+
+/* 强制移除所有 Vuetify 组件的阴影，无论是否有 elevation 属性 */
+:deep(.v-card),
+:deep(.v-sheet),
+:deep(.v-btn),
+:deep(.v-chip),
+:deep(.v-list-item),
+:deep(.v-menu .v-overlay__content),
+:deep(.v-dialog .v-card),
+:deep(.v-navigation-drawer),
+:deep(.v-app-bar),
+:deep(.v-toolbar),
+:deep(.v-tooltip .v-overlay__content),
+:deep(.v-bottom-sheet),
+:deep(.v-expansion-panels .v-expansion-panel),
+:deep(.v-item-group .v-item),
+:deep(.v-stepper .v-stepper__step),
+:deep(.v-timeline .v-timeline-item) {
+  box-shadow: none !important;
+}
+
+/* ============================================
+   保持过渡动画流畅
+   ============================================ */
+
+:deep(.v-card),
+:deep(.v-btn),
+:deep(.v-chip),
+:deep(.v-list-item),
+:deep(.v-text-field .v-field),
+:deep(.v-textarea .v-field) {
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease !important;
+}
+

@@ -213,7 +213,7 @@ const handleLogin = async () => {
   height: 32px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--theme-primary), rgba(var(--theme-primary-rgb), 0.7));
-  box-shadow: 0 6px 18px rgba(var(--theme-primary-rgb), 0.35);
+  box-shadow: none;
 }
 
 .hero-figure {
@@ -273,7 +273,7 @@ const handleLogin = async () => {
   background: #fff;
   border-radius: 50%;
   margin: 0 auto;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  box-shadow: none;
   position: relative;
 }
 
@@ -291,7 +291,7 @@ const handleLogin = async () => {
   background: linear-gradient(135deg, #ffb74d, #ff7043);
   border-radius: 40px;
   margin: -10px auto 0;
-  box-shadow: 0 10px 30px rgba(255, 112, 67, 0.25);
+  box-shadow: none;
 }
 
 .astronaut-arm,
@@ -339,7 +339,7 @@ const handleLogin = async () => {
   border-radius: 16px;
   background: rgba(96, 165, 250, 0.15);
   border: 1px solid rgba(96, 165, 250, 0.2);
-  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
+  box-shadow: none;
   animation: float 6s ease-in-out infinite;
 }
 
@@ -406,7 +406,7 @@ const handleLogin = async () => {
   background: #fff;
   border-radius: 18px;
   padding: 20px 24px;
-  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.05);
+  box-shadow: none;
   border: 1px solid rgba(148, 163, 184, 0.15);
 }
 
@@ -452,7 +452,8 @@ const handleLogin = async () => {
 
 .inputForm:focus-within {
   border-color: var(--theme-primary);
-  box-shadow: 0 0 0 2px var(--theme-primary-light);
+  box-shadow: none;
+  border-width: 2px;
 }
 
 .input {

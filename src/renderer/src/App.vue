@@ -497,8 +497,8 @@ onUnmounted(() => {
         {{ toast.message }}
       </v-snackbar>
       <v-layout class="app-layout">
-        <v-navigation-drawer width="232" permanent class="app-drawer">
-          <v-divider class="mx-3 mb-2" />
+        <v-navigation-drawer width="232" permanent class="app-drawer" variant="flat">
+          <v-divider class="mx-3 mb-2" style="opacity: 0.1;" />
 
           <v-list density="compact" nav class="pa-0 mt-1" :lines="false">
             <v-list-item
@@ -506,7 +506,7 @@ onUnmounted(() => {
               :key="item.key"
               :value="item.key"
               :active="activeMenu === item.key"
-              rounded="lg"
+              rounded="sm"
               class="mx-2"
               @click="selectMenu(item.key)"
             >
@@ -522,7 +522,7 @@ onUnmounted(() => {
           </v-list>
 
           <template #append>
-            <v-divider class="mx-3 mb-2" />
+            <v-divider class="mx-3 mb-2" style="opacity: 0.1;" />
             <div class="version-pill">
               <v-icon size="14" icon="mdi-alpha-v-box-outline" class="mr-1" />
               客户端 v{{ appVersion || "--" }}
@@ -543,7 +543,7 @@ onUnmounted(() => {
                 class="status-chip"
                 :class="toneClass(chip.state)"
                 variant="flat"
-                rounded="pill"
+                rounded="sm"
               >
                 <v-icon size="16" class="mr-2">{{ chip.icon }}</v-icon>
                 {{ chip.label }}
@@ -625,7 +625,7 @@ onUnmounted(() => {
               <template v-if="activeMenu === 'dashboard'">
                 <v-row class="hero-row mb-6" dense>
                   <v-col cols="12">
-                    <v-sheet class="hero-sheet" rounded="xl" elevation="0">
+                    <v-sheet class="hero-sheet" rounded="lg" elevation="0">
                       <div class="hero-shell">
                         <div class="hero-copy">
                           <p class="hero-eyebrow">控制中心</p>
@@ -674,8 +674,8 @@ onUnmounted(() => {
                   >
                     <v-card
                       class="stat-card"
-                      elevation="2"
-                      rounded="lg"
+                      elevation="0"
+                      rounded="md"
                       variant="flat"
                       :class="`stat-card--${card.color}`"
                     >
@@ -708,7 +708,7 @@ onUnmounted(() => {
 
                 <v-row dense class="mt-1">
                   <v-col cols="12" lg="6">
-                    <v-card elevation="2" rounded="xl" class="panel-card">
+                    <v-card elevation="0" rounded="lg" class="panel-card">
                       <v-card-title class="panel-title d-flex align-center ga-2">
                         <v-icon icon="mdi-heart-pulse" size="16" />
                         系统状态
@@ -721,7 +721,7 @@ onUnmounted(() => {
                             class="status-pill"
                             :class="toneClass(serverStatus ? 'success' : 'error')"
                             variant="flat"
-                            rounded="pill"
+                            rounded="sm"
                           >
                             <v-icon size="14" class="mr-1">
                               {{
@@ -738,7 +738,7 @@ onUnmounted(() => {
                           <v-chip
                             class="status-pill"
                             :class="toneClass(websocketBadge.tone)"
-                            rounded="pill"
+                            rounded="sm"
                             variant="flat"
                           >
                             <v-icon size="14" class="mr-1">{{
@@ -779,7 +779,7 @@ onUnmounted(() => {
                   </v-col>
 
                   <v-col cols="12" lg="6">
-                    <v-card elevation="2" rounded="xl" class="panel-card">
+                    <v-card elevation="0" rounded="lg" class="panel-card">
                       <v-card-title class="panel-title d-flex align-center ga-2">
                         <v-icon icon="mdi-flash-outline" size="16" />
                         快速操作
@@ -806,7 +806,7 @@ onUnmounted(() => {
                   </v-col>
 
                   <v-col cols="12" lg="6">
-                    <v-card elevation="2" rounded="xl" class="panel-card">
+                    <v-card elevation="0" rounded="lg" class="panel-card">
                       <v-card-title class="panel-title d-flex align-center ga-2">
                         <v-icon icon="mdi-message-text-outline" size="16" />
                         管理消息
@@ -886,7 +886,7 @@ onUnmounted(() => {
                   </v-col>
 
                   <v-col cols="12" lg="6">
-                    <v-card elevation="2" rounded="xl" class="panel-card">
+                    <v-card elevation="0" rounded="lg" class="panel-card">
                       <v-card-title class="panel-title d-flex align-center ga-2">
                         <v-icon icon="mdi-shield-account" size="16" />
                         客户端身份
@@ -986,7 +986,7 @@ onUnmounted(() => {
               </template>
 
               <template v-else-if="['tasks', 'settings', 'logs'].includes(activeMenu)">
-                <v-card elevation="2" rounded="xl" class="panel-card">
+                <v-card elevation="0" rounded="lg" class="panel-card">
                   <v-card-title class="panel-title">
                     {{ pageTitle }}
                   </v-card-title>
@@ -1000,7 +1000,7 @@ onUnmounted(() => {
               <template v-else-if="activeMenu === 'about'">
                 <v-card border="sm" class="about-card mx-auto" max-width="480">
                   <v-card-text class="d-flex flex-column align-center py-8 ga-2">
-                    <v-avatar size="72" rounded="lg">
+                    <v-avatar size="72" rounded="sm">
                       <v-img :src="appLogo" cover alt="logo" />
                     </v-avatar>
                     <div class="about-title">衣设客户端</div>
@@ -1041,7 +1041,7 @@ onUnmounted(() => {
 .ws-snackbar :deep(.v-snackbar__wrapper) {
   border-radius: 16px;
   padding-inline: 16px;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+  box-shadow: none;
   background-color: #0f172a;
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1083,6 +1083,7 @@ onUnmounted(() => {
 .app-drawer {
   background: #ffffff;
   transition: width 0.25s ease;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .version-pill {
@@ -1090,49 +1091,76 @@ onUnmounted(() => {
   padding: 8px 12px;
   border-radius: 8px;
   font-size: 12px;
-  color: #4b5563;
-  background: #f3f4f6;
+  color: #6b7280;
+  background: #f9fafb;
+  border: 1px solid rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-weight: 500;
 }
 
 :deep(.v-navigation-drawer .v-list-item) {
   margin: 0 8px 4px;
-  border-radius: 4px;
-  transition: background-color 0.2s ease;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
 }
 
 :deep(.v-navigation-drawer .v-list-item:hover) {
   background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
 }
 
 :deep(.v-navigation-drawer .v-list-item--active) {
-  background: rgba(25, 118, 210, 0.12);
-}
-
-:deep(.v-navigation-drawer .v-list-item--active .v-icon) {
-  color: #1976d2;
-}
-
-:deep(.v-navigation-drawer .v-list-item--active .v-list-item-title) {
-  color: #1976d2;
+  background: rgba(0, 0, 0, 0.08);
+  border-left: 3px solid var(--theme-primary, #000000);
+  border-color: rgba(0, 0, 0, 0.12);
   font-weight: 500;
 }
 
+:deep(.v-navigation-drawer .v-list-item--active .v-icon) {
+  color: var(--theme-primary, #000000);
+}
+
+:deep(.v-navigation-drawer .v-list-item--active .v-list-item-title) {
+  color: var(--theme-primary, #000000);
+  font-weight: 600;
+}
+
+:deep(.v-navigation-drawer .v-list-item .v-icon) {
+  color: #6b7280;
+  transition: color 0.2s ease;
+}
+
+:deep(.v-navigation-drawer .v-list-item:hover .v-icon) {
+  color: #374151;
+}
+
 :deep(.v-list-item-title) {
-  font-size: 11px;
+  font-size: 13px;
   letter-spacing: 0.009375em;
-  color: rgba(0, 0, 0, 0.87);
+  color: #374151;
+  transition: color 0.2s ease;
+}
+
+:deep(.v-navigation-drawer .v-list-item:hover .v-list-item-title) {
+  color: #111827;
 }
 
 :deep(.v-navigation-drawer .v-list-item__prepend) {
-  margin-inline-end: 4px;
+  margin-inline-end: 8px;
 }
 
 :deep(.v-navigation-drawer .v-list-item__spacer) {
   width: 2px;
   min-width: 2px;
+}
+
+/* 导航栏分隔线样式 */
+:deep(.v-navigation-drawer .v-divider) {
+  opacity: 0.1;
+  border-color: rgba(0, 0, 0, 0.1);
 }
 
 .main-surface {
@@ -1231,7 +1259,7 @@ onUnmounted(() => {
 
 .hero-metric {
   padding: 16px;
-  border-radius: 16px;
+  border-radius: 8px;
   background: rgba(15, 23, 42, 0.02);
   min-width: 120px;
   border: 1px solid rgba(15, 23, 42, 0.05);
@@ -1289,7 +1317,7 @@ onUnmounted(() => {
 }
 
 .stat-card:hover {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.15) !important;
 }
 
 .stat-meta {
@@ -1337,7 +1365,7 @@ onUnmounted(() => {
 }
 
 .panel-card:hover {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.15) !important;
 }
 
 .panel-title {
@@ -1543,8 +1571,8 @@ onUnmounted(() => {
 
 .about-card {
   background: #ffffff;
-  border: 1px solid transparent;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: none;
 }
 
 .about-title {
@@ -1563,9 +1591,7 @@ onUnmounted(() => {
   color: #4b5563;
 }
 
-:deep(.v-chip) {
-  border-radius: 999px;
-}
+/* Chip 圆角由 vuetify-flat.css 统一管理 */
 
 :deep(.v-card-text),
 :deep(.v-card-title) {
@@ -1578,7 +1604,7 @@ onUnmounted(() => {
 }
 
 :deep(.v-card) {
-  transition: box-shadow 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
 .user-info {
