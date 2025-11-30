@@ -46,6 +46,14 @@ declare global {
         error?: string
         statusCode?: number
       }>
+      // 文件查询相关方法
+      checkFileDownloaded(url: string): Promise<{
+        found: boolean
+        filePath?: string | null
+        fileSize?: number
+        message: string
+        error?: string
+      }>
     }
   }
 }

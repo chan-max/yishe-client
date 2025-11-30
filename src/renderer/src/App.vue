@@ -25,6 +25,9 @@ const selectingDirectory = ref(false)
 const downloadUrl = ref('')
 const downloading = ref(false)
 const downloadHistory = ref<Array<{ url: string; result: any; timestamp: number }>>([])
+const queryUrl = ref('')
+const querying = ref(false)
+const queryResult = ref<{ found: boolean; filePath?: string | null; fileSize?: number; message: string } | null>(null)
 
 interface AdminMessage {
   id: string
@@ -42,6 +45,7 @@ const clientProfile = websocketClient.profile
 const menuItems = [
   { key: 'dashboard', label: '仪表盘', icon: 'mdi-view-dashboard-outline' },
   { key: 'tasks', label: '任务管理', icon: 'mdi-clipboard-check-outline' },
+  { key: 'workspace', label: '文件工作目录', icon: 'mdi-folder-multiple-outline' },
   { key: 'settings', label: '系统设置', icon: 'mdi-cog-outline' },
   { key: 'logs', label: '日志查看', icon: 'mdi-file-document-outline' },
   { key: 'about', label: '关于', icon: 'mdi-information-outline' }
@@ -99,6 +103,7 @@ const statCards = [
 const pageDescriptions: Record<string, string> = {
   dashboard: '系统运行概览与快速入口',
   tasks: '集中管理批量任务与执行情况',
+  workspace: '管理工作目录和文件下载',
   settings: '维护系统参数与设备配置',
   logs: '追踪运行日志与异常信息',
   about: '查看客户端版本信息'
@@ -606,6 +611,63 @@ const formatFileSize = (bytes: number): string => {
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+}
+
+// 处理文件查询
+const handleQuery = async () => {
+  if (!queryUrl.value.trim()) {
+    showToast({
+      color: 'warning',
+      icon: 'mdi-alert-outline',
+      message: '请输入查询链接'
+    })
+    return
+  }
+
+  if (!workspaceDirectory.value) {
+    showToast({
+      color: 'warning',
+      icon: 'mdi-alert-outline',
+      message: '请先设置工作目录'
+    })
+    return
+  }
+
+  try {
+    querying.value = true
+    queryResult.value = null
+    
+    const result = await window.api.checkFileDownloaded(queryUrl.value.trim())
+    queryResult.value = result
+
+    if (result.found) {
+      showToast({
+        color: 'success',
+        icon: 'mdi-check-circle',
+        message: '文件已找到'
+      })
+    } else {
+      showToast({
+        color: 'info',
+        icon: 'mdi-information',
+        message: result.message || '文件未找到'
+      })
+    }
+  } catch (error: any) {
+    console.error('查询失败:', error)
+    showToast({
+      color: 'error',
+      icon: 'mdi-alert-circle-outline',
+      message: error.message || '查询失败，请稍后重试'
+    })
+    queryResult.value = {
+      found: false,
+      message: error.message || '查询失败',
+      filePath: null
+    }
+  } finally {
+    querying.value = false
+  }
 }
 
 onMounted(() => {
@@ -1158,6 +1220,18 @@ onUnmounted(() => {
                     {{ pageTitle }}
                   </v-card-title>
                   <v-divider />
+                  <v-card-text class="text-center py-10 text-medium-emphasis">
+                    系统设置功能开发中，敬请期待…
+                  </v-card-text>
+                </v-card>
+              </template>
+
+              <template v-else-if="activeMenu === 'workspace'">
+                <v-card elevation="0" rounded="lg" class="panel-card">
+                  <v-card-title class="panel-title">
+                    {{ pageTitle }}
+                  </v-card-title>
+                  <v-divider />
                   <v-card-text class="pa-6">
                     <!-- 工作目录设置 -->
                     <v-card variant="outlined" class="mb-4">
@@ -1217,6 +1291,97 @@ onUnmounted(() => {
                             >
                               未设置
                             </v-chip>
+                          </div>
+                        </div>
+                      </v-card-text>
+                    </v-card>
+
+                    <!-- 文件查询功能 -->
+                    <v-card variant="outlined" class="mb-4">
+                      <v-card-title class="text-h6 pb-2">
+                        <v-icon class="mr-2">mdi-magnify</v-icon>
+                        文件查询
+                      </v-card-title>
+                      <v-divider class="mb-4" />
+                      <v-card-text>
+                        <div class="mb-4">
+                          <div class="text-body-2 text-medium-emphasis mb-4">
+                            输入文件下载链接，查询该文件是否已下载。如果已下载，将显示文件的绝对路径。
+                          </div>
+                          <v-text-field
+                            v-model="queryUrl"
+                            label="文件下载链接"
+                            placeholder="https://example.com/file.zip"
+                            variant="outlined"
+                            density="comfortable"
+                            prepend-inner-icon="mdi-link"
+                            class="mb-3"
+                            :disabled="querying"
+                            @keyup.enter="handleQuery"
+                          >
+                            <template v-slot:append>
+                              <v-btn
+                                color="primary"
+                                variant="flat"
+                                @click="handleQuery"
+                                :loading="querying"
+                                :disabled="!queryUrl.trim() || !workspaceDirectory"
+                                prepend-icon="mdi-magnify"
+                              >
+                                查询
+                              </v-btn>
+                            </template>
+                          </v-text-field>
+                          <div v-if="!workspaceDirectory" class="d-flex align-center ga-2 mb-2">
+                            <v-alert
+                              type="warning"
+                              variant="tonal"
+                              density="compact"
+                              class="flex-grow-1"
+                            >
+                              请先设置工作目录才能使用查询功能
+                            </v-alert>
+                          </div>
+                          
+                          <!-- 查询结果 -->
+                          <div v-if="queryResult" class="mt-4">
+                            <v-alert
+                              :type="queryResult.found ? 'success' : 'info'"
+                              variant="tonal"
+                              :icon="queryResult.found ? 'mdi-check-circle' : 'mdi-information'"
+                              class="mb-3"
+                            >
+                              {{ queryResult.message }}
+                            </v-alert>
+                            
+                            <v-card v-if="queryResult.found && queryResult.filePath" variant="outlined" class="mt-3">
+                              <v-card-text>
+                                <div class="text-subtitle-2 mb-2">文件信息</div>
+                                <v-text-field
+                                  :model-value="queryResult.filePath"
+                                  label="文件绝对路径"
+                                  readonly
+                                  variant="outlined"
+                                  density="comfortable"
+                                  prepend-inner-icon="mdi-file"
+                                  class="mb-2"
+                                >
+                                  <template v-slot:append>
+                                    <v-btn
+                                      variant="text"
+                                      size="small"
+                                      @click="copyToClipboard(queryResult.filePath, '文件路径')"
+                                      prepend-icon="mdi-content-copy"
+                                    >
+                                      复制
+                                    </v-btn>
+                                  </template>
+                                </v-text-field>
+                                <div v-if="queryResult.fileSize" class="text-body-2 text-medium-emphasis">
+                                  文件大小: {{ formatFileSize(queryResult.fileSize) }}
+                                </div>
+                              </v-card-text>
+                            </v-card>
                           </div>
                         </div>
                       </v-card-text>
@@ -1304,18 +1469,6 @@ onUnmounted(() => {
                             </v-list-item>
                           </v-list>
                         </div>
-                      </v-card-text>
-                    </v-card>
-                    
-                    <!-- 其他设置占位 -->
-                    <v-card variant="outlined">
-                      <v-card-title class="text-h6 pb-2">
-                        <v-icon class="mr-2">mdi-cog-outline</v-icon>
-                        其他设置
-                      </v-card-title>
-                      <v-divider class="mb-4" />
-                      <v-card-text class="text-center py-10 text-medium-emphasis">
-                        更多设置功能开发中，敬请期待…
                       </v-card-text>
                     </v-card>
                   </v-card-text>

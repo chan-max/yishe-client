@@ -38,6 +38,8 @@ const api = {
   setWorkspaceDirectory: (path: string) => ipcRenderer.invoke('set-workspace-directory', path),
   // 文件下载相关方法
   downloadFile: (url: string) => ipcRenderer.invoke('download-file', url),
+  // 文件查询相关方法
+  checkFileDownloaded: (url: string) => ipcRenderer.invoke('check-file-downloaded', url),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

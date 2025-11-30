@@ -1,6 +1,7 @@
 // 文件顶部已有该导入
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog } from 'electron'
 import { join } from 'path'
+import { resolve } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/favicon.png?asset'
 import puppeteer from 'puppeteer'
@@ -1111,6 +1112,122 @@ ipcMain.handle('download-file', async (event, url: string) => {
     return {
       success: false,
       message: `下载失败: ${error.message || '未知错误'}`,
+      error: 'UNKNOWN_ERROR'
+    }
+  }
+})
+
+// 查询文件是否已下载
+/**
+ * 根据 URL 查询文件是否已下载
+ * @param url 文件下载链接
+ * @returns 查询结果 { found: boolean, filePath?: string, fileSize?: number, message: string }
+ */
+ipcMain.handle('check-file-downloaded', async (event, url: string) => {
+  try {
+    // 检查工作目录是否设置
+    const workspaceDir = store.get('workspaceDirectory', '') as string
+    if (!workspaceDir || workspaceDir.trim() === '') {
+      return {
+        found: false,
+        message: '工作目录未设置',
+        error: 'WORKSPACE_NOT_SET'
+      }
+    }
+
+    // 验证 URL
+    if (!url || typeof url !== 'string' || url.trim() === '') {
+      return {
+        found: false,
+        message: '无效的下载链接',
+        error: 'INVALID_URL'
+      }
+    }
+
+    let parsedUrl: URL
+    try {
+      parsedUrl = new URL(url)
+    } catch (error) {
+      return {
+        found: false,
+        message: '无效的 URL 格式',
+        error: 'INVALID_URL_FORMAT'
+      }
+    }
+
+    const filesDir = pathJoin(workspaceDir, 'files')
+    
+    // 如果 files 目录不存在，说明没有下载过文件
+    if (!fs.existsSync(filesDir)) {
+      return {
+        found: false,
+        message: '文件目录不存在，未找到文件',
+        filePath: null
+      }
+    }
+
+    // 从 URL 提取可能的文件名
+    const urlPath = parsedUrl.pathname
+    let possibleFileName = urlPath.split('/').pop() || 'download'
+    
+    // 清理文件名
+    possibleFileName = possibleFileName.replace(/[<>:"/\\|?*]/g, '_')
+
+    // 检查可能的文件路径
+    const possibleFilePath = pathJoin(filesDir, possibleFileName)
+    
+    if (fs.existsSync(possibleFilePath)) {
+      const stats = fs.statSync(possibleFilePath)
+      // 返回绝对路径（跨平台）
+      const absolutePath = resolve(filesDir, possibleFileName)
+      return {
+        found: true,
+        filePath: absolutePath,
+        fileSize: stats.size,
+        message: '文件已找到'
+      }
+    }
+
+    // 如果直接文件名匹配失败，尝试在 files 目录中搜索
+    // 读取目录中的所有文件
+    try {
+      const files = fs.readdirSync(filesDir)
+      
+      // 尝试匹配文件名（不区分大小写，支持部分匹配）
+      const urlFileName = possibleFileName.toLowerCase()
+      for (const file of files) {
+        const filePath = pathJoin(filesDir, file)
+        const fileStats = fs.statSync(filePath)
+        
+        // 如果是文件（不是目录）
+        if (fileStats.isFile()) {
+          const fileName = file.toLowerCase()
+          // 精确匹配或部分匹配
+          if (fileName === urlFileName || fileName.includes(urlFileName) || urlFileName.includes(fileName)) {
+            const absolutePath = resolve(filesDir, file)
+            return {
+              found: true,
+              filePath: absolutePath,
+              fileSize: fileStats.size,
+              message: '找到匹配的文件'
+            }
+          }
+        }
+      }
+    } catch (error) {
+      // 忽略读取目录错误
+    }
+
+    // 如果都找不到，返回未找到
+    return {
+      found: false,
+      message: '未找到对应的文件',
+      filePath: null
+    }
+  } catch (error: any) {
+    return {
+      found: false,
+      message: `查询失败: ${error.message || '未知错误'}`,
       error: 'UNKNOWN_ERROR'
     }
   }
