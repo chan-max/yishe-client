@@ -11,11 +11,16 @@ import puppeteer from 'puppeteer'
 import { spawn } from 'child_process'
 import { homedir } from 'os'
 import { join as pathJoin } from 'path'
+import fs from 'fs'
+import https from 'https'
+import http from 'http'
+import { URL } from 'url'
 import { startServer, getOrCreateBrowser } from './server';
 // 暂时注释掉发布服务相关引用，代码保留但不使用
 // import { PublishService } from './publishService';
 import { connectionManager } from './connectionManager';
 import { networkMonitor } from './networkMonitor';
+import ElectronStore from 'electron-store';
 
 // 扩展app对象的类型
 declare global {
@@ -32,6 +37,15 @@ declare global {
 // 全局变量
 let tray: Tray | null = null
 let mainWindow: BrowserWindow | null = null
+
+// 初始化 electron-store
+// 处理 electron-store 在 CommonJS 环境下的导入问题
+const Store = (ElectronStore as any).default || ElectronStore;
+const store = new Store({
+  defaults: {
+    workspaceDirectory: ''
+  }
+})
 
 // 防止重复显示协议错误弹窗的标记
 let protocolErrorDialogShown = false;
@@ -788,3 +802,316 @@ ipcMain.handle('get-app-version', () => app.getVersion())
 ipcMain.handle('open-external', async (event, url: string) => {
   await shell.openExternal(url);
 });
+
+// 工作目录相关 IPC 处理器
+ipcMain.handle('select-workspace-directory', async () => {
+  if (!mainWindow) {
+    throw new Error('主窗口不存在')
+  }
+
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+    title: '选择工作目录'
+  })
+
+  if (result.canceled) {
+    return null
+  }
+
+  const selectedPath = result.filePaths[0]
+  if (selectedPath) {
+    // 保存到 electron-store
+    store.set('workspaceDirectory', selectedPath)
+    return selectedPath
+  }
+
+  return null
+})
+
+ipcMain.handle('get-workspace-directory', async () => {
+  return store.get('workspaceDirectory', '') as string
+})
+
+ipcMain.handle('set-workspace-directory', async (event, path: string) => {
+  if (path && typeof path === 'string') {
+    store.set('workspaceDirectory', path)
+    return true
+  }
+  return false
+})
+
+// 文件下载辅助函数：处理下载响应
+function handleDownloadResponse(
+  response: http.IncomingMessage,
+  filesDir: string,
+  resolve: (result: any) => void,
+  initialFileName?: string
+) {
+  if (response.statusCode && (response.statusCode < 200 || response.statusCode >= 300)) {
+    resolve({
+      success: false,
+      message: `下载失败: HTTP ${response.statusCode}`,
+      error: 'HTTP_ERROR',
+      statusCode: response.statusCode
+    })
+    return
+  }
+
+  // 从响应头获取文件名
+  let fileName = initialFileName || 'download'
+  const contentDisposition = response.headers['content-disposition']
+  if (contentDisposition) {
+    const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+    if (filenameMatch && filenameMatch[1]) {
+      let suggestedFileName = filenameMatch[1].replace(/['"]/g, '')
+      try {
+        suggestedFileName = decodeURIComponent(suggestedFileName)
+      } catch (e) {
+        // 忽略解码错误
+      }
+      if (suggestedFileName) {
+        fileName = suggestedFileName.replace(/[<>:"/\\|?*]/g, '_')
+      }
+    }
+  }
+
+  const finalFilePath = pathJoin(filesDir, fileName)
+  
+  // 如果文件已存在，返回跳过
+  if (fs.existsSync(finalFilePath)) {
+    const stats = fs.statSync(finalFilePath)
+    resolve({
+      success: true,
+      message: '文件已存在，跳过下载',
+      filePath: finalFilePath,
+      skipped: true,
+      fileSize: stats.size
+    })
+    return
+  }
+
+  // 创建写入流
+  const fileStream = fs.createWriteStream(finalFilePath)
+  let downloadedBytes = 0
+
+  response.pipe(fileStream)
+
+  fileStream.on('finish', () => {
+    fileStream.close()
+    const stats = fs.statSync(finalFilePath)
+    resolve({
+      success: true,
+      message: '下载完成',
+      filePath: finalFilePath,
+      fileSize: stats.size,
+      downloadedBytes: downloadedBytes
+    })
+  })
+
+  fileStream.on('error', (error) => {
+    if (fs.existsSync(finalFilePath)) {
+      fs.unlinkSync(finalFilePath) // 删除不完整的文件
+    }
+    resolve({
+      success: false,
+      message: `文件写入失败: ${error.message}`,
+      error: 'FILE_WRITE_ERROR'
+    })
+  })
+
+  response.on('data', (chunk) => {
+    downloadedBytes += chunk.length
+  })
+
+  response.on('error', (error) => {
+    fileStream.close()
+    if (fs.existsSync(finalFilePath)) {
+      fs.unlinkSync(finalFilePath) // 删除不完整的文件
+    }
+    resolve({
+      success: false,
+      message: `下载失败: ${error.message}`,
+      error: 'DOWNLOAD_ERROR'
+    })
+  })
+}
+
+// 文件下载相关 IPC 处理器
+/**
+ * 从 URL 下载文件到工作目录下的 files 目录
+ * @param url 文件下载链接
+ * @returns 下载结果 { success: boolean, message: string, filePath?: string, skipped?: boolean }
+ */
+ipcMain.handle('download-file', async (event, url: string) => {
+  try {
+    // 检查工作目录是否设置
+    const workspaceDir = store.get('workspaceDirectory', '') as string
+    if (!workspaceDir || workspaceDir.trim() === '') {
+      return {
+        success: false,
+        message: '请先设置工作目录',
+        error: 'WORKSPACE_NOT_SET'
+      }
+    }
+
+    // 验证 URL
+    if (!url || typeof url !== 'string' || url.trim() === '') {
+      return {
+        success: false,
+        message: '无效的下载链接',
+        error: 'INVALID_URL'
+      }
+    }
+
+    let parsedUrl: URL
+    try {
+      parsedUrl = new URL(url)
+    } catch (error) {
+      return {
+        success: false,
+        message: '无效的 URL 格式',
+        error: 'INVALID_URL_FORMAT'
+      }
+    }
+
+    // 创建 files 目录
+    const filesDir = pathJoin(workspaceDir, 'files')
+    if (!fs.existsSync(filesDir)) {
+      fs.mkdirSync(filesDir, { recursive: true })
+    }
+
+    // 从 URL 获取文件名
+    const urlPath = parsedUrl.pathname
+    let fileName = urlPath.split('/').pop() || 'download'
+    
+    // 如果文件名没有扩展名，尝试从 Content-Disposition 或 URL 中获取
+    if (!fileName.includes('.')) {
+      // 尝试从 URL 查询参数中获取文件名
+      const urlParams = parsedUrl.searchParams
+      const suggestedName = urlParams.get('filename') || urlParams.get('name')
+      if (suggestedName) {
+        fileName = suggestedName
+      } else {
+        // 默认使用时间戳作为文件名
+        fileName = `download_${Date.now()}`
+      }
+    }
+
+    // 清理文件名（移除非法字符）
+    fileName = fileName.replace(/[<>:"/\\|?*]/g, '_')
+
+    const filePath = pathJoin(filesDir, fileName)
+
+    // 检查文件是否已存在
+    if (fs.existsSync(filePath)) {
+      const stats = fs.statSync(filePath)
+      return {
+        success: true,
+        message: '文件已存在，跳过下载',
+        filePath: filePath,
+        skipped: true,
+        fileSize: stats.size
+      }
+    }
+
+    // 下载文件
+    return await new Promise((resolve) => {
+      const protocol = parsedUrl.protocol === 'https:' ? https : http
+      
+      const request = protocol.get(url, (response) => {
+        // 检查响应状态（处理重定向）
+        if (response.statusCode && response.statusCode >= 300 && response.statusCode < 400) {
+          const redirectUrl = response.headers.location
+          if (redirectUrl) {
+            request.destroy()
+            // 构建完整的重定向 URL
+            const fullRedirectUrl = redirectUrl.startsWith('http') 
+              ? redirectUrl 
+              : `${parsedUrl.protocol}//${parsedUrl.host}${redirectUrl}`
+            // 递归下载重定向的 URL
+            const downloadRedirect = (redirectUrl: string, maxRedirects = 5): Promise<any> => {
+              if (maxRedirects <= 0) {
+                return Promise.resolve({
+                  success: false,
+                  message: '重定向次数过多',
+                  error: 'TOO_MANY_REDIRECTS'
+                })
+              }
+              
+              const redirectParsedUrl = new URL(redirectUrl)
+              const redirectProtocol = redirectParsedUrl.protocol === 'https:' ? https : http
+              
+              return new Promise((resolveRedirect) => {
+                const redirectRequest = redirectProtocol.get(redirectUrl, (redirectResponse) => {
+                  // 如果还有重定向，继续递归
+                  if (redirectResponse.statusCode && redirectResponse.statusCode >= 300 && redirectResponse.statusCode < 400) {
+                    const nextRedirectUrl = redirectResponse.headers.location
+                    if (nextRedirectUrl) {
+                      redirectRequest.destroy()
+                      const fullNextRedirectUrl = nextRedirectUrl.startsWith('http') 
+                        ? nextRedirectUrl 
+                        : `${redirectParsedUrl.protocol}//${redirectParsedUrl.host}${nextRedirectUrl}`
+                      downloadRedirect(fullNextRedirectUrl, maxRedirects - 1).then(resolveRedirect)
+                      return
+                    }
+                  }
+                  
+                  // 处理正常的下载响应
+                  const redirectUrlPath = redirectParsedUrl.pathname
+                  const redirectFileName = redirectUrlPath.split('/').pop() || fileName
+                  handleDownloadResponse(redirectResponse, filesDir, resolveRedirect, redirectFileName)
+                })
+                
+                redirectRequest.on('error', (error) => {
+                  resolveRedirect({
+                    success: false,
+                    message: `重定向下载失败: ${error.message}`,
+                    error: 'REDIRECT_DOWNLOAD_ERROR'
+                  })
+                })
+                
+                redirectRequest.setTimeout(30000, () => {
+                  redirectRequest.destroy()
+                  resolveRedirect({
+                    success: false,
+                    message: '重定向下载超时',
+                    error: 'TIMEOUT'
+                  })
+                })
+              })
+            }
+            
+            downloadRedirect(fullRedirectUrl).then(resolve)
+            return
+          }
+        }
+
+        // 使用辅助函数处理下载响应
+        handleDownloadResponse(response, filesDir, resolve, fileName)
+      })
+
+      request.on('error', (error) => {
+        resolve({
+          success: false,
+          message: `网络错误: ${error.message}`,
+          error: 'NETWORK_ERROR'
+        })
+      })
+
+      request.setTimeout(30000, () => {
+        request.destroy()
+        resolve({
+          success: false,
+          message: '下载超时',
+          error: 'TIMEOUT'
+        })
+      })
+    })
+  } catch (error: any) {
+    return {
+      success: false,
+      message: `下载失败: ${error.message || '未知错误'}`,
+      error: 'UNKNOWN_ERROR'
+    }
+  }
+})

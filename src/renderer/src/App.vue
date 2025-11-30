@@ -20,6 +20,11 @@ const activeMenu = ref('dashboard')
 const isLoggedIn = ref(false)
 const userInfo = ref<UserInfo | null>(null)
 const loadingUserInfo = ref(false)
+const workspaceDirectory = ref('')
+const selectingDirectory = ref(false)
+const downloadUrl = ref('')
+const downloading = ref(false)
+const downloadHistory = ref<Array<{ url: string; result: any; timestamp: number }>>([])
 
 interface AdminMessage {
   id: string
@@ -442,9 +447,171 @@ const handleLogout = async () => {
   }
 }
 
+// 加载工作目录
+const loadWorkspaceDirectory = async () => {
+  try {
+    const path = await window.api.getWorkspaceDirectory()
+    workspaceDirectory.value = path || ''
+  } catch (error) {
+    console.error('加载工作目录失败:', error)
+  }
+}
+
+// 选择工作目录
+const selectWorkspaceDirectory = async () => {
+  try {
+    selectingDirectory.value = true
+    const selectedPath = await window.api.selectWorkspaceDirectory()
+    if (selectedPath) {
+      workspaceDirectory.value = selectedPath
+      showToast({
+        color: 'success',
+        icon: 'mdi-check-circle',
+        message: '工作目录设置成功'
+      })
+    }
+  } catch (error) {
+    console.error('选择工作目录失败:', error)
+    showToast({
+      color: 'error',
+      icon: 'mdi-alert-circle-outline',
+      message: '选择工作目录失败，请稍后重试'
+    })
+  } finally {
+    selectingDirectory.value = false
+  }
+}
+
+// 清除工作目录
+const clearWorkspaceDirectory = async () => {
+  try {
+    await window.api.setWorkspaceDirectory('')
+    workspaceDirectory.value = ''
+    showToast({
+      color: 'success',
+      icon: 'mdi-check-circle',
+      message: '工作目录已清除'
+    })
+  } catch (error) {
+    console.error('清除工作目录失败:', error)
+    showToast({
+      color: 'error',
+      icon: 'mdi-alert-circle-outline',
+      message: '清除工作目录失败，请稍后重试'
+    })
+  }
+}
+
+// 处理文件下载
+const handleDownload = async () => {
+  if (!downloadUrl.value.trim()) {
+    showToast({
+      color: 'warning',
+      icon: 'mdi-alert-outline',
+      message: '请输入下载链接'
+    })
+    return
+  }
+
+  if (!workspaceDirectory.value) {
+    showToast({
+      color: 'warning',
+      icon: 'mdi-alert-outline',
+      message: '请先设置工作目录'
+    })
+    return
+  }
+
+  try {
+    downloading.value = true
+    const result = await window.api.downloadFile(downloadUrl.value.trim())
+    
+    // 添加到下载历史
+    downloadHistory.value.push({
+      url: downloadUrl.value.trim(),
+      result: result,
+      timestamp: Date.now()
+    })
+    
+    // 只保留最近 10 条记录
+    if (downloadHistory.value.length > 10) {
+      downloadHistory.value = downloadHistory.value.slice(-10)
+    }
+
+    if (result.success) {
+      if (result.skipped) {
+        showToast({
+          color: 'info',
+          icon: 'mdi-information',
+          message: result.message || '文件已存在，跳过下载'
+        })
+      } else {
+        showToast({
+          color: 'success',
+          icon: 'mdi-check-circle',
+          message: result.message || '下载完成'
+        })
+        // 清空输入框
+        downloadUrl.value = ''
+      }
+    } else {
+      showToast({
+        color: 'error',
+        icon: 'mdi-alert-circle-outline',
+        message: result.message || '下载失败'
+      })
+    }
+  } catch (error: any) {
+    console.error('下载失败:', error)
+    showToast({
+      color: 'error',
+      icon: 'mdi-alert-circle-outline',
+      message: error.message || '下载失败，请稍后重试'
+    })
+    
+    // 添加到下载历史（失败记录）
+    downloadHistory.value.push({
+      url: downloadUrl.value.trim(),
+      result: {
+        success: false,
+        message: error.message || '下载失败'
+      },
+      timestamp: Date.now()
+    })
+  } finally {
+    downloading.value = false
+  }
+}
+
+// 格式化下载结果
+const formatDownloadResult = (result: any): string => {
+  if (!result) return ''
+  
+  if (result.success) {
+    if (result.skipped) {
+      return `已跳过 - ${result.message || '文件已存在'}`
+    } else {
+      const size = result.fileSize ? formatFileSize(result.fileSize) : ''
+      return `下载成功${size ? ` - ${size}` : ''}`
+    }
+  } else {
+    return `失败 - ${result.message || '未知错误'}`
+  }
+}
+
+// 格式化文件大小
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+}
+
 onMounted(() => {
   startServerPolling()
   websocketClient.connect()
+  loadWorkspaceDirectory()
   websocketClient.events.on('toast', showToast)
   websocketClient.events.on('log', logHandler)
   websocketClient.events.on('adminMessage', handleAdminMessage)
@@ -985,7 +1152,177 @@ onUnmounted(() => {
                 </v-row>
               </template>
 
-              <template v-else-if="['tasks', 'settings', 'logs'].includes(activeMenu)">
+              <template v-else-if="activeMenu === 'settings'">
+                <v-card elevation="0" rounded="lg" class="panel-card">
+                  <v-card-title class="panel-title">
+                    {{ pageTitle }}
+                  </v-card-title>
+                  <v-divider />
+                  <v-card-text class="pa-6">
+                    <!-- 工作目录设置 -->
+                    <v-card variant="outlined" class="mb-4">
+                      <v-card-title class="text-h6 pb-2">
+                        <v-icon class="mr-2">mdi-folder-outline</v-icon>
+                        工作目录设置
+                      </v-card-title>
+                      <v-divider class="mb-4" />
+                      <v-card-text>
+                        <div class="mb-4">
+                          <div class="text-body-2 text-medium-emphasis mb-2">
+                            当前工作目录用于存储应用生成的文件和临时数据。选择后会自动保存，下次启动时无需重新设置。
+                          </div>
+                          <v-text-field
+                            v-model="workspaceDirectory"
+                            label="工作目录路径"
+                            readonly
+                            variant="outlined"
+                            density="comfortable"
+                            prepend-inner-icon="mdi-folder"
+                            class="mb-3"
+                          >
+                            <template v-slot:append>
+                              <v-btn
+                                variant="text"
+                                size="small"
+                                @click="selectWorkspaceDirectory"
+                                :loading="selectingDirectory"
+                              >
+                                选择文件夹
+                              </v-btn>
+                            </template>
+                          </v-text-field>
+                          <div v-if="workspaceDirectory" class="d-flex align-center ga-2">
+                            <v-chip
+                              color="success"
+                              size="small"
+                              prepend-icon="mdi-check-circle"
+                            >
+                              已设置
+                            </v-chip>
+                            <v-btn
+                              variant="text"
+                              size="small"
+                              color="error"
+                              prepend-icon="mdi-delete-outline"
+                              @click="clearWorkspaceDirectory"
+                            >
+                              清除设置
+                            </v-btn>
+                          </div>
+                          <div v-else class="d-flex align-center">
+                            <v-chip
+                              color="warning"
+                              size="small"
+                              prepend-icon="mdi-alert-outline"
+                            >
+                              未设置
+                            </v-chip>
+                          </div>
+                        </div>
+                      </v-card-text>
+                    </v-card>
+                    
+                    <!-- 文件下载功能 -->
+                    <v-card variant="outlined" class="mb-4">
+                      <v-card-title class="text-h6 pb-2">
+                        <v-icon class="mr-2">mdi-download-outline</v-icon>
+                        文件下载
+                      </v-card-title>
+                      <v-divider class="mb-4" />
+                      <v-card-text>
+                        <div class="mb-4">
+                          <div class="text-body-2 text-medium-emphasis mb-4">
+                            输入文件下载链接，文件将保存到工作目录下的 <code>files</code> 目录。如果文件已存在，将自动跳过下载。
+                          </div>
+                          <v-text-field
+                            v-model="downloadUrl"
+                            label="文件下载链接"
+                            placeholder="https://example.com/file.zip"
+                            variant="outlined"
+                            density="comfortable"
+                            prepend-inner-icon="mdi-link"
+                            class="mb-3"
+                            :disabled="downloading"
+                            @keyup.enter="handleDownload"
+                          >
+                            <template v-slot:append>
+                              <v-btn
+                                color="primary"
+                                variant="flat"
+                                @click="handleDownload"
+                                :loading="downloading"
+                                :disabled="!downloadUrl.trim() || !workspaceDirectory"
+                                prepend-icon="mdi-download"
+                              >
+                                下载
+                              </v-btn>
+                            </template>
+                          </v-text-field>
+                          <div v-if="!workspaceDirectory" class="d-flex align-center ga-2 mb-2">
+                            <v-alert
+                              type="warning"
+                              variant="tonal"
+                              density="compact"
+                              class="flex-grow-1"
+                            >
+                              请先设置工作目录才能使用下载功能
+                            </v-alert>
+                          </div>
+                        </div>
+                        
+                        <!-- 下载历史 -->
+                        <div v-if="downloadHistory.length > 0" class="mt-4">
+                          <div class="text-subtitle-2 mb-2">下载历史</div>
+                          <v-list density="compact" variant="outlined" rounded="lg">
+                            <v-list-item
+                              v-for="(item, index) in downloadHistory.slice().reverse()"
+                              :key="index"
+                              :title="item.url"
+                              :subtitle="formatDownloadResult(item.result)"
+                              class="mb-1"
+                            >
+                              <template v-slot:prepend>
+                                <v-icon
+                                  :color="item.result.success ? (item.result.skipped ? 'warning' : 'success') : 'error'"
+                                >
+                                  {{ item.result.success 
+                                    ? (item.result.skipped ? 'mdi-skip-next' : 'mdi-check-circle') 
+                                    : 'mdi-alert-circle' }}
+                                </v-icon>
+                              </template>
+                              <template v-slot:append>
+                                <v-chip
+                                  :color="item.result.success ? (item.result.skipped ? 'warning' : 'success') : 'error'"
+                                  size="small"
+                                  variant="tonal"
+                                >
+                                  {{ item.result.success 
+                                    ? (item.result.skipped ? '已跳过' : '成功') 
+                                    : '失败' }}
+                                </v-chip>
+                              </template>
+                            </v-list-item>
+                          </v-list>
+                        </div>
+                      </v-card-text>
+                    </v-card>
+                    
+                    <!-- 其他设置占位 -->
+                    <v-card variant="outlined">
+                      <v-card-title class="text-h6 pb-2">
+                        <v-icon class="mr-2">mdi-cog-outline</v-icon>
+                        其他设置
+                      </v-card-title>
+                      <v-divider class="mb-4" />
+                      <v-card-text class="text-center py-10 text-medium-emphasis">
+                        更多设置功能开发中，敬请期待…
+                      </v-card-text>
+                    </v-card>
+                  </v-card-text>
+                </v-card>
+              </template>
+
+              <template v-else-if="['tasks', 'logs'].includes(activeMenu)">
                 <v-card elevation="0" rounded="lg" class="panel-card">
                   <v-card-title class="panel-title">
                     {{ pageTitle }}

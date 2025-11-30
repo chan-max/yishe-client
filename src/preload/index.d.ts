@@ -32,6 +32,20 @@ declare global {
       reconnect(): Promise<any>
       openExternal(url: string): Promise<void>
       openAllMediaPages(): Promise<any>
+      // 工作目录相关方法
+      selectWorkspaceDirectory(): Promise<string | null>
+      getWorkspaceDirectory(): Promise<string>
+      setWorkspaceDirectory(path: string): Promise<boolean>
+      // 文件下载相关方法
+      downloadFile(url: string): Promise<{
+        success: boolean
+        message: string
+        filePath?: string
+        skipped?: boolean
+        fileSize?: number
+        error?: string
+        statusCode?: number
+      }>
     }
   }
 }

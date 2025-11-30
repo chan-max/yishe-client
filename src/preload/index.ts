@@ -32,6 +32,12 @@ const api = {
   },
   getConnectionStatus: () => fetch('http://localhost:1519/api/connection/status').then(res => res.json()),
   reconnect: () => fetch('http://localhost:1519/api/connection/reconnect', { method: 'POST' }).then(res => res.json()),
+  // 工作目录相关方法
+  selectWorkspaceDirectory: () => ipcRenderer.invoke('select-workspace-directory'),
+  getWorkspaceDirectory: () => ipcRenderer.invoke('get-workspace-directory'),
+  setWorkspaceDirectory: (path: string) => ipcRenderer.invoke('set-workspace-directory', path),
+  // 文件下载相关方法
+  downloadFile: (url: string) => ipcRenderer.invoke('download-file', url),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
