@@ -8,16 +8,19 @@
 -->
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import { websocketClient } from './services/websocketClient'
 import { getUserInfo, logout, type UserInfo } from './api/auth'
 import Login from './views/Login.vue'
+import Dashboard from './views/Dashboard.vue'
+import Tasks from './views/Tasks.vue'
+import Workspace from './views/Workspace.vue'
+import Settings from './views/Settings.vue'
+import Logs from './views/Logs.vue'
+import About from './views/About.vue'
 import { LOCAL_API_BASE } from './config/api'
 import { getTokenFromClient } from './api/user'
 import { useToast } from './composables/useToast'
 
-const route = useRoute()
-const router = useRouter()
 const { toast, showToast } = useToast()
 
 const serverStatus = ref(false)
@@ -26,6 +29,7 @@ const activeMenu = ref('dashboard')
 const isLoggedIn = ref(false)
 const userInfo = ref<UserInfo | null>(null)
 const loadingUserInfo = ref(false)
+const checkingAuth = ref(true) // 添加检查认证状态，避免闪烁
 
 interface AdminMessage {
   id: string
@@ -313,7 +317,7 @@ const throttle = (lastCheck: number, delay: number) => Date.now() - lastCheck >=
 
 const selectMenu = (key: string) => {
   activeMenu.value = key
-  router.push(`/${key}`)
+  // 不再使用 router，直接切换菜单
 }
 
 const startServerPolling = () => {
@@ -335,6 +339,7 @@ const checkServerStatus = async () => {
 
 // 检查登录状态并获取用户信息
 const checkAuthAndGetUserInfo = async () => {
+  checkingAuth.value = true // 开始检查，避免闪烁
   try {
     // 先检查是否有 token，如果没有 token 就不需要请求
     const token = await getTokenFromClient()
@@ -342,8 +347,9 @@ const checkAuthAndGetUserInfo = async () => {
       isLoggedIn.value = false
       userInfo.value = null
       loadingUserInfo.value = false
-    return
-  }
+      checkingAuth.value = false
+      return
+    }
 
     loadingUserInfo.value = true
     const info = await getUserInfo()
@@ -373,6 +379,7 @@ const checkAuthAndGetUserInfo = async () => {
     }
   } finally {
     loadingUserInfo.value = false
+    checkingAuth.value = false // 检查完成
   }
 }
 
@@ -696,8 +703,14 @@ onUnmounted(() => {
 
 <template>
   <v-app>
+    <!-- 检查认证状态时的加载界面 -->
+    <div v-if="checkingAuth" class="auth-checking">
+      <v-progress-circular indeterminate color="primary" size="64" />
+      <p class="mt-4 text-medium-emphasis">正在检查登录状态...</p>
+    </div>
+
     <!-- 登录页面 -->
-    <Login v-if="!isLoggedIn" @login-success="handleLoginSuccess" />
+    <Login v-else-if="!isLoggedIn" @login-success="handleLoginSuccess" />
 
     <!-- 主应用界面 -->
     <template v-else>
@@ -840,7 +853,13 @@ onUnmounted(() => {
 
           <v-main class="main-scroll" style="overflow-y: auto; height: calc(100vh - 64px);">
             <v-container fluid class="py-4 px-4" style="max-width: 1400px;">
-              <router-view />
+              <!-- 使用组件切换替代 router-view -->
+              <Dashboard v-if="activeMenu === 'dashboard'" />
+              <Tasks v-else-if="activeMenu === 'tasks'" />
+              <Workspace v-else-if="activeMenu === 'workspace'" />
+              <Settings v-else-if="activeMenu === 'settings'" />
+              <Logs v-else-if="activeMenu === 'logs'" />
+              <About v-else-if="activeMenu === 'about'" />
             </v-container>
           </v-main>
         </div>
@@ -1449,6 +1468,15 @@ onUnmounted(() => {
 .user-name {
   margin-right: 4px;
   font-size: 14px;
+}
+
+.auth-checking {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #fafafa;
 }
 
 @media (max-width: 960px) {
