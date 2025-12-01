@@ -1,6 +1,7 @@
 import { io, type Socket } from 'socket.io-client'
 import { reactive } from 'vue'
 import mitt from 'mitt'
+import { getTokenFromClient } from '../api/user'
 
 type WsStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'error'
 
@@ -285,11 +286,15 @@ function cleanupSocket() {
   stopHeartbeat()
 }
 
-function buildQuery() {
+function buildQuery(token?: string | null) {
   const payload: Record<string, string> = {
     clientSource: CLIENT_SOURCE,
     clientId: identity.clientId,
     machineCode: identity.machineCode
+  }
+
+  if (token) {
+    payload.token = token
   }
 
   try {
@@ -413,7 +418,7 @@ function emitClientInfo() {
   socket.emit('client-info', { ...clientInfo })
 }
 
-function connect(endpoint?: string) {
+async function connect(endpoint?: string) {
   const targetEndpoint = endpoint || wsState.endpoint || DEFAULT_WS_ENDPOINT
   wsState.endpoint = targetEndpoint
   void fetchNetworkProfile()
@@ -431,6 +436,17 @@ function connect(endpoint?: string) {
     retryCount: 0
   })
 
+  let token: string | undefined
+  try {
+    token = await getTokenFromClient()
+  } catch (error) {
+    // 读取 token 失败不阻塞连接，只记录日志
+    emitter.emit('log', {
+      level: 'warn',
+      message: `[ws] 获取 token 失败，将在未认证状态下连接: ${serializeError(error)}`
+    })
+  }
+
   socket = io(targetEndpoint, {
     transports: ['websocket'],
     reconnection: true,
@@ -438,7 +454,12 @@ function connect(endpoint?: string) {
     reconnectionDelay: 2000,
     reconnectionDelayMax: 12_000,
     timeout: 8000,
-    query: buildQuery()
+    query: buildQuery(token),
+    auth: token
+      ? {
+          token
+        }
+      : undefined
   })
 
   bindSocketEvents(socket)
