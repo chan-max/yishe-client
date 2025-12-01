@@ -31,6 +31,16 @@ const userInfo = ref<UserInfo | null>(null)
 const loadingUserInfo = ref(false)
 const checkingAuth = ref(true) // 添加检查认证状态，避免闪烁
 
+// 工作目录与下载相关状态
+const workspaceDirectory = ref('')
+const selectingDirectory = ref(false)
+const downloadUrl = ref('')
+const downloading = ref(false)
+const downloadHistory = ref<any[]>([])
+const queryUrl = ref('')
+const querying = ref(false)
+const queryResult = ref<any | null>(null)
+
 interface AdminMessage {
   id: string
   data: any
@@ -155,6 +165,26 @@ function toWsStatusText(status: string) {
   return statusMap(status).text
 }
 
+const ACTIVE_WS_STATUSES = ['connecting', 'connected', 'reconnecting']
+
+const ensureWebsocketConnected = () => {
+  if (ACTIVE_WS_STATUSES.includes(wsState.status)) return
+  websocketClient.connect()
+}
+
+const disconnectWebsocketIfNeeded = () => {
+  if (['idle', 'disconnected'].includes(wsState.status)) return
+  websocketClient.disconnect()
+}
+
+watch(isLoggedIn, (loggedIn) => {
+  if (loggedIn) {
+    ensureWebsocketConnected()
+  } else {
+    disconnectWebsocketIfNeeded()
+  }
+})
+
 const reconnectWebsocket = () => {
   websocketClient.reconnect()
   showToast({
@@ -226,6 +256,14 @@ const formatMessageTime = (timestamp: string) => {
       minute: '2-digit'
     })
   }
+}
+
+const formatCompanyName = (company: any) => {
+  if (!company) return '--'
+  if (typeof company === 'object') {
+    return company?.name || '--'
+  }
+  return company
 }
 
 const copyToClipboard = async (value?: string, label?: string) => {
@@ -435,6 +473,7 @@ const handleLogout = async () => {
     await logout()
     isLoggedIn.value = false
     userInfo.value = null
+    disconnectWebsocketIfNeeded()
     showToast({
       color: 'success',
       icon: 'mdi-logout',
@@ -668,7 +707,6 @@ const handleQuery = async () => {
 
 onMounted(() => {
   startServerPolling()
-  websocketClient.connect()
   loadWorkspaceDirectory()
   websocketClient.events.on('toast', showToast)
   websocketClient.events.on('log', logHandler)
@@ -819,12 +857,7 @@ onUnmounted(() => {
                   </v-list-item>
                   <v-list-item v-if="userInfo.company">
                     <v-list-item-title
-                      >公司:
-                      {{ 
-                    typeof userInfo.company === 'object' && userInfo.company !== null 
-                      ? ((userInfo.company as any)?.name || '--') 
-                      : (userInfo.company || '--')
-                      }}</v-list-item-title
+                      >公司: {{ formatCompanyName(userInfo.company) }}</v-list-item-title
                     >
                   </v-list-item>
                   <v-list-item>
