@@ -16,7 +16,7 @@ import fs from 'fs'
 import https from 'https'
 import http from 'http'
 import { URL } from 'url'
-import { startServer, getOrCreateBrowser } from './server';
+import { startServer, stopServer, isServerRunning, saveToken, getOrCreateBrowser } from './server';
 // 暂时注释掉发布服务相关引用，代码保留但不使用
 // import { PublishService } from './publishService';
 import { connectionManager } from './connectionManager';
@@ -629,6 +629,22 @@ app.whenReady().then(() => {
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
 
+  // 监听 token 保存事件，启动服务
+  // 注意：server.ts 中也有 save-token 处理器，但它在服务启动后才注册
+  // 这里我们在服务启动前拦截，先启动服务并保存 token
+  ipcMain.handle('save-token', async (event, newToken) => {
+    // 先保存 token（无论服务是否启动）
+    saveToken(newToken);
+    
+    // 如果服务未启动，启动服务
+    if (!isServerRunning()) {
+      console.log('🔐 检测到 token 保存，启动 1519 服务...');
+      startServer(1519);
+    }
+    
+    return true;
+  })
+
   // 退出确认IPC处理器
   ipcMain.handle('confirm-exit', async () => {
     if (!mainWindow) return
@@ -662,8 +678,7 @@ app.whenReady().then(() => {
   // 创建系统托盘
   createTray()
 
-  // 启动服务器
-  startServer(1519);
+  // 注意：服务器现在只在用户登录后启动，不再在应用启动时启动
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

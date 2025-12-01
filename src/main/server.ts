@@ -24,6 +24,11 @@ puppeteer.use(StealthPlugin());
 // 用内存变量存储 token
 let token: string | null = null;
 
+// 导出保存 token 的函数，供外部使用
+export function saveToken(newToken: string): void {
+  token = newToken;
+}
+
 // 全局浏览器实例管理
 let browserInstance: Browser | null = null;
 
@@ -393,7 +398,42 @@ export async function closeBrowser(): Promise<void> {
   }
 }
 
-export function startServer(port: number = 1519): void {
+let serverInstance: any = null;
+let stopServerFn: (() => Promise<void>) | null = null;
+let currentPort: number = 1519;
+
+export function startServer(port: number = 1519): (() => Promise<void>) {
+  currentPort = port;
+  // 如果服务器已经在运行，先停止它
+  if (stopServerFn) {
+    console.log('⚠️ 服务器已在运行，先停止旧实例');
+    return stopServerFn().then(() => {
+      console.log('✅ 旧服务器实例已停止');
+      const stopFn = _startServer(port);
+      stopServerFn = stopFn;
+      return stopFn;
+    }) as any;
+  }
+
+  const stopFn = _startServer(port);
+  stopServerFn = stopFn;
+  return stopFn;
+}
+
+export function stopServer(): Promise<void> {
+  if (stopServerFn) {
+    const fn = stopServerFn;
+    stopServerFn = null;
+    return fn();
+  }
+  return Promise.resolve();
+}
+
+export function isServerRunning(): boolean {
+  return stopServerFn !== null;
+}
+
+function _startServer(port: number = 1519): (() => Promise<void>) {
   const app = express();
   
   console.log('🚀 启动 Express 服务器...');
@@ -1623,11 +1663,9 @@ export function startServer(port: number = 1519): void {
     }
   });
 
-  // token 持久化存储
-  ipcMain.handle('save-token', async (event, newToken) => {
-    token = newToken;
-    return true;
-  });
+  // token 持久化存储 IPC 处理器
+  // 注意：save-token 处理器在 index.ts 中注册，避免重复注册
+  // 这里只注册 get-token 和 is-token-exist 处理器
   ipcMain.handle('get-token', async () => {
     return token;
   });
@@ -1709,14 +1747,19 @@ export function startServer(port: number = 1519): void {
    *                   type: boolean
    *                   example: true
    */
-  app.post('/api/logoutToken', (req, res) => {
+  app.post('/api/logoutToken', async (req, res) => {
     token = null;
+    // 登出时停止服务
+    if (stopServerFn) {
+      console.log('🔐 检测到 token 清除，停止 1519 服务...');
+      await stopServer();
+    }
     res.json({ success: true });
   });
 
 
   // 启动服务器
-  app.listen(port, () => {
+  const server = app.listen(port, () => {
     console.log('✅ Express 服务器启动成功！');
     console.log('─'.repeat(50));
     console.log('📋 可用接口:');
@@ -1747,6 +1790,20 @@ export function startServer(port: number = 1519): void {
   }).on('error', (err) => {
     console.error('❌ Express 服务器启动失败:', err);
   });
+
+  // 返回停止服务器的函数
+  return () => {
+    return new Promise<void>((resolve) => {
+      if (server) {
+        server.close(() => {
+          console.log('✅ Express 服务器已停止');
+          resolve();
+        });
+      } else {
+        resolve();
+      }
+    });
+  };
 }
 
 
