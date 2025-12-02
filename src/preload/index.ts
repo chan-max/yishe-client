@@ -30,6 +30,9 @@ const api = {
   onConnectionStatus: (callback: (status: any) => void) => {
     ipcRenderer.on('connection-status', (event, status) => callback(status));
   },
+  onExtensionConnectionStatus: (callback: (status: any) => void) => {
+    ipcRenderer.on('extension-connection-status', (event, status) => callback(status));
+  },
   getConnectionStatus: () => fetch('http://localhost:1519/api/connection/status').then(res => res.json()),
   reconnect: () => fetch('http://localhost:1519/api/connection/reconnect', { method: 'POST' }).then(res => res.json()),
   // 工作目录相关方法

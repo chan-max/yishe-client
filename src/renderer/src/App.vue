@@ -31,6 +31,15 @@ const userInfo = ref<UserInfo | null>(null)
 const loadingUserInfo = ref(false)
 const checkingAuth = ref(true) // 添加检查认证状态，避免闪烁
 
+// 插件连接状态
+const extensionConnectionStatus = ref<{
+  connected: boolean
+  clientId?: string
+  clientSource?: string
+  connectedAt?: string
+  totalConnections?: number
+} | null>(null)
+
 // 工作目录与下载相关状态
 const workspaceDirectory = ref('')
 const selectingDirectory = ref(false)
@@ -128,12 +137,21 @@ const pageDescription = computed(() => pageDescriptions[activeMenu.value] ?? '')
 
 const statusChips = computed(() => {
   const wsDescriptor = statusMap(wsState.status)
+  const extensionStatus = extensionConnectionStatus.value
+  const extensionConnected = extensionStatus?.connected ?? false
+  
   return [
     {
       key: 'local',
       label: serverStatus.value ? '本地服务 · 运行中' : '本地服务 · 未连接',
       state: serverStatus.value ? 'success' : 'error',
       icon: serverStatus.value ? 'mdi-lan-connect' : 'mdi-lan-disconnect'
+    },
+    {
+      key: 'extension',
+      label: extensionConnected ? `插件连接 · 已连接${extensionStatus?.totalConnections ? ` (${extensionStatus.totalConnections})` : ''}` : '插件连接 · 未连接',
+      state: extensionConnected ? 'success' : 'muted',
+      icon: extensionConnected ? 'mdi-puzzle-check' : 'mdi-puzzle-outline'
     },
     {
       key: 'ws',
@@ -723,6 +741,45 @@ onMounted(() => {
   window.addEventListener('auth:logout', () => {
     isLoggedIn.value = false
     userInfo.value = null
+  })
+
+  // 监听插件连接状态
+  if (window.api.onExtensionConnectionStatus) {
+    window.api.onExtensionConnectionStatus((status: any) => {
+      extensionConnectionStatus.value = status
+    })
+  }
+
+  // 定期检查插件连接状态
+  const checkExtensionStatus = async () => {
+    try {
+      const response = await fetch(`${LOCAL_API_BASE}/extension/connections`)
+      if (response.ok) {
+        const data = await response.json()
+        extensionConnectionStatus.value = {
+          connected: data.total > 0,
+          totalConnections: data.total,
+          ...(data.connections?.[0] || {})
+        }
+      } else {
+        extensionConnectionStatus.value = null
+      }
+    } catch (error) {
+      // 忽略错误，可能服务未启动
+      extensionConnectionStatus.value = null
+    }
+  }
+  
+  // 立即检查一次
+  checkExtensionStatus()
+  // 每5秒检查一次
+  const extensionStatusTimer = setInterval(checkExtensionStatus, 5000)
+  
+  // 清理定时器
+  onBeforeUnmount(() => {
+    if (extensionStatusTimer) {
+      clearInterval(extensionStatusTimer)
+    }
   })
 })
 

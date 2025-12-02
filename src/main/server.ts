@@ -15,8 +15,10 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { Browser } from 'puppeteer';
 // 暂时注释掉发布服务相关引用，代码保留但不使用
 // import { PublishService } from './publishService';
-import { app, ipcMain } from 'electron';
+import { app, ipcMain, BrowserWindow } from 'electron';
 import { connectionManager } from './connectionManager';
+import { Server as SocketIOServer } from 'socket.io';
+import { createServer } from 'http';
 
 // 使用 stealth 插件
 puppeteer.use(StealthPlugin());
@@ -401,6 +403,8 @@ export async function closeBrowser(): Promise<void> {
 let serverInstance: any = null;
 let stopServerFn: (() => Promise<void>) | null = null;
 let currentPort: number = 1519;
+let ioServer: SocketIOServer | null = null;
+let extensionConnections = new Map<string, { socketId: string; connectedAt: string }>();
 
 export function startServer(port: number = 1519): (() => Promise<void>) {
   currentPort = port;
@@ -431,6 +435,13 @@ export function stopServer(): Promise<void> {
 
 export function isServerRunning(): boolean {
   return stopServerFn !== null;
+}
+
+export function getExtensionConnections() {
+  return Array.from(extensionConnections.entries()).map(([clientId, info]) => ({
+    clientId,
+    ...info
+  }));
 }
 
 function _startServer(port: number = 1519): (() => Promise<void>) {
@@ -1758,9 +1769,85 @@ function _startServer(port: number = 1519): (() => Promise<void>) {
   });
 
 
-  // 启动服务器
-  const server = app.listen(port, () => {
+  // 创建 HTTP 服务器并附加 Express 应用
+  const httpServer = createServer(app);
+  
+  // 创建 Socket.IO 服务器
+  ioServer = new SocketIOServer(httpServer, {
+    path: '/ws',
+    cors: {
+      origin: '*',
+      methods: ['GET', 'POST']
+    },
+    transports: ['websocket', 'polling']
+  });
+
+  // Socket.IO 连接管理
+  ioServer.on('connection', (socket) => {
+    const clientId = socket.handshake.query.clientId as string || socket.id;
+    const clientSource = socket.handshake.query.clientSource as string || 'unknown';
+    
+    console.log(`[WS] 插件连接: ${clientId} (${clientSource})`);
+    
+    extensionConnections.set(clientId, {
+      socketId: socket.id,
+      connectedAt: new Date().toISOString()
+    });
+
+    // 通知主窗口插件连接状态
+    const mainWindow = BrowserWindow.getAllWindows()[0];
+    if (mainWindow) {
+      mainWindow.webContents.send('extension-connection-status', {
+        connected: true,
+        clientId,
+        clientSource,
+        connectedAt: extensionConnections.get(clientId)?.connectedAt,
+        totalConnections: extensionConnections.size
+      });
+    }
+
+    // 处理 ping
+    socket.on('ping', () => {
+      socket.emit('pong', {
+        timestamp: new Date().toISOString(),
+        message: 'pong'
+      });
+    });
+
+    // 处理客户端信息
+    socket.on('client-info', (data) => {
+      console.log(`[WS] 收到客户端信息: ${clientId}`, data);
+    });
+
+    // 处理断开连接
+    socket.on('disconnect', (reason) => {
+      console.log(`[WS] 插件断开: ${clientId}, 原因: ${reason}`);
+      extensionConnections.delete(clientId);
+      
+      // 通知主窗口插件断开
+      const mainWindow = BrowserWindow.getAllWindows()[0];
+      if (mainWindow) {
+        mainWindow.webContents.send('extension-connection-status', {
+          connected: false,
+          clientId,
+          disconnectedAt: new Date().toISOString(),
+          reason,
+          totalConnections: extensionConnections.size
+        });
+      }
+    });
+
+    // 处理错误
+    socket.on('error', (error) => {
+      console.error(`[WS] Socket 错误: ${clientId}`, error);
+    });
+  });
+
+  // 启动 HTTP 服务器（绑定到 0.0.0.0 以允许所有网络接口访问）
+  httpServer.listen(port, '0.0.0.0', () => {
     console.log('✅ Express 服务器启动成功！');
+    console.log('✅ Socket.IO 服务器启动成功！');
+    console.log(`📡 WebSocket 端点: ws://localhost:${port}/ws`);
     console.log('─'.repeat(50));
     console.log('📋 可用接口:');
     console.log('🔧 系统监控:');
@@ -1788,14 +1875,38 @@ function _startServer(port: number = 1519): (() => Promise<void>) {
     console.log(`   GET  /api-docs                      - Swagger API 文档`);
     console.log('─'.repeat(50));
   }).on('error', (err) => {
-    console.error('❌ Express 服务器启动失败:', err);
+    console.error('❌ HTTP 服务器启动失败:', err);
+  });
+
+  // 添加获取插件连接状态的 API
+  app.get('/api/extension/connections', (req, res) => {
+    const connections = Array.from(extensionConnections.entries()).map(([clientId, info]) => ({
+      clientId,
+      ...info
+    }));
+    res.json({
+      total: extensionConnections.size,
+      connections
+    });
   });
 
   // 返回停止服务器的函数
   return () => {
     return new Promise<void>((resolve) => {
-      if (server) {
-        server.close(() => {
+      // 关闭所有 Socket.IO 连接
+      if (ioServer) {
+        ioServer.close(() => {
+          console.log('✅ Socket.IO 服务器已停止');
+        });
+        ioServer = null;
+      }
+      
+      // 清空连接记录
+      extensionConnections.clear();
+      
+      // 关闭 HTTP 服务器
+      if (httpServer) {
+        httpServer.close(() => {
           console.log('✅ Express 服务器已停止');
           resolve();
         });
