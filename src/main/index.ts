@@ -16,7 +16,15 @@ import fs from 'fs'
 import https from 'https'
 import http from 'http'
 import { URL } from 'url'
-import { startServer, stopServer, isServerRunning, saveToken, getOrCreateBrowser } from './server';
+import {
+  startServer,
+  stopServer,
+  isServerRunning,
+  saveToken,
+  getOrCreateBrowser,
+  getTokenValue,
+  isTokenExist
+} from './server';
 // 暂时注释掉发布服务相关引用，代码保留但不使用
 // import { PublishService } from './publishService';
 import { connectionManager } from './connectionManager';
@@ -644,6 +652,15 @@ app.whenReady().then(() => {
     
     return true;
   })
+
+  // token 读取相关 IPC 处理器
+  ipcMain.handle('get-token', async () => {
+    return getTokenValue();
+  });
+
+  ipcMain.handle('is-token-exist', async () => {
+    return isTokenExist();
+  });
 
   // 退出确认IPC处理器
   ipcMain.handle('confirm-exit', async () => {

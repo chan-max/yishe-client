@@ -148,6 +148,7 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
+/* 布局容器：左右两列，大屏展示插画，小屏只展示表单 */
 .login-shell {
   display: flex;
   min-height: 100vh;
@@ -362,6 +363,7 @@ const handleLogin = async () => {
   right: -10px;
 }
 
+/* 表单区域：在各种窗口尺寸下居中显示 */
 .form-panel {
   flex: 0.9;
   display: flex;
@@ -373,12 +375,12 @@ const handleLogin = async () => {
 
 .form-card {
   width: 100%;
-  max-width: 480px;
+  max-width: 440px;
   background: #fff;
   border-radius: 18px;
-  padding: 20px 24px;
-  box-shadow: none;
-  border: 1px solid rgba(148, 163, 184, 0.15);
+  padding: 24px 24px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.18);
 }
 
 .welcome-block h1 {
@@ -393,12 +395,13 @@ const handleLogin = async () => {
   font-size: 13px;
 }
 
+/* Element Plus 表单整体间距稍微紧凑一点 */
 .form {
   display: flex;
   flex-direction: column;
   gap: 10px;
   background-color: #ffffff;
-  padding: 20px 24px;
+  padding: 16px 0 0;
   border-radius: 18px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
     'Open Sans', 'Helvetica Neue', sans-serif;
@@ -489,27 +492,14 @@ const handleLogin = async () => {
   font-size: 12px;
 }
 
+/* 登录按钮复用 Element Plus 主题色，尺寸和圆角稍微定制 */
 .button-submit {
   margin: 10px 0 2px;
-  background-color: #151717;
-  border: none;
-  color: #ffffff;
+  width: 100%;
+  height: 44px;
+  border-radius: 999px;
   font-size: 14px;
   font-weight: 600;
-  border-radius: 10px;
-  height: 48px;
-  width: 100%;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.button-submit:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.button-submit:hover:not(:disabled) {
-  background-color: #252727;
 }
 
 .p {
@@ -559,18 +549,36 @@ const handleLogin = async () => {
   }
 }
 
+/* 中等屏幕：缩小插画区域，保证布局不会挤压表单 */
+@media (max-width: 1200px) {
+  .hero-panel {
+    padding: 32px 32px;
+  }
+
+  .hero-illustration {
+    width: 420px;
+    height: 420px;
+  }
+}
+
+/* 小屏幕：隐藏插画区域，只保留居中的登录卡片，避免布局错乱 */
 @media (max-width: 960px) {
   .login-shell {
     flex-direction: column;
   }
+
   .hero-panel {
-    padding: 32px 24px;
+    display: none;
   }
+
   .form-panel {
     padding: 32px 16px 48px;
+    flex: 1;
   }
+
   .form-card {
-    padding: 32px 24px;
+    max-width: 420px;
+    padding: 24px 20px;
   }
 }
 </style>

@@ -26,9 +26,17 @@ puppeteer.use(StealthPlugin());
 // 用内存变量存储 token
 let token: string | null = null;
 
-// 导出保存 token 的函数，供外部使用
+// 导出保存 token 的函数和读取函数，供主进程使用
 export function saveToken(newToken: string): void {
   token = newToken;
+}
+
+export function getTokenValue(): string | null {
+  return token;
+}
+
+export function isTokenExist(): boolean {
+  return !!token;
 }
 
 // 全局浏览器实例管理
@@ -1672,16 +1680,6 @@ function _startServer(port: number = 1519): (() => Promise<void>) {
         timestamp: new Date().toISOString()
       });
     }
-  });
-
-  // token 持久化存储 IPC 处理器
-  // 注意：save-token 处理器在 index.ts 中注册，避免重复注册
-  // 这里只注册 get-token 和 is-token-exist 处理器
-  ipcMain.handle('get-token', async () => {
-    return token;
-  });
-  ipcMain.handle('is-token-exist', async () => {
-    return !!token;
   });
 
   /**
