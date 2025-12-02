@@ -4,4 +4,8 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import { vuetify } from './plugins/vuetify'
 
-createApp(App).use(vuetify).mount('#app')
+// Ant Design Vue 全局引入
+import Antd from 'ant-design-vue'
+import 'ant-design-vue/dist/reset.css'
+
+createApp(App).use(vuetify).use(Antd).mount('#app')
