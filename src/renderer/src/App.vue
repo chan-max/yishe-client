@@ -815,7 +815,9 @@ onUnmounted(() => {
           class="ws-snackbar"
           :class="'ws-snackbar--' + toast.color"
         >
-          <span class="ws-snackbar-icon">{{ toast.icon }}</span>
+          <span v-if="toast.icon" class="ws-snackbar-icon">
+            <i :class="['mdi', toast.icon]" />
+          </span>
           <span>{{ toast.message }}</span>
         </div>
       </transition>
@@ -1591,5 +1593,109 @@ onUnmounted(() => {
   .user-info {
     margin-right: 0;
   }
+}
+
+/* ========================
+ * Element Plus 布局覆盖
+ * ======================*/
+
+.app-root {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-layout {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.drawer-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  padding-top: 16px;
+}
+
+.main-surface {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.app-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.bar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.bar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.main-scroll {
+  flex: 1;
+  min-height: 0;
+  background: #fafafa;
+  overflow-y: auto;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.menu-item-icon {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.8);
+}
+
+.app-menu :deep(.el-menu-item) {
+  margin: 0 12px 4px;
+  border-radius: 10px;
+  height: 40px;
+  line-height: 40px;
+}
+
+.app-menu :deep(.el-menu-item.is-active) {
+  background: rgba(15, 23, 42, 0.06);
+  font-weight: 600;
+}
+
+.ws-snackbar {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+}
+
+.user-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.user-name {
+  font-size: 14px;
 }
 </style>

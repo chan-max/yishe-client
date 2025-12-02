@@ -309,7 +309,6 @@ function buildQuery(token?: string | null) {
 function bindSocketEvents(currentSocket: Socket) {
   currentSocket.on('connect', () => {
     emitter.emit('log', { level: 'info', message: '[ws] connected' })
-    emitter.emit('toast', { color: 'success', icon: 'mdi-radiobox-marked', message: '实时通道已连接' })
     updateState({
       status: 'connected',
       connectedAt: new Date().toISOString(),
