@@ -4,15 +4,45 @@
 
 <template>
   <div>
-    <v-card elevation="0" rounded="lg" class="panel-card">
-      <v-card-title class="panel-title text-h6 py-3">
-        系统设置
-      </v-card-title>
-      <v-divider />
-      <v-card-text class="text-center py-10 text-medium-emphasis">
+    <el-card class="panel-card" shadow="never">
+      <template #header>
+        <div class="panel-header">
+          <span class="panel-title">系统设置</span>
+        </div>
+      </template>
+      <div class="panel-body text-center text-medium-emphasis">
         系统设置功能开发中，敬请期待…
-      </v-card-text>
-    </v-card>
+      </div>
+    </el-card>
   </div>
 </template>
+
+<style scoped>
+.panel-card :deep(.el-card__header) {
+  padding: 12px 16px;
+}
+
+.panel-card :deep(.el-card__body) {
+  padding: 32px 16px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-title {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-medium-emphasis {
+  color: #6b7280;
+}
+</style>
 

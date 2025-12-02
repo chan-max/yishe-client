@@ -5,17 +5,45 @@
 
 <template>
   <div>
-    <v-card elevation="0" rounded="lg" class="panel-card">
-      <v-card-title class="panel-title text-h6 py-3">
-        仪表盘
-      </v-card-title>
-      <v-divider />
-      <v-card-text class="pa-4">
-        <div class="text-center py-10 text-medium-emphasis">
+    <el-card class="panel-card" shadow="never">
+      <template #header>
+        <div class="panel-header">
+          <span class="panel-title">仪表盘</span>
+        </div>
+      </template>
+      <div class="panel-body">
+        <div class="text-center placeholder">
           Dashboard 内容待迁移...
         </div>
-      </v-card-text>
-    </v-card>
+      </div>
+    </el-card>
   </div>
 </template>
+
+<style scoped>
+.panel-card :deep(.el-card__header) {
+  padding: 12px 16px;
+}
+
+.panel-card :deep(.el-card__body) {
+  padding: 16px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-title {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.placeholder {
+  padding: 40px 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+</style>
 

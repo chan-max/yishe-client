@@ -797,10 +797,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <v-app>
+  <div class="app-root">
     <!-- 检查认证状态时的加载界面 -->
     <div v-if="checkingAuth" class="auth-checking">
-      <v-progress-circular indeterminate color="primary" size="64" />
+      <div class="auth-spinner"></div>
       <p class="mt-4 text-medium-emphasis">正在检查登录状态...</p>
     </div>
 
@@ -809,153 +809,133 @@ onUnmounted(() => {
 
     <!-- 主应用界面 -->
     <template v-else>
-      <v-snackbar
-        v-model="toast.visible"
-        :timeout="3000"
-        :color="toast.color"
-        variant="flat"
-        location="top center"
-        class="ws-snackbar"
-        :class="['ws-snackbar', 'ws-snackbar--' + toast.color]"
-        :z-index="99999"
-      >
-        <v-icon size="18" class="mr-2">{{ toast.icon }}</v-icon>
-        {{ toast.message }}
-      </v-snackbar>
-      <v-layout class="app-layout">
-        <v-navigation-drawer width="232" permanent class="app-drawer" variant="flat">
-          <v-divider class="mx-3 mb-2" style="opacity: 0.1;" />
+      <transition name="fade">
+        <div
+          v-if="toast.visible"
+          class="ws-snackbar"
+          :class="'ws-snackbar--' + toast.color"
+        >
+          <span class="ws-snackbar-icon">{{ toast.icon }}</span>
+          <span>{{ toast.message }}</span>
+        </div>
+      </transition>
 
-          <v-list density="compact" nav class="pa-0 mt-1" :lines="false">
-            <v-list-item
-              v-for="item in menuItems"
-              :key="item.key"
-              :value="item.key"
-              :active="activeMenu === item.key"
-              rounded="sm"
-              class="mx-2"
-              @click="selectMenu(item.key)"
+      <el-container class="app-layout">
+        <el-aside width="232px" class="app-drawer">
+          <div class="drawer-inner">
+            <el-menu
+              :default-active="activeMenu"
+              class="app-menu"
+              @select="selectMenu"
             >
-              <v-list-item-title class="text-sm">
-               <div class="flex items-center gap-2">
-                <v-icon size="16" :icon="item.icon" />
-                <div>{{ item.label }}</div>
-               </div>
-                
-                </v-list-item-title
+              <el-menu-item
+                v-for="item in menuItems"
+                :key="item.key"
+                :index="item.key"
               >
-            </v-list-item>
-          </v-list>
+                <span class="menu-item">
+                  <span class="menu-item-icon" />
+                  <span>{{ item.label }}</span>
+                </span>
+              </el-menu-item>
+            </el-menu>
 
-          <template #append>
-            <v-divider class="mx-3 mb-2" style="opacity: 0.1;" />
             <div class="version-pill">
-              <v-icon size="14" icon="mdi-alpha-v-box-outline" class="mr-1" />
-              客户端 v{{ appVersion || "--" }}
+              <span class="version-icon">V</span>
+              客户端 v{{ appVersion || '--' }}
             </div>
-          </template>
-        </v-navigation-drawer>
+          </div>
+        </el-aside>
 
-        <div class="main-surface">
-          <v-app-bar flat height="64" class="app-bar" density="comfortable">
-            <div class="bar-title">
-              <span class="heading">{{ pageTitle }}</span>
-              <span class="caption text-medium-emphasis">{{ pageDescription }}</span>
+        <el-container class="main-surface">
+          <el-header height="64px" class="app-bar">
+            <div class="bar-left">
+              <div class="bar-title">
+                <span class="heading">{{ pageTitle }}</span>
+                <span class="caption text-medium-emphasis">{{ pageDescription }}</span>
+              </div>
+              <div class="status-chips">
+                <el-tag
+                  v-for="chip in statusChips"
+                  :key="chip.key"
+                  size="small"
+                  class="status-chip"
+                  :class="toneClass(chip.state)"
+                >
+                  <span class="status-dot" />
+                  <span>{{ chip.label }}</span>
+                </el-tag>
+              </div>
             </div>
-            <div class="status-chips">
-              <v-chip
-                v-for="chip in statusChips"
-                :key="chip.key"
-                class="status-chip"
-                :class="toneClass(chip.state)"
-                variant="flat"
-                rounded="sm"
-              >
-                <v-icon size="16" class="mr-2">{{ chip.icon }}</v-icon>
-                {{ chip.label }}
-              </v-chip>
-            </div>
-            <v-spacer />
 
-            <!-- 用户信息 -->
-            <div v-if="userInfo" class="user-info d-flex align-center ga-2 mr-4">
-              <v-menu location="bottom end">
-                <template #activator="{ props }">
-                  <v-btn v-bind="props" variant="text" class="user-btn" size="large">
-                    <v-avatar size="36" class="mr-2">
-                      <v-icon icon="mdi-account-circle" size="32" />
-                    </v-avatar>
-                    <span class="user-name">{{
-                      userInfo.username || userInfo.account
-                    }}</span>
-                    <v-chip
+            <div class="bar-right">
+              <!-- 用户信息 -->
+              <template v-if="userInfo">
+                <el-dropdown>
+                  <span class="user-btn">
+                    <el-avatar size="small" class="mr-2">
+                      <span class="avatar-placeholder">U</span>
+                    </el-avatar>
+                    <span class="user-name">
+                      {{ userInfo.username || userInfo.account }}
+                    </span>
+                    <el-tag
                       v-if="userInfo.isAdmin"
                       size="small"
-                      color="primary"
-                      variant="tonal"
+                      type="primary"
+                      effect="plain"
                       class="ml-2"
                     >
                       管理员
-                    </v-chip>
-                  </v-btn>
-                </template>
-                <v-list>
-                  <v-list-item>
-                    <v-list-item-title class="text-subtitle-2"
-                      >账号信息</v-list-item-title
-                    >
-                  </v-list-item>
-                  <v-divider />
-                  <v-list-item>
-                    <v-list-item-title
-                      >用户名:
-                      {{ userInfo.username || userInfo.account }}</v-list-item-title
-                    >
-                  </v-list-item>
-                  <v-list-item v-if="userInfo.company">
-                    <v-list-item-title
-                      >公司: {{ formatCompanyName(userInfo.company) }}</v-list-item-title
-                    >
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title>账号: {{ userInfo.account }}</v-list-item-title>
-                  </v-list-item>
-                  <v-divider />
-                  <v-list-item @click="handleLogout">
-                    <v-list-item-title class="text-error">
-                      <v-icon icon="mdi-logout" start />
-                      退出登录
-                    </v-list-item-title>
-                  </v-list-item>
-                </v-list>
-              </v-menu>
+                    </el-tag>
+                  </span>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item disabled class="dropdown-title">
+                        账号信息
+                      </el-dropdown-item>
+                      <el-dropdown-item divided disabled>
+                        用户名：{{ userInfo.username || userInfo.account }}
+                      </el-dropdown-item>
+                      <el-dropdown-item v-if="userInfo.company" disabled>
+                        公司：{{ formatCompanyName(userInfo.company) }}
+                      </el-dropdown-item>
+                      <el-dropdown-item disabled>
+                        账号：{{ userInfo.account }}
+                      </el-dropdown-item>
+                      <el-dropdown-item divided @click="handleLogout">
+                        <span class="text-error">退出登录</span>
+                      </el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </template>
+
+              <el-button
+                v-else-if="loadingUserInfo"
+                text
+                loading
+                class="ml-2"
+              >
+                加载中...
+              </el-button>
             </div>
+          </el-header>
 
-            <v-btn
-              v-else-if="loadingUserInfo"
-              variant="text"
-              :loading="true"
-              class="mr-4"
-            >
-              加载中...
-            </v-btn>
-          </v-app-bar>
-
-          <v-main class="main-scroll" style="overflow-y: auto; height: calc(100vh - 64px);">
-            <v-container fluid class="py-4 px-4" style="max-width: 1400px;">
-              <!-- 使用组件切换替代 router-view -->
+          <el-main class="main-scroll">
+            <div class="page-container">
               <Dashboard v-if="activeMenu === 'dashboard'" />
               <Tasks v-else-if="activeMenu === 'tasks'" />
               <Workspace v-else-if="activeMenu === 'workspace'" />
               <Settings v-else-if="activeMenu === 'settings'" />
               <Logs v-else-if="activeMenu === 'logs'" />
               <About v-else-if="activeMenu === 'about'" />
-            </v-container>
-          </v-main>
-        </div>
-      </v-layout>
+            </div>
+          </el-main>
+        </el-container>
+      </el-container>
     </template>
-  </v-app>
+  </div>
 </template>
 
 <style scoped>
@@ -1567,6 +1547,24 @@ onUnmounted(() => {
   justify-content: center;
   min-height: 100vh;
   background: #fafafa;
+}
+
+.auth-spinner {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  border: 4px solid #e5e7eb;
+  border-top-color: #2563eb;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 960px) {

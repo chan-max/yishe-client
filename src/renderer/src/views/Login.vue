@@ -32,7 +32,7 @@
       </div>
     </section>
 
-    <!-- Form block：使用 Ant Design Vue 重构 -->
+    <!-- Form block：Element Plus 表单 -->
     <section class="form-panel">
       <div class="form-card">
         <div class="welcome-block">
@@ -40,62 +40,56 @@
           <p>登录账号，即可开启智能设计与任务管理体验</p>
         </div>
 
-        <a-form
-          class="form"
-          layout="vertical"
-          @submit.prevent="handleLogin"
-          autocomplete="on"
-        >
-          <a-form-item label="账号" :validate-status="accountStatus" :help="accountHelp">
-            <a-input
-              v-model:value="form.account"
+        <el-form class="form" label-position="top" @submit.prevent="handleLogin" autocomplete="on">
+          <el-form-item label="账号" :error="accountHelp || undefined">
+            <el-input
+              v-model="form.account"
               size="large"
-              allow-clear
+              clearable
               autocomplete="username"
               placeholder="请输入账号"
             />
-          </a-form-item>
+          </el-form-item>
 
-          <a-form-item label="密码" :validate-status="passwordStatus" :help="passwordHelp">
-            <a-input-password
-              v-model:value="form.password"
+          <el-form-item label="密码" :error="passwordHelp || undefined">
+            <el-input
+              v-model="form.password"
               size="large"
               autocomplete="current-password"
               placeholder="请输入密码"
-              :visibility-toggle="true"
+              show-password
             />
-          </a-form-item>
+          </el-form-item>
 
           <div class="flex-row">
-            <a-checkbox v-model:checked="rememberMe">记住我</a-checkbox>
-            <a-typography-link class="span" disabled>忘记密码？</a-typography-link>
+            <el-checkbox v-model="rememberMe">记住我</el-checkbox>
+            <el-link class="span" disabled>忘记密码？</el-link>
           </div>
 
-          <a-alert
+          <el-alert
             v-if="errorMessage"
             class="form-error-alert"
             type="error"
-            :message="errorMessage"
+            :title="errorMessage"
             show-icon
           />
 
-          <a-button
+          <el-button
             class="button-submit"
             type="primary"
             size="large"
-            block
-            html-type="submit"
             :loading="loading"
             :disabled="!formValid"
+            native-type="submit"
           >
             立即登录
-          </a-button>
+          </el-button>
 
           <p class="p">
             还没有账号？
-            <a-typography-text class="span">联系管理员开通</a-typography-text>
+            <span class="span">联系管理员开通</span>
           </p>
-        </a-form>
+        </el-form>
       </div>
     </section>
   </div>
@@ -120,19 +114,11 @@ const form = reactive({
 
 const formValid = computed(() => form.account.trim().length >= 3 && form.password.length >= 6)
 
-const accountStatus = computed(() => {
-  if (!form.account) return ''
-  return form.account.trim().length >= 3 ? 'success' : 'error'
-})
 const accountHelp = computed(() => {
   if (!form.account) return ''
   return form.account.trim().length >= 3 ? '' : '账号长度至少 3 位'
 })
 
-const passwordStatus = computed(() => {
-  if (!form.password) return ''
-  return form.password.length >= 6 ? 'success' : 'error'
-})
 const passwordHelp = computed(() => {
   if (!form.password) return ''
   return form.password.length >= 6 ? '' : '密码长度至少 6 位'

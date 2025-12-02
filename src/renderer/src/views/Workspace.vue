@@ -263,253 +263,391 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
+  <div class="workspace-page">
     <!-- 工作目录设置 -->
-    <v-card variant="outlined" class="mb-3">
-      <v-card-title class="text-subtitle-1 py-2 px-3">
-        <v-icon size="18" class="mr-2">mdi-folder-outline</v-icon>
-        工作目录设置
-      </v-card-title>
-      <v-divider class="mx-3" />
-      <v-card-text class="pa-3">
-        <div class="mb-3">
-          <div class="text-caption text-medium-emphasis mb-2">
-            当前工作目录用于存储应用生成的文件和临时数据。选择后会自动保存，下次启动时无需重新设置。
-          </div>
-          <v-text-field
-            v-model="workspaceDirectory"
-            label="工作目录路径"
-            readonly
-            variant="outlined"
-            density="compact"
-            prepend-inner-icon="mdi-folder"
-            class="mb-2"
-            hide-details
-          >
-            <template v-slot:append>
-              <v-btn
-                variant="text"
-                size="small"
-                @click="selectWorkspaceDirectory"
-                :loading="selectingDirectory"
-              >
-                选择文件夹
-              </v-btn>
-            </template>
-          </v-text-field>
-          <div v-if="workspaceDirectory" class="d-flex align-center ga-2">
-            <v-chip
-              color="success"
-              size="x-small"
-              prepend-icon="mdi-check-circle"
-            >
-              已设置
-            </v-chip>
-            <v-btn
-              variant="text"
-              size="x-small"
-              color="error"
-              prepend-icon="mdi-delete-outline"
-              @click="clearWorkspaceDirectory"
-            >
-              清除
-            </v-btn>
-          </div>
-          <div v-else class="d-flex align-center">
-            <v-chip
-              color="warning"
-              size="x-small"
-              prepend-icon="mdi-alert-outline"
-            >
-              未设置
-            </v-chip>
+    <el-card class="mb-3 workspace-card" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <div class="card-header-left">
+            <el-icon class="mr-2">
+              <folder-opened />
+            </el-icon>
+            <span>工作目录设置</span>
           </div>
         </div>
-      </v-card-text>
-    </v-card>
+      </template>
+
+      <div class="mb-3">
+        <div class="text-caption text-medium-emphasis mb-2">
+          当前工作目录用于存储应用生成的文件和临时数据。选择后会自动保存，下次启动时无需重新设置。
+        </div>
+        <el-input
+          v-model="workspaceDirectory"
+          class="mb-2"
+          readonly
+          placeholder="请选择工作目录"
+        >
+          <template #prepend>
+            <el-icon>
+              <folder />
+            </el-icon>
+          </template>
+          <template #append>
+            <el-button
+              type="primary"
+              link
+              size="small"
+              @click="selectWorkspaceDirectory"
+              :loading="selectingDirectory"
+            >
+              选择文件夹
+            </el-button>
+          </template>
+        </el-input>
+
+        <div v-if="workspaceDirectory" class="status-row">
+          <el-tag type="success" size="small">已设置</el-tag>
+          <el-button
+            type="danger"
+            link
+            size="small"
+            @click="clearWorkspaceDirectory"
+          >
+            清除
+          </el-button>
+        </div>
+        <div v-else class="status-row">
+          <el-tag type="warning" size="small">未设置</el-tag>
+        </div>
+      </div>
+    </el-card>
 
     <!-- 文件查询功能 -->
-    <v-card variant="outlined" class="mb-3">
-      <v-card-title class="text-subtitle-1 py-2 px-3">
-        <v-icon size="18" class="mr-2">mdi-magnify</v-icon>
-        文件查询
-      </v-card-title>
-      <v-divider class="mx-3" />
-      <v-card-text class="pa-3">
-        <div class="mb-3">
-          <div class="text-caption text-medium-emphasis mb-2">
-            输入文件下载链接，查询该文件是否已下载。如果已下载，将显示文件的绝对路径。
-          </div>
-          <v-text-field
-            v-model="queryUrl"
-            label="文件下载链接"
-            placeholder="https://example.com/file.zip"
-            variant="outlined"
-            density="compact"
-            prepend-inner-icon="mdi-link"
-            class="mb-2"
-            :disabled="querying"
-            @keyup.enter="handleQuery"
-            hide-details
-          >
-            <template v-slot:append>
-              <v-btn
-                color="primary"
-                variant="flat"
-                size="small"
-                @click="handleQuery"
-                :loading="querying"
-                :disabled="!queryUrl.trim() || !workspaceDirectory"
-                prepend-icon="mdi-magnify"
-              >
-                查询
-              </v-btn>
-            </template>
-          </v-text-field>
-          <div v-if="!workspaceDirectory" class="d-flex align-center ga-2 mb-2">
-            <v-alert
-              type="warning"
-              variant="tonal"
-              density="compact"
-              class="grow text-caption py-2"
-            >
-              请先设置工作目录才能使用查询功能
-            </v-alert>
-          </div>
-          
-          <!-- 查询结果 -->
-          <div v-if="queryResult" class="mt-2">
-            <v-alert
-              :type="queryResult.found ? 'success' : 'info'"
-              variant="tonal"
-              :icon="queryResult.found ? 'mdi-check-circle' : 'mdi-information'"
-              class="mb-2 text-caption py-2"
-            >
-              {{ queryResult.message }}
-            </v-alert>
-            
-            <v-card v-if="queryResult.found && queryResult.filePath" variant="outlined" class="mt-2">
-              <v-card-text class="pa-2">
-                <div class="text-caption mb-1 font-weight-medium">文件信息</div>
-                <v-text-field
-                  :model-value="queryResult.filePath"
-                  label="文件绝对路径"
-                  readonly
-                  variant="outlined"
-                  density="compact"
-                  prepend-inner-icon="mdi-file"
-                  class="mb-1"
-                  hide-details
-                >
-                  <template v-slot:append>
-                    <v-btn
-                      variant="text"
-                      size="x-small"
-                      @click="copyToClipboard(queryResult.filePath, '文件路径')"
-                      prepend-icon="mdi-content-copy"
-                    >
-                      复制
-                    </v-btn>
-                  </template>
-                </v-text-field>
-                <div v-if="queryResult.fileSize" class="text-caption text-medium-emphasis">
-                  文件大小: {{ formatFileSize(queryResult.fileSize) }}
-                </div>
-              </v-card-text>
-            </v-card>
+    <el-card class="mb-3 workspace-card" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <div class="card-header-left">
+            <el-icon class="mr-2">
+              <search />
+            </el-icon>
+            <span>文件查询</span>
           </div>
         </div>
-      </v-card-text>
-    </v-card>
-    
+      </template>
+
+      <div class="mb-3">
+        <div class="text-caption text-medium-emphasis mb-2">
+          输入文件下载链接，查询该文件是否已下载。如果已下载，将显示文件的绝对路径。
+        </div>
+
+        <el-input
+          v-model="queryUrl"
+          class="mb-2"
+          :disabled="querying"
+          placeholder="https://example.com/file.zip"
+          @keyup.enter="handleQuery"
+        >
+          <template #prepend>
+            <el-icon>
+              <link />
+            </el-icon>
+          </template>
+          <template #append>
+            <el-button
+              type="primary"
+              size="small"
+              @click="handleQuery"
+              :loading="querying"
+              :disabled="!queryUrl.trim() || !workspaceDirectory"
+            >
+              查询
+            </el-button>
+          </template>
+        </el-input>
+
+        <el-alert
+          v-if="!workspaceDirectory"
+          type="warning"
+          show-icon
+          class="mb-2"
+          :closable="false"
+        >
+          请先设置工作目录才能使用查询功能
+        </el-alert>
+
+        <!-- 查询结果 -->
+        <div v-if="queryResult" class="mt-2">
+          <el-alert
+            :type="queryResult.found ? 'success' : 'info'"
+            show-icon
+            :closable="false"
+            class="mb-2"
+          >
+            {{ queryResult.message }}
+          </el-alert>
+
+          <el-card
+            v-if="queryResult.found && queryResult.filePath"
+            class="mt-2 inner-card"
+            shadow="never"
+          >
+            <div class="text-caption mb-1 font-weight-medium">文件信息</div>
+            <el-input
+              :model-value="queryResult.filePath"
+              readonly
+              class="mb-1"
+            >
+              <template #prepend>
+                <el-icon>
+                  <document />
+                </el-icon>
+              </template>
+              <template #append>
+                <el-button
+                  link
+                  size="small"
+                  @click="copyToClipboard(queryResult.filePath, '文件路径')"
+                >
+                  复制
+                </el-button>
+              </template>
+            </el-input>
+            <div v-if="queryResult.fileSize" class="text-caption text-medium-emphasis">
+              文件大小: {{ formatFileSize(queryResult.fileSize) }}
+            </div>
+          </el-card>
+        </div>
+      </div>
+    </el-card>
+
     <!-- 文件下载功能 -->
-    <v-card variant="outlined" class="mb-3">
-      <v-card-title class="text-subtitle-1 py-2 px-3">
-        <v-icon size="18" class="mr-2">mdi-download-outline</v-icon>
-        文件下载
-      </v-card-title>
-      <v-divider class="mx-3" />
-      <v-card-text class="pa-3">
-        <div class="mb-3">
-          <div class="text-caption text-medium-emphasis mb-2">
-            输入文件下载链接，文件将保存到工作目录下的 <code>files</code> 目录。如果文件已存在，将自动跳过下载。
+    <el-card class="mb-3 workspace-card" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <div class="card-header-left">
+            <el-icon class="mr-2">
+              <download />
+            </el-icon>
+            <span>文件下载</span>
           </div>
-          <v-text-field
-            v-model="downloadUrl"
-            label="文件下载链接"
-            placeholder="https://example.com/file.zip"
-            variant="outlined"
-            density="compact"
-            prepend-inner-icon="mdi-link"
-            class="mb-2"
-            :disabled="downloading"
-            @keyup.enter="handleDownload"
-            hide-details
+        </div>
+      </template>
+
+      <div class="mb-3">
+        <div class="text-caption text-medium-emphasis mb-2">
+          输入文件下载链接，文件将保存到工作目录下的 <code>files</code> 目录。如果文件已存在，将自动跳过下载。
+        </div>
+
+        <el-input
+          v-model="downloadUrl"
+          class="mb-2"
+          :disabled="downloading"
+          placeholder="https://example.com/file.zip"
+          @keyup.enter="handleDownload"
+        >
+          <template #prepend>
+            <el-icon>
+              <link />
+            </el-icon>
+          </template>
+          <template #append>
+            <el-button
+              type="primary"
+              size="small"
+              @click="handleDownload"
+              :loading="downloading"
+              :disabled="!downloadUrl.trim() || !workspaceDirectory"
+            >
+              下载
+            </el-button>
+          </template>
+        </el-input>
+
+        <el-alert
+          v-if="!workspaceDirectory"
+          type="warning"
+          show-icon
+          class="mb-2"
+          :closable="false"
+        >
+          请先设置工作目录才能使用下载功能
+        </el-alert>
+      </div>
+
+      <!-- 下载历史 -->
+      <div v-if="downloadHistory.length > 0" class="mt-2">
+        <div class="text-caption mb-1 font-weight-medium">下载历史</div>
+        <div class="history-list">
+          <div
+            v-for="(item, index) in downloadHistory.slice().reverse()"
+            :key="index"
+            class="history-item"
           >
-            <template v-slot:append>
-              <v-btn
-                color="primary"
-                variant="flat"
-                size="small"
-                @click="handleDownload"
-                :loading="downloading"
-                :disabled="!downloadUrl.trim() || !workspaceDirectory"
-                prepend-icon="mdi-download"
+            <div class="history-main">
+              <el-icon
+                :class="['history-icon', item.result.success ? (item.result.skipped ? 'is-warning' : 'is-success') : 'is-error']"
               >
-                下载
-              </v-btn>
-            </template>
-          </v-text-field>
-          <div v-if="!workspaceDirectory" class="d-flex align-center ga-2 mb-2">
-            <v-alert
-              type="warning"
-              variant="tonal"
-              density="compact"
-              class="grow text-caption py-2"
+                <circle-check v-if="item.result.success && !item.result.skipped" />
+                <minus v-else-if="item.result.success && item.result.skipped" />
+                <warning-filled v-else />
+              </el-icon>
+              <div class="history-text">
+                <div class="history-url" :title="item.url">
+                  {{ item.url }}
+                </div>
+                <div class="history-sub">
+                  {{ formatDownloadResult(item.result) }}
+                </div>
+              </div>
+            </div>
+            <el-tag
+              size="small"
+              :type="item.result.success ? (item.result.skipped ? 'warning' : 'success') : 'danger'"
             >
-              请先设置工作目录才能使用下载功能
-            </v-alert>
+              {{
+                item.result.success
+                  ? item.result.skipped
+                    ? '已跳过'
+                    : '成功'
+                  : '失败'
+              }}
+            </el-tag>
           </div>
         </div>
-        
-        <!-- 下载历史 -->
-        <div v-if="downloadHistory.length > 0" class="mt-2">
-          <div class="text-caption mb-1 font-weight-medium">下载历史</div>
-          <v-list density="compact" variant="outlined" rounded="sm" style="max-height: 200px; overflow-y: auto;">
-            <v-list-item
-              v-for="(item, index) in downloadHistory.slice().reverse()"
-              :key="index"
-              :title="item.url"
-              :subtitle="formatDownloadResult(item.result)"
-              class="py-1"
-              style="min-height: auto;"
-            >
-              <template v-slot:prepend>
-                <v-icon
-                  size="16"
-                  :color="item.result.success ? (item.result.skipped ? 'warning' : 'success') : 'error'"
-                >
-                  {{ item.result.success 
-                    ? (item.result.skipped ? 'mdi-skip-next' : 'mdi-check-circle') 
-                    : 'mdi-alert-circle' }}
-                </v-icon>
-              </template>
-              <template v-slot:append>
-                <v-chip
-                  :color="item.result.success ? (item.result.skipped ? 'warning' : 'success') : 'error'"
-                  size="x-small"
-                  variant="tonal"
-                >
-                  {{ item.result.success 
-                    ? (item.result.skipped ? '已跳过' : '成功') 
-                    : '失败' }}
-                </v-chip>
-              </template>
-            </v-list-item>
-          </v-list>
-        </div>
-      </v-card-text>
-    </v-card>
+      </div>
+    </el-card>
   </div>
 </template>
+
+<style scoped>
+.workspace-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.workspace-card :deep(.el-card__header) {
+  padding: 10px 16px;
+}
+
+.workspace-card :deep(.el-card__body) {
+  padding: 12px 16px 16px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-header-left {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.mr-2 {
+  margin-right: 8px;
+}
+
+.mb-2 {
+  margin-bottom: 8px;
+}
+
+.mb-3 {
+  margin-bottom: 12px;
+}
+
+.mt-2 {
+  margin-top: 8px;
+}
+
+.text-caption {
+  font-size: 12px;
+}
+
+.text-medium-emphasis {
+  color: #6b7280;
+}
+
+.font-weight-medium {
+  font-weight: 500;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.history-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.history-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.history-icon {
+  font-size: 16px;
+  color: #9ca3af;
+}
+
+.history-icon.is-success {
+  color: #16a34a;
+}
+
+.history-icon.is-warning {
+  color: #f59e0b;
+}
+
+.history-icon.is-error {
+  color: #dc2626;
+}
+
+.history-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.history-url {
+  font-size: 12px;
+  color: #111827;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.history-sub {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.inner-card :deep(.el-card__body) {
+  padding: 8px 10px 10px;
+}
+</style>
 

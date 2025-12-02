@@ -2,10 +2,11 @@ import './assets/main.css'
 
 import { createApp } from 'vue'
 import App from './App.vue'
-import { vuetify } from './plugins/vuetify'
+import { setupElementPlus } from './plugins/elementPlus'
 
-// Ant Design Vue 全局引入
-import Antd from 'ant-design-vue'
-import 'ant-design-vue/dist/reset.css'
+const app = createApp(App)
 
-createApp(App).use(vuetify).use(Antd).mount('#app')
+// 全局注册 Element Plus，UI 统一使用 Element Plus 组件
+setupElementPlus(app)
+
+app.mount('#app')
